@@ -1,0 +1,30 @@
+{
+  "latest_version": "5.1.1",
+  "schema_version": 2,
+  "min_supported_version": "5.0.0",
+  "released": "2026-09-21",
+  "active_cohorts": ["PILOT-01"],
+  "kernel": "current.md",
+  "modules": {
+    "1-intake": "modules/1-intake.md",
+    "2-mindmap": "modules/2-mindmap.md",
+    "3-networking": "modules/3-networking.md",
+    "4-dashboard": "modules/4-dashboard.md"
+  },
+  "templates": {
+    "_META": "templates/_META.md",
+    "00_CORE": "templates/00_CORE.md",
+    "01_ACTIVE": "templates/01_ACTIVE.md",
+    "DIGESTS": "templates/DIGESTS.md",
+    "archive_month": "templates/archive_month.md"
+  },
+  "migrations": {
+    "1-to-2": "migrations/1-to-2.md"
+  },
+  "whats_new": [
+    "You can now connect Google Drive (optional) so your progress saves automatically and updates never wipe it. Without Drive, Bridge gives you a save-file instead.",
+    "Bridge now tidies old history into monthly archives automatically, so it stays fast and accurate over time."
+  ],
+  "message_id": "2026-09-21-a",
+  "message": ""
+}
