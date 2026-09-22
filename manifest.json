@@ -1,8 +1,8 @@
 {
-  "latest_version": "5.1.1",
+  "latest_version": "5.2.0",
   "schema_version": 2,
   "min_supported_version": "5.0.0",
-  "released": "2026-09-21",
+  "released": "2026-09-22",
   "active_cohorts": ["PILOT-01"],
   "kernel": "current.md",
   "modules": {
@@ -22,8 +22,9 @@
     "1-to-2": "migrations/1-to-2.md"
   },
   "whats_new": [
-    "You can now connect Google Drive (optional) so your progress saves automatically and updates never wipe it. Without Drive, Bridge gives you a save-file instead.",
-    "Bridge now tidies old history into monthly archives automatically, so it stays fast and accurate over time."
+    "Bridge now asks before it changes your saved files, like tidying last month or bringing over old notes.",
+    "Each update is locked to a fixed version you approved, so nothing changes unless you say yes.",
+    "Google Drive stays optional. Bridge only sets up a folder after you choose to connect it."
   ],
   "message_id": "2026-09-21-a",
   "message": ""
