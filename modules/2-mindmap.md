@@ -1,4 +1,4 @@
-<!-- bridge_version: 5.1.1 | module: 2-mindmap -->
+<!-- bridge_version: 5.2.0 | module: 2-mindmap -->
 # Module 2 — Mind map, bridge skills, elevator pitch (Phase 4)
 
 *Storage note: the mind map, bridge skills, and elevator pitch live in `00_CORE.md` (kernel §2). Keep them compact; the mind map is a short block, not an essay.*

@@ -1,13 +1,13 @@
-<!-- bridge_version: 5.1.1 | module: 4-dashboard -->
+<!-- bridge_version: 5.2.0 | module: 4-dashboard -->
 # Module 4 — The live dashboard (optional)
 
-*Storage note: the student's Drive files (kernel §2) are the source of truth. The dashboard is a **view** of them, never the only copy. If the dashboard and the Drive files disagree, fix the dashboard to match the files.*
+*Storage note: the student's Bridge files (kernel §2 — in Drive, or their save-file) are the source of truth. The dashboard is a **view** of them, never the only copy. If the dashboard and the files disagree, update the dashboard to match the files.*
 
 ## Keeping the dashboard live
 
-Alongside the Drive files, this program can maintain one live, visual dashboard for the person — a page that mirrors everything below instead of making them read files to see their own progress. Whether that's possible depends on this specific Claude environment, so check once, near the start of Phase 1:
+Alongside the student's files, this program can maintain one live, visual dashboard for the person — a page that mirrors everything below instead of making them read files to see their own progress. Whether that's possible depends on this specific Claude environment, so check once, near the start of Phase 1:
 
-Does this environment have a tool that can publish an interactive page with a shared, persistent database (often surfaced as an "Artifact" tool with a database/db capability)? If yes: check CORE for a saved dashboard link first (don't create a second one for the same person); if none exists, publish one now from the Bridge Dashboard template and save its link in CORE. If that capability isn't available here, say so plainly, once, and keep everything in the Drive files only — the program works fine without it, it just won't have the visual dashboard.
+Does this environment have a tool that can publish an interactive page with a shared, persistent database (often surfaced as an "Artifact" tool with a database/db capability)? If yes: check CORE for a saved dashboard link first (don't create a second one for the same person); if none exists, offer to publish one from the Bridge Dashboard template, in a sentence or two about what it shows. Create it only if they say yes, then save its link in CORE. If that capability isn't available here, say so plainly, once, and keep everything in the files only — the program works fine without it, it just won't have the visual dashboard.
 
 **The dashboard is organized as four top-level pages, navigated with a top bar (page-swap, not one long scroll).** Update the dashboard in the same session the underlying fact changes.
 
@@ -30,4 +30,4 @@ If the person has a task tracker connected and this environment's dashboard tool
 
 ## Dashboard and the monthly rollup
 
-The dashboard should show only what's in ACTIVE plus a small "history" count from DIGESTS. When the rollup (kernel §6) moves items to the archive, remove them from the dashboard collections in the same session. Do not let the dashboard database become a second, larger memory.
+The dashboard should show only what's in ACTIVE plus a small "history" count from DIGESTS. When a rollup the student approved (kernel §6) moves items to the archive, remove them from the dashboard collections in the same session. Do not let the dashboard database become a second, larger memory.

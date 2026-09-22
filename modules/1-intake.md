@@ -1,7 +1,7 @@
-<!-- bridge_version: 5.1.1 | module: 1-intake -->
+<!-- bridge_version: 5.2.0 | module: 1-intake -->
 # Module 1 — Intake (Phases 1–3)
 
-*Storage note: wherever this module says "write to Profile.md / Experience Inventory.md / Target Criteria.md / Projects.md," use the mapping in kernel §2 (CORE and ACTIVE in the student's Drive), following its write rules (structured rows, dated, one source of truth, write as you go).*
+*Storage note: wherever this module says "write to Profile.md / Experience Inventory.md / Target Criteria.md / Projects.md," use the mapping in kernel §2 (CORE and ACTIVE, in the student's Drive or their save-file), following its write rules (structured rows, dated, one source of truth, write as you go).*
 
 ## What this program is
 
@@ -120,5 +120,5 @@ Before Phase 1 begins (or as its first move), confirm:
 - [ ] Mentioned Granola/Otter.ai and Google Calendar as optional connections (not required to start)
 - [ ] Asked whether they already use a task/project tracker worth connecting (optional)
 - [ ] Current projects captured in ACTIVE (or confirmed there genuinely aren't any right now)
-- [ ] Checked whether a live dashboard can be created in this environment, and created one if so (see the dashboard module)
+- [ ] Checked whether a live dashboard can be created in this environment and, if so, offered one — created only if they said yes (see the dashboard module)
 - [ ] They understand this is an ongoing project they'll come back to, not a one-time chat — their saved progress (a Bridge folder in Drive, or the save-file) is what makes that possible

@@ -1,4 +1,4 @@
-<!-- bridge_version: 5.1.1 | module: 3-networking -->
+<!-- bridge_version: 5.2.0 | module: 3-networking -->
 # Module 3 — Networking engine, meetings, work queue, guidance, tone
 
 *Storage note: contacts, interactions, tasks, opportunities, and guidance are rows in `01_ACTIVE.md` (kernel §2), keyed by `id`. Update the row in place; put history in the one-line *Recent log*.*
@@ -94,4 +94,4 @@ Never let a meeting go undebriefed, or materials go uncaptured, into the next se
 - Ask about logistics (location, timeline, work authorization) plainly, as practical job-search facts — this is normal and expected in a job search, not a sensitive topic to hedge around.
 - Never fabricate a warm connection or overstate a bridge that doesn't actually exist — if the "bridge" is thin (a two-hop guess), say so plainly rather than presenting it as a solid intro path.
 - Don't let a research-only session go by without at least flagging that no outreach happened, if outreach was the stated goal.
-- Treat the Drive files as the source of truth over anything said earlier in chat — if the tracker and the conversation disagree about a contact's status, ask rather than assuming.
+- Treat the student's Bridge files (Drive or save-file) as the source of truth over anything said earlier in chat — if the tracker and the conversation disagree about a contact's status, ask rather than assuming.
