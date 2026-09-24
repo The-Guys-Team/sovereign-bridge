@@ -1,0 +1,1162 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bridge v6 Preview</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #EFEBDD; --paper-raised: #FAF8F0; --paper-sunk: #E6E1D0;
+    --ink: #17233D; --ink-2: #26365A;
+    --text: #1E2430; --text-muted: #5B6270; --text-faint: #8A8F7C;
+    --brass: #A6752B; --brass-soft: #E7D3AC;
+    --route: #2F6F5E; --route-soft: #D2E5DD;
+    --amber: #9A7120; --amber-soft: #EEE0BE;
+    --rust: #A6402E; --rust-soft: #EBD4CD;
+    --slate: #5B6270; --slate-soft: #DCDCD1;
+    --violet: #5B4A8A; --violet-soft: #E1DAF0;
+    --border: rgba(23,35,61,0.14); --border-strong: rgba(23,35,61,0.26);
+    --shadow: 0 1px 2px rgba(23,35,61,0.06), 0 6px 20px rgba(23,35,61,0.05);
+    --chrome-text: #EFEBDD; --chrome-dim: rgba(239,235,221,0.6); --chrome-accent: #D9A857;
+    --serif: 'Fraunces', Georgia, serif; --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #12161F; --paper-raised: #1B2130; --paper-sunk: #0E1219; --ink: #0B0E15; --ink-2: #1D2740;
+      --text: #ECE7DA; --text-muted: #A0A6B4; --text-faint: #6E7480;
+      --brass: #D9A857; --brass-soft: #3B331F; --route: #64B39B; --route-soft: #1E332C;
+      --amber: #D2A24B; --amber-soft: #362D18; --rust: #D9846C; --rust-soft: #35211C;
+      --slate: #A0A6B4; --slate-soft: #262B38; --violet: #B6A6E8; --violet-soft: #2A2440;
+      --border: rgba(236,231,218,0.12); --border-strong: rgba(236,231,218,0.22);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #12161F; --paper-raised: #1B2130; --paper-sunk: #0E1219; --ink: #0B0E15; --ink-2: #1D2740;
+    --text: #ECE7DA; --text-muted: #A0A6B4; --text-faint: #6E7480;
+    --brass: #D9A857; --brass-soft: #3B331F; --route: #64B39B; --route-soft: #1E332C;
+    --amber: #D2A24B; --amber-soft: #362D18; --rust: #D9846C; --rust-soft: #35211C;
+    --slate: #A0A6B4; --slate-soft: #262B38; --violet: #B6A6E8; --violet-soft: #2A2440;
+    --border: rgba(236,231,218,0.12); --border-strong: rgba(236,231,218,0.22);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; font-size: 14px; }
+  h1, h2, h3 { font-family: var(--serif); text-wrap: balance; margin: 0; font-weight: 500; }
+  button { font-family: inherit; color: inherit; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .eyebrow { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); }
+  .muted { color: var(--text-muted); }
+  a { color: inherit; }
+
+  /* chrome */
+  .chrome { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: var(--ink); color: var(--chrome-text); }
+  .chrome-top { display: flex; align-items: baseline; gap: 1rem; padding: 0.8rem 1.4rem 0.2rem; flex-wrap: wrap; }
+  .brand { font-family: var(--serif); font-style: italic; font-size: 1.25rem; }
+  .brand-v { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em; color: var(--chrome-accent); text-transform: uppercase; margin-left: 0.4rem; font-style: normal; }
+  .who-line { font-size: 0.8rem; color: var(--chrome-dim); flex: 1; min-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav { display: flex; gap: 0.1rem; padding: 0 1rem; overflow-x: auto; scrollbar-width: none; }
+  .nav button { background: none; border: none; color: var(--chrome-dim); font-size: 0.85rem; font-weight: 500; padding: 0.7rem 0.75rem; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .nav button:hover { color: var(--chrome-text); }
+  .nav button.active { color: var(--chrome-accent); border-bottom-color: var(--chrome-accent); }
+
+  .page { padding-inline: 16px; padding-block: 1.8rem 11rem; }
+  .page[hidden] { display: none !important; }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.2rem; }
+  .page-head h2 { font-size: 1.6rem; margin-top: 0.2rem; }
+  .page-head p { color: var(--text-muted); margin: 0.35rem 0 0; max-width: 62ch; line-height: 1.5; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+  .sec-head h3 { font-size: 1.05rem; font-weight: 600; }
+  .sec-note { font-family: var(--mono); font-size: 0.66rem; color: var(--text-faint); }
+  .empty { padding: 1.3rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border-strong); border-radius: 10px; }
+
+  .chip { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.16rem 0.5rem; border-radius: 100px; white-space: nowrap; background: var(--slate-soft); color: var(--slate); display: inline-block; }
+  .chip.route { background: var(--route-soft); color: var(--route); }
+  .chip.amber { background: var(--amber-soft); color: var(--amber); }
+  .chip.rust { background: var(--rust-soft); color: var(--rust); }
+  .chip.violet { background: var(--violet-soft); color: var(--violet); }
+  .chip.brass { background: var(--brass-soft); color: var(--brass); }
+  .jump { font-family: var(--mono); font-size: 0.64rem; padding: 0.2rem 0.6rem; border-radius: 100px; border: 1px solid var(--brass); background: transparent; color: var(--brass); cursor: pointer; white-space: nowrap; }
+  .jump:hover { background: var(--brass); color: var(--paper-raised); }
+  .btn { font-weight: 600; font-size: 0.8rem; border-radius: 7px; padding: 0.45rem 0.9rem; cursor: pointer; border: 1px solid var(--border-strong); background: var(--paper-raised); }
+  .btn:hover { border-color: var(--brass); }
+  .btn.primary { background: var(--ink); color: var(--chrome-text); border-color: var(--ink); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .linkish { background: none; border: none; padding: 0; color: var(--brass); cursor: pointer; font-size: 0.78rem; font-family: var(--mono); }
+  @keyframes flash { 0%,100% { box-shadow: var(--shadow); } 30% { box-shadow: 0 0 0 3px var(--brass); } }
+  .flash { animation: flash 1.8s ease; }
+  .tabs { display: flex; gap: 1.2rem; border-bottom: 1px solid var(--border); margin-bottom: 1.3rem; overflow-x: auto; }
+  .tabs button { background: none; border: none; border-bottom: 2px solid transparent; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); padding: 0.55rem 0; cursor: pointer; white-space: nowrap; }
+  .tabs button.active { color: var(--brass); border-bottom-color: var(--brass); }
+  .tabs .n { margin-left: 0.3rem; opacity: 0.7; }
+  .pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .pill { font-family: var(--mono); font-size: 0.66rem; padding: 0.35rem 0.75rem; border-radius: 100px; border: 1px solid var(--border-strong); background: var(--paper-raised); color: var(--text-muted); cursor: pointer; }
+  .pill.active { background: var(--ink); color: var(--chrome-accent); border-color: var(--ink); }
+
+  /* ---------- TODAY: bearing (compass) ---------- */
+  .bearing { background: var(--ink); color: var(--chrome-text); border-radius: 14px; padding: 1.5rem 1.6rem 1.3rem; position: relative; overflow: hidden; }
+  .bearing::after { content: ""; position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; border: 1px dashed rgba(217,168,87,0.25); pointer-events: none; }
+  .bearing-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .bearing-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--chrome-accent); display: flex; align-items: center; gap: 0.5rem; }
+  .needle { width: 14px; height: 14px; display: inline-block; }
+  .bearing-refresh { background: none; border: 1px solid rgba(239,235,221,0.25); color: var(--chrome-dim); font-family: var(--mono); font-size: 0.62rem; border-radius: 100px; padding: 0.2rem 0.6rem; cursor: pointer; position: relative; z-index: 1; }
+  .bearing-refresh.stale { border-color: var(--chrome-accent); color: var(--chrome-accent); }
+  .bearing-headline { font-family: var(--serif); font-size: 1.35rem; line-height: 1.35; margin: 0.8rem 0 1.1rem; max-width: 40ch; position: relative; z-index: 1; }
+  .moves { display: flex; flex-direction: column; gap: 0.5rem; position: relative; z-index: 1; }
+  .move { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.7rem; align-items: start; background: rgba(255,255,255,0.04); border: 1px solid rgba(239,235,221,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; }
+  .move.first { background: rgba(217,168,87,0.1); border-color: rgba(217,168,87,0.45); }
+  .move-n { font-family: var(--mono); font-size: 0.72rem; color: var(--chrome-accent); padding-top: 0.15rem; }
+  .move-text { font-size: 0.95rem; font-weight: 500; line-height: 1.35; }
+  .move.first .move-text { font-size: 1.05rem; }
+  .move-why { font-size: 0.8rem; color: var(--chrome-dim); margin-top: 0.25rem; line-height: 1.45; }
+  .move-kind { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chrome-dim); margin-right: 0.4rem; }
+  .move .jump { border-color: rgba(217,168,87,0.6); color: var(--chrome-accent); }
+  .move .jump:hover { background: var(--chrome-accent); color: var(--ink); }
+  .wrapup { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px dashed rgba(239,235,221,0.18); position: relative; z-index: 1; }
+  .wrapup ul { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.86rem; line-height: 1.55; color: var(--chrome-text); }
+  .reflect { margin-top: 0.9rem; position: relative; z-index: 1; }
+  .reflect-q { font-family: var(--serif); font-style: italic; font-size: 0.98rem; color: var(--chrome-text); }
+  .reflect-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .reflect-row input { flex: 1; min-width: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(239,235,221,0.2); border-radius: 7px; padding: 0.45rem 0.65rem; color: var(--chrome-text); font: inherit; font-size: 0.85rem; }
+  .reflect-row button { background: var(--chrome-accent); color: var(--ink); border: none; border-radius: 7px; padding: 0.45rem 0.8rem; font-weight: 600; font-size: 0.78rem; cursor: pointer; }
+  .radar { margin-top: 0.9rem; position: relative; z-index: 1; }
+  .radar summary { font-family: var(--mono); font-size: 0.64rem; color: var(--chrome-dim); cursor: pointer; letter-spacing: 0.05em; }
+  .radar ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.82rem; color: var(--chrome-dim); line-height: 1.5; }
+
+  /* up next */
+  .agenda { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: var(--paper-raised); overflow: hidden; }
+  .ag-row { display: grid; grid-template-columns: 7.2rem 1fr auto; gap: 0.9rem; align-items: center; padding: 0.7rem 1rem; border-top: 1px solid var(--border); }
+  .ag-row:first-child { border-top: none; }
+  .ag-when { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .ag-row.soon .ag-when, .ag-row.now .ag-when { color: var(--rust); font-weight: 500; }
+  .ag-row.now { background: var(--rust-soft); }
+  .ag-title { font-weight: 600; font-size: 0.88rem; }
+  .ag-sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.1rem; }
+  .ag-acts { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .ag-src { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+  .cal-note { font-size: 0.74rem; color: var(--text-faint); margin-top: 0.5rem; font-family: var(--mono); }
+
+  /* tasks */
+  .task-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .task { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.6rem 0.85rem; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 9px; cursor: pointer; }
+  .task.done { opacity: 0.55; }
+  .task.done .task-text { text-decoration: line-through; }
+  .box { width: 16px; height: 16px; border: 2px solid var(--border-strong); border-radius: 5px; flex: none; margin-top: 0.1rem; display: grid; place-items: center; }
+  .task.done .box { background: var(--route); border-color: var(--route); }
+  .box svg { width: 10px; height: 10px; display: none; }
+  .task.done .box svg { display: block; }
+  .task-text { font-size: 0.86rem; line-height: 1.4; }
+  .task-meta { display: flex; gap: 0.4rem; margin-top: 0.3rem; flex-wrap: wrap; align-items: center; }
+  .due { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); }
+  .due.late { color: var(--rust); font-weight: 500; }
+  .pri-high { color: var(--rust); }
+
+  /* pipeline */
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  .lane { background: var(--paper-sunk); border-radius: 12px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+  .lane-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0.1rem 0.25rem 0.3rem; }
+  .lane-head b { font-family: var(--serif); font-size: 0.98rem; font-weight: 600; }
+  .lane-head span { font-family: var(--mono); font-size: 0.66rem; color: var(--text-faint); }
+  .lane-desc { font-size: 0.72rem; color: var(--text-faint); padding: 0 0.25rem; margin-top: -0.4rem; }
+  .opp { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 0.9rem; box-shadow: var(--shadow); cursor: pointer; }
+  .opp.closed { opacity: 0.7; box-shadow: none; }
+  .opp-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+  .opp-org { font-weight: 600; font-size: 0.9rem; }
+  .opp-title { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.35; }
+  .opp-next { font-size: 0.78rem; margin-top: 0.55rem; line-height: 1.45; color: var(--text); }
+  .opp-foot { display: flex; gap: 0.35rem; margin-top: 0.55rem; flex-wrap: wrap; }
+  .opp-detail { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dotted var(--border-strong); font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; display: flex; flex-direction: column; gap: 0.4rem; }
+  .opp-detail b { color: var(--text); font-weight: 600; }
+
+  /* people */
+  .buckets { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; align-items: start; }
+  .bucket-h { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 0.6rem; display: flex; justify-content: space-between; }
+  .bucket-col { display: flex; flex-direction: column; gap: 0.55rem; }
+  .contact { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 9px; padding: 0.75rem 0.9rem; cursor: pointer; }
+  .contact-top { display: flex; justify-content: space-between; gap: 0.5rem; }
+  .c-name { font-weight: 600; font-size: 0.88rem; }
+  .c-role { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.1rem; }
+  .c-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; color: var(--text-faint); margin-top: 0.45rem; gap: 0.5rem; }
+  .c-detail { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dotted var(--border-strong); font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.5rem; }
+  .timeline { display: flex; flex-direction: column; gap: 0.35rem; border-left: 2px solid var(--border-strong); padding-left: 0.7rem; }
+  .tl-item { font-size: 0.78rem; }
+  .tl-date { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+  .cand { display: flex; gap: 0.9rem; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; align-items: flex-start; }
+  .cand.fresh { border-color: var(--brass); }
+  .cand-body { flex: 1; min-width: 0; }
+  .cand-why { font-size: 0.82rem; margin-top: 0.4rem; line-height: 1.45; }
+  .cand-acts { display: flex; flex-direction: column; gap: 0.35rem; flex: none; }
+  .btn-ok { background: var(--route); color: #fff; border: none; border-radius: 7px; padding: 0.35rem 0.8rem; font-weight: 600; font-size: 0.76rem; cursor: pointer; }
+  .btn-no { background: none; color: var(--rust); border: 1px solid var(--rust); border-radius: 7px; padding: 0.35rem 0.8rem; font-weight: 600; font-size: 0.76rem; cursor: pointer; }
+  .prep { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; }
+  .prep.next { border-color: var(--amber); box-shadow: var(--shadow); }
+  .prep-top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: baseline; }
+  .prep-when { font-family: var(--mono); font-size: 0.72rem; color: var(--amber); font-weight: 500; }
+  .prep h4 { margin: 0.8rem 0 0.3rem; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; }
+  .prep ul { margin: 0; padding-left: 1.1rem; font-size: 0.84rem; line-height: 1.5; color: var(--text-muted); }
+  .prep-bg { margin-top: 0.7rem; font-size: 0.8rem; color: var(--text-muted); border-left: 3px solid var(--slate-soft); padding-left: 0.8rem; line-height: 1.5; }
+  details.fold > summary { cursor: pointer; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); padding: 0.4rem 0; }
+  .stack { display: flex; flex-direction: column; gap: 0.7rem; }
+  .row-card { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
+
+  /* coaching */
+  .pitch { font-family: var(--serif); font-style: italic; font-size: 1.12rem; line-height: 1.6; max-width: 62ch; }
+  .pitch-card { background: var(--paper-raised); border: 1px solid var(--brass); border-radius: 12px; padding: 1.3rem 1.5rem; }
+  .pitch-acts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+  .skill { border-left: 2px solid var(--brass); padding-left: 0.85rem; }
+  .skill b { font-family: var(--serif); font-weight: 500; font-size: 0.95rem; }
+  .skill p { margin: 0.25rem 0 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+  .drills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.7rem; }
+  .drill { text-align: left; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; cursor: pointer; }
+  .drill:hover { border-color: var(--violet); }
+  .drill b { display: block; font-size: 0.86rem; }
+  .drill span { display: block; font-size: 0.76rem; color: var(--text-muted); margin-top: 0.25rem; line-height: 1.4; }
+  .stories { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.8rem; }
+  .story { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; }
+  .story b { font-size: 0.88rem; }
+  .story p { font-size: 0.8rem; color: var(--text-muted); margin: 0.35rem 0 0; line-height: 1.5; }
+  .tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .tag { font-family: var(--mono); font-size: 0.6rem; padding: 0.12rem 0.45rem; border-radius: 5px; background: var(--brass-soft); color: var(--brass); }
+  .signals { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .signal-col h4 { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; margin: 0 0 0.5rem; }
+  .signal { font-size: 0.82rem; line-height: 1.45; padding: 0.5rem 0; border-top: 1px solid var(--border); }
+  .signal small { display: block; font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+
+  /* direction */
+  .steps { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; font-family: var(--mono); font-size: 0.66rem; color: var(--text-faint); letter-spacing: 0.05em; text-transform: uppercase; }
+  .steps .on { color: var(--route); }
+  .steps .sep { opacity: 0.5; }
+  .route { position: relative; padding-left: 2rem; display: flex; flex-direction: column; gap: 1.3rem; }
+  .route::before { content: ""; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(var(--brass), var(--route)); opacity: 0.55; }
+  .stop { position: relative; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.3rem; }
+  .stop::before { content: ""; position: absolute; left: -2rem; top: 1.2rem; width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 3px solid var(--brass); }
+  .stop.fixed { background: var(--route-soft); border-color: var(--route); }
+  .stop.fixed::before { background: var(--route); border-color: var(--route); }
+  .stop-top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: baseline; }
+  .stop-title { font-family: var(--serif); font-size: 1.05rem; font-weight: 500; }
+  .stop-when { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brass); }
+  .stop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.7rem; }
+  .stop-grid h4 { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; margin: 0 0 0.2rem; }
+  .stop-grid p, .stop > p { margin: 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+  .forks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.7rem; }
+  .fork { border: 1px dashed var(--border-strong); border-radius: 9px; padding: 0.8rem 0.9rem; }
+  .fork b { font-family: var(--serif); font-weight: 500; font-size: 0.92rem; display: block; margin-top: 0.2rem; }
+  .fork p { font-size: 0.8rem; color: var(--text-muted); margin: 0.4rem 0 0; line-height: 1.45; }
+  .readout-banner { background: var(--route-soft); border: 1px solid var(--route); border-radius: 12px; padding: 1.1rem 1.3rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+  /* projects */
+  .projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; align-items: start; }
+  .proj { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .proj.closed { opacity: 0.7; }
+  .proj-top { display: flex; justify-content: space-between; gap: 0.5rem; }
+  .proj-name { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+  .proj p { margin: 0; font-size: 0.83rem; line-height: 1.5; }
+  .proj .lbl { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.15rem; }
+  .note-row { display: flex; gap: 0.4rem; }
+  .note-row input { flex: 1; min-width: 0; font: inherit; font-size: 0.8rem; padding: 0.4rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--paper); color: var(--text); }
+  .notes { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.78rem; max-height: 170px; overflow-y: auto; }
+
+  /* records */
+  .log-row { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: 0.9rem; padding: 0.65rem 0.2rem; border-top: 1px solid var(--border); cursor: pointer; align-items: baseline; }
+  .log-row:first-child { border-top: none; }
+  .log-date { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); }
+  .log-who { font-weight: 600; font-size: 0.86rem; }
+  .log-sum { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.45; }
+  .log-sum.clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .search { width: 100%; max-width: 320px; font: inherit; font-size: 0.84rem; padding: 0.45rem 0.7rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--paper-raised); color: var(--text); }
+  .exp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
+  .journal-e { border-left: 2px solid var(--brass); padding-left: 0.9rem; }
+  .journal-e p { font-family: var(--serif); font-style: italic; margin: 0.2rem 0 0; line-height: 1.55; font-size: 0.92rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .stat { background: var(--paper-raised); padding: 0.9rem 1rem; }
+  .stat b { font-family: var(--serif); font-size: 1.5rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .stat span { display: block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-top: 0.35rem; }
+
+  /* ---------- chat dock ---------- */
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 0 16px calc(0.8rem + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+  .dock-inner { max-width: 760px; margin: 0 auto; pointer-events: auto; background: var(--paper-raised); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 10px 40px rgba(23,35,61,0.18); overflow: hidden; }
+  .dock-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--border); gap: 0.5rem; }
+  .dock-bar .eyebrow { color: var(--violet); display: flex; gap: 0.45rem; align-items: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--route); display: inline-block; }
+  .dot.off { background: var(--text-faint); }
+  .dot.busy { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .dot.busy, .flash { animation: none; } }
+  .dock-btns { display: flex; gap: 0.6rem; }
+  .thread { max-height: 0; overflow-y: auto; transition: max-height .2s ease; }
+  .dock.open .thread { max-height: 48vh; }
+  .thread-inner { padding: 0.8rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .latest { padding: 0.7rem 0.9rem 0; }
+  .dock.open .latest { display: none; }
+  .msg { max-width: 88%; display: flex; flex-direction: column; gap: 0.3rem; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .bub { padding: 0.55rem 0.8rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.5; white-space: pre-wrap; }
+  .msg.user .bub { background: var(--ink); color: var(--chrome-text); border-bottom-right-radius: 3px; }
+  .msg.bot .bub { background: var(--paper); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+  .msg.failed .bub { opacity: 0.7; }
+  .saved { font-size: 0.76rem; color: var(--route); line-height: 1.45; display: flex; flex-direction: column; gap: 0.15rem; }
+  .saved .miss { color: var(--rust); }
+  .saved-line { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
+  .undo { background: none; border: none; color: var(--text-faint); font-family: var(--mono); font-size: 0.62rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .fail-note { font-size: 0.74rem; color: var(--rust); display: flex; gap: 0.5rem; align-items: center; }
+  .dock-input { display: flex; gap: 0.5rem; padding: 0.6rem 0.8rem 0.7rem; align-items: flex-end; }
+  .dock-input textarea { flex: 1; min-width: 0; resize: none; font: inherit; font-size: 0.88rem; line-height: 1.4; border: 1px solid var(--border-strong); border-radius: 9px; padding: 0.55rem 0.7rem; background: var(--paper); color: var(--text); max-height: 140px; }
+  .send { background: var(--violet); color: #fff; border: none; border-radius: 9px; padding: 0.55rem 1rem; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
+  .send.stop { background: var(--rust); }
+  .send:disabled { opacity: 0.45; cursor: default; }
+  .thinking { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); }
+  .dock-status { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); padding: 0 0.9rem 0.5rem; }
+  .dock-status:empty { display: none; }
+
+  @media (max-width: 720px) {
+    .board { grid-template-columns: 1fr; }
+    .signals, .stop-grid, .forks { grid-template-columns: 1fr; }
+    .ag-row { grid-template-columns: 1fr; gap: 0.3rem; }
+    .ag-acts { justify-content: flex-start; }
+    .log-row { grid-template-columns: 1fr; gap: 0.2rem; }
+    .move { grid-template-columns: 1.3rem 1fr; }
+    .move .jump { grid-column: 2; justify-self: start; }
+    .cand { flex-direction: column; }
+    .cand-acts { flex-direction: row; }
+    .chrome-top { padding-inline: 16px; }
+  }
+</style>
+
+<header class="chrome">
+  <div class="chrome-top">
+    <span class="brand">Bridge<span class="brand-v">v6 preview</span></span>
+    <span class="who-line" id="whoLine">Loading…</span>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-page="today" class="active">Today</button>
+    <button data-page="pipeline">Pipeline</button>
+    <button data-page="people">People</button>
+    <button data-page="coaching">Coaching</button>
+    <button data-page="direction">Direction</button>
+    <button data-page="projects">Projects</button>
+    <button data-page="records">Records</button>
+  </nav>
+</header>
+
+<main>
+  <!-- TODAY -->
+  <section class="page" id="page-today">
+    <div class="wrap">
+      <div class="bearing" id="bearing"></div>
+      <div>
+        <div class="sec-head"><h3>Up next</h3><span class="sec-note" id="agendaNote"></span></div>
+        <div id="agendaBody"></div>
+      </div>
+      <div>
+        <div class="sec-head"><h3>To-do</h3>
+          <div class="pills" id="todoFilters">
+            <button class="pill active" data-f="today">Today</button>
+            <button class="pill" data-f="week">This week</button>
+            <button class="pill" data-f="waiting">Waiting</button>
+            <button class="pill" data-f="all">All open</button>
+          </div>
+        </div>
+        <div id="todoBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIPELINE -->
+  <section class="page" id="page-pipeline" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">What you're pursuing</div><h2>Pipeline</h2><p>Jobs, internships, programs, research and classes, sorted by where each one stands. Tap a card for its history and the people attached to it.</p></div>
+      <div class="pills" id="oppFilters"></div>
+      <div class="board" id="board"></div>
+    </div>
+  </section>
+
+  <!-- PEOPLE -->
+  <section class="page" id="page-people" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">Who can bridge you there</div><h2>People</h2><p>Your contacts, fresh candidates to approve, outreach in flight, and prep for the next conversation.</p></div>
+      <div>
+        <div class="tabs" id="peopleTabs">
+          <button data-tab="contacts">Contacts<span class="n" id="nContacts"></span></button>
+          <button data-tab="candidates">Candidates<span class="n" id="nCandidates"></span></button>
+          <button data-tab="outreach">Outreach<span class="n" id="nOutreach"></span></button>
+          <button data-tab="prep">Call prep<span class="n" id="nPrep"></span></button>
+        </div>
+        <div data-panel="contacts" id="contactsBody"></div>
+        <div data-panel="candidates" id="candidatesBody" hidden></div>
+        <div data-panel="outreach" id="outreachBody" hidden></div>
+        <div data-panel="prep" id="prepBody" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COACHING -->
+  <section class="page" id="page-coaching" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">How you tell it</div><h2>Coaching</h2><p>Your pitch, the stories behind it, what real conversations are teaching you, and drills you can run with Claude any time.</p></div>
+      <div id="coachPitch"></div>
+      <div><div class="sec-head"><h3>Practice with Claude</h3><span class="sec-note">opens in the chat below</span></div><div class="drills" id="drills"></div></div>
+      <div><div class="sec-head"><h3>What to lean on</h3></div><div class="skills" id="coachSkills"></div></div>
+      <div><div class="sec-head"><h3>Story bank</h3><span class="sec-note">from your resume breakdown</span></div><div class="stories" id="stories"></div></div>
+      <div><div class="sec-head"><h3>What conversations are telling you</h3></div><div class="signals" id="signals"></div></div>
+    </div>
+  </section>
+
+  <!-- DIRECTION -->
+  <section class="page" id="page-direction" hidden>
+    <div class="wrap">
+      <div id="readoutBanner"></div>
+      <div class="page-head"><div class="eyebrow">Long-term direction</div><h2>Where this is heading</h2><p>A working map, not a commitment. Each stop gets revised as real conversations bring evidence in.</p></div>
+      <div class="steps" id="stepsBar"></div>
+      <div id="routeBody"></div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section class="page" id="page-projects" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">What you're building</div><h2>Projects</h2><p>Everything live beyond the search itself, and how it connects back to where you're heading.</p></div>
+      <div class="projects" id="projectsBody"></div>
+    </div>
+  </section>
+
+  <!-- RECORDS -->
+  <section class="page" id="page-records" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">The record</div><h2>Records</h2><p>For looking things up. Bridge reads these too; they're its memory of everything so far.</p></div>
+      <div>
+        <div class="tabs" id="recTabs">
+          <button data-tab="log">Conversation log</button>
+          <button data-tab="resume">Resume breakdown</button>
+          <button data-tab="journal">Journal</button>
+          <button data-tab="sessions">Sessions</button>
+          <button data-tab="stats">Stats</button>
+        </div>
+        <div data-panel="log"><input class="search" id="logSearch" placeholder="Search people, companies, notes…" /><div id="logBody" style="margin-top:0.9rem"></div></div>
+        <div data-panel="resume" id="resumeBody" hidden></div>
+        <div data-panel="journal" id="journalBody" hidden></div>
+        <div data-panel="sessions" id="sessionsBody" hidden></div>
+        <div data-panel="stats" id="statsBody" hidden></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="dock" id="dock">
+  <div class="dock-inner">
+    <div class="dock-bar">
+      <span class="eyebrow"><span class="dot off" id="dockDot"></span><span id="dockLabel">Bridge chat</span></span>
+      <div class="dock-btns"><button class="linkish" id="histBtn">History</button><button class="linkish" id="hideLatestBtn">Hide</button></div>
+    </div>
+    <div class="thread" id="thread"><div class="thread-inner" id="threadInner"></div></div>
+    <div class="latest" id="latest"></div>
+    <div class="dock-input">
+      <textarea id="chatInput" rows="1" placeholder="Mind-dump anything: a reply, a reschedule, a question…"></textarea>
+      <button class="send" id="sendBtn">Send</button>
+    </div>
+    <div class="dock-status" id="dockStatus"></div>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  /* ================= helpers ================= */
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  const slug = (b) => (String(b || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '') || 'item') + '-' + Date.now().toString(36).slice(-5);
+  const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const CHECK = '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function parseWhen(s) {
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y, m, d] = s.split('-').map(Number); return { date: new Date(y, m - 1, d), allDay: true }; }
+    const d = new Date(s); if (isNaN(d)) return null; return { date: d, allDay: false };
+  }
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  function fmtDate(s) { const w = typeof s === 'string' ? parseWhen(s) : (s ? { date: s } : null); if (!w) return '—'; return w.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  function fmtTime(d) { return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' ', '').toLowerCase(); }
+  function whenLabel(start, allDay, end) {
+    const now = new Date();
+    const mins = Math.round((start - now) / 60000);
+    if (!allDay && end && start <= now && now < end) return { text: 'now', cls: 'now' };
+    if (!allDay && mins >= 0 && mins < 60) return { text: 'in ' + Math.max(mins, 1) + ' min', cls: 'soon' };
+    if (!allDay && mins >= 60 && mins < 180) return { text: 'in ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm', cls: 'soon' };
+    const tmr = new Date(now); tmr.setDate(now.getDate() + 1);
+    const day = sameDay(start, now) ? 'today' : sameDay(start, tmr) ? 'tomorrow' : start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return { text: allDay ? day : day + ' ' + fmtTime(start), cls: '' };
+  }
+  function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function tokens(s) { return norm(s).split(' ').filter(t => t.length >= 3 && !['the', 'and', 'with', 'call', 'interview', 'team', 'program', 'prep'].includes(t)); }
+
+  /* ================= state ================= */
+  const S = { profile: null, mindmap: null, brief: null, experience: [], network: [], interactions: [], sessions: [], prep: [], candidates: [], projects: [], opportunities: [], outreach: [], tasks: [], reflections: [], guidance: [], activity: [], calendar: null, calStatus: 'loading' };
+  let db = null, sample = null, loaded = false;
+  let lastDataChange = 0;
+
+  /* ================= navigation ================= */
+  let currentPage = 'today';
+  function go(page, tab, target) {
+    if (!page || !$('page-' + page)) page = 'today';
+    currentPage = page;
+    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+    document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== 'page-' + page; });
+    if (tab) { const tb = document.querySelector('#page-' + page + ' .tabs button[data-tab="' + tab + '"]'); if (tb) tb.click(); }
+    window.scrollTo(0, 0);
+    if (target) setTimeout(() => {
+      const el = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]');
+      if (el) { if (el.dataset.expandable) { openKeys.add(target); renderAll(); } const el2 = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]'); if (!el2) return; el2.scrollIntoView({ behavior: 'smooth', block: 'center' }); el2.classList.add('flash'); setTimeout(() => el2.classList.remove('flash'), 1900); }
+    }, 80);
+  }
+  document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.page)));
+  document.addEventListener('click', (e) => {
+    const j = e.target.closest('[data-go]');
+    if (j) { e.stopPropagation(); go(j.dataset.go, j.dataset.tab || '', j.dataset.target || ''); return; }
+    const a = e.target.closest('[data-ask]');
+    if (a) { e.stopPropagation(); Chat.prefill(a.dataset.ask, a.dataset.send === '1'); }
+  });
+  function jump(label, page, tab, target) { return '<button class="jump" data-go="' + esc(page) + '" data-tab="' + esc(tab || '') + '" data-target="' + esc(target || '') + '">' + esc(label) + ' →</button>'; }
+  function initTabs(barId) {
+    const bar = $(barId); const btns = bar.querySelectorAll('button'); const host = bar.parentElement;
+    btns.forEach(b => b.addEventListener('click', () => {
+      btns.forEach(x => x.classList.toggle('active', x === b));
+      host.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+    }));
+    btns[0].click();
+  }
+  initTabs('peopleTabs'); initTabs('recTabs');
+  const openKeys = new Set();
+  function toggleKey(k) { if (openKeys.has(k)) openKeys.delete(k); else openKeys.add(k); renderAll(); }
+
+  /* ================= agenda (calendar + prep, one clock) ================= */
+  function prepWhen(p) { return parseWhen(p.meetingDate); }
+  function calendarItems() {
+    const out = [];
+    const evs = (S.calendar && S.calendar.events) || [];
+    evs.forEach(ev => {
+      if (ev.status === 'cancelled' || ev.eventType === 'BIRTHDAY' || ev.eventType === 'WORKING_LOCATION') return;
+      const s = ev.start || {}, e = ev.end || {};
+      const allDay = !!s.date && !s.dateTime;
+      const start = allDay ? parseWhen(s.date).date : new Date(s.dateTime);
+      const end = allDay ? null : new Date(e.dateTime || s.dateTime);
+      if (isNaN(start)) return;
+      out.push({ title: ev.summary || '(busy)', start, end, allDay, link: ev.htmlLink || '', src: 'cal', where: ev.location || '' });
+    });
+    return out;
+  }
+  function matchPrep(item) {
+    const itemToks = new Set(tokens(item.title));
+    return S.prep.find(p => {
+      const w = prepWhen(p); if (!w || !sameDay(w.date, item.start)) return false;
+      const pt = tokens((p.contactName || '') + ' ' + (p.company || ''));
+      return pt.some(t => itemToks.has(t));
+    });
+  }
+  function agendaItems() {
+    const now = new Date();
+    const items = calendarItems();
+    const used = new Set();
+    items.forEach(it => { const p = matchPrep(it); if (p) { it.prep = p; used.add(p.id); } });
+    S.prep.forEach(p => {
+      if (used.has(p.id)) return;
+      const w = prepWhen(p); if (!w) return;
+      const end = w.allDay ? null : new Date(w.date.getTime() + 45 * 60000);
+      items.push({ title: p.contactName || 'Call', sub: p.company || '', start: w.date, end, allDay: w.allDay, src: 'prep', prep: p });
+    });
+    const upcoming = items.filter(it => {
+      if (it.allDay) { const eod = new Date(it.start); eod.setHours(23, 59, 59); return eod >= now; }
+      return (it.end || it.start) >= now;
+    }).sort((a, b) => a.start - b.start);
+    return upcoming;
+  }
+  function needsDebrief() {
+    const now = new Date();
+    return S.prep.filter(p => {
+      const w = prepWhen(p); if (!w) return false;
+      const endish = w.allDay ? new Date(w.date.getTime() + 86400000) : new Date(w.date.getTime() + 45 * 60000);
+      if (endish > now || (now - endish) > 4 * 86400000) return false;
+      const pt = tokens((p.contactName || '') + ' ' + (p.company || ''));
+      const logged = S.interactions.some(i => { const iw = parseWhen(i.date); if (!iw || iw.date < new Date(w.date.getFullYear(), w.date.getMonth(), w.date.getDate())) return false; const it = tokens((i.contactName || '') + ' ' + (i.company || '')); return pt.some(t => it.includes(t)); });
+      return !logged && !p.debriefed;
+    });
+  }
+  function renderAgenda() {
+    const el = $('agendaBody');
+    const items = agendaItems().slice(0, 6);
+    const debriefs = needsDebrief();
+    let html = '';
+    const rows = [];
+    debriefs.forEach(p => rows.push(`<div class="ag-row"><div class="ag-when">needs debrief</div><div><div class="ag-title">${esc(p.contactName)}</div><div class="ag-sub">${esc(p.company || '')} · ${esc(fmtDate(p.meetingDate))}</div></div><div class="ag-acts"><button class="jump" data-ask="Debrief my ${esc(p.contactName)} conversation: " >Debrief →</button></div></div>`));
+    items.forEach(it => {
+      const w = whenLabel(it.start, it.allDay, it.end);
+      const prepBtn = it.prep ? jump('Prep', 'people', 'prep', it.prep.id) : '';
+      const sub = it.prep ? trunc(it.prep.purpose || it.prep.company || '', 110) : (it.sub || it.where || '');
+      rows.push(`<div class="ag-row ${w.cls}"><div class="ag-when">${esc(w.text)}</div><div><div class="ag-title">${esc(it.title)}</div>${sub ? `<div class="ag-sub">${esc(sub)}</div>` : ''}</div><div class="ag-acts">${it.src === 'cal' ? '<span class="ag-src">calendar</span>' : '<span class="ag-src">not on calendar</span>'}${prepBtn}${!it.prep && it.src === 'cal' ? '' : ''}</div></div>`);
+    });
+    html = rows.length ? `<div class="agenda">${rows.join('')}</div>` : '<div class="empty">Nothing scheduled in the next week. When a call gets booked, it shows up here with a countdown.</div>';
+    el.innerHTML = html;
+    const note = { live: 'Google Calendar · live', loading: 'connecting calendar…', off: 'calendar not connected: showing Call Prep only', error: 'calendar unreachable: showing Call Prep only' }[S.calStatus] || '';
+    $('agendaNote').textContent = note;
+  }
+
+  /* ================= bearing (the compass) ================= */
+  function period() { const h = new Date().getHours(); return todayISO() + (h >= 17 ? '-evening' : '-morning'); }
+  function fallbackMoves() {
+    const moves = [];
+    const next = agendaItems()[0];
+    S.guidance.filter(g => !g.done).slice(0, 2).forEach(g => moves.push({ text: g.text, why: g.relatedTo || '', kind: g.type === 'nudge' ? 'do' : 'coach', page: g.linkPage === 'network' ? (g.linkTab === 'opportunities' ? 'pipeline' : 'people') : g.linkPage, tab: g.linkTab === 'opportunities' ? '' : g.linkTab, target: g.linkTarget }));
+    if (next && next.prep) moves.push({ text: 'Get ready for ' + next.prep.contactName, why: whenLabel(next.start, next.allDay, next.end).text, kind: 'do', page: 'people', tab: 'prep', target: next.prep.id });
+    S.tasks.filter(t => !t.done && !t.agendaLinked && t.priority === 'high').slice(0, 2).forEach(t => moves.push({ text: t.text, why: t.dueDate ? 'due ' + fmtDate(t.dueDate) : '', kind: 'do' }));
+    return moves.slice(0, 3);
+  }
+  function renderBearing() {
+    const el = $('bearing');
+    const b = S.brief;
+    const per = period();
+    const isEvening = per.endsWith('evening');
+    const fresh = b && b.period === per;
+    const stale = b && lastDataChange && b.generatedAtMs && lastDataChange > b.generatedAtMs + 1000;
+    const moves = (b && Array.isArray(b.moves) && b.moves.length) ? b.moves : fallbackMoves();
+    const headline = (b && b.headline) || (S.profile && S.profile.currentChapter) || 'Bridge is getting its bearings.';
+    const label = (isEvening ? 'Evening wrap' : 'Bearing') + ' · ' + new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    const needle = '<svg class="needle" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1"/><path d="M7 2 L9 7 L7 12 L5 7 Z" fill="currentColor" opacity=".9"/></svg>';
+    const movesHtml = moves.map((m, i) => {
+      const link = m.page && $('page-' + m.page) ? jump(i === 0 ? 'Go' : 'Open', m.page, m.tab, m.target) : '';
+      return `<div class="move${i === 0 ? ' first' : ''}"><div class="move-n">${i + 1}</div><div><div class="move-text">${esc(m.text)}</div>${m.why ? `<div class="move-why"><span class="move-kind">${esc(m.kind === 'coach' ? 'coaching' : 'to do')}</span>${esc(m.why)}</div>` : ''}</div>${link}</div>`;
+    }).join('') || '<div class="move-why">No open moves right now.</div>';
+    let wrapHtml = '';
+    if (isEvening && fresh && b.wrap && b.wrap.length) wrapHtml = `<div class="wrapup"><div class="bearing-label">What moved today</div><ul>${b.wrap.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
+    let reflectHtml = '';
+    if (isEvening && fresh && b.reflect && !b.reflectAnswered) reflectHtml = `<div class="reflect"><div class="reflect-q">${esc(b.reflect)}</div><div class="reflect-row"><input id="reflectInput" placeholder="One line is plenty. It goes to your journal." /><button id="reflectSave">Save</button></div></div>`;
+    const openG = S.guidance.filter(g => !g.done);
+    const radar = openG.length ? `<details class="radar"><summary>Also on Bridge's radar (${openG.length})</summary><ul>${openG.map(g => `<li>${esc(g.text)}</li>`).join('')}</ul></details>` : '';
+    const refreshLabel = !sample ? '' : Brief.busy ? 'thinking…' : stale ? 'new info · refresh' : 'refresh';
+    el.innerHTML = `<div class="bearing-top"><div class="bearing-label">${needle}${esc(label)}</div>${refreshLabel ? `<button class="bearing-refresh${stale ? ' stale' : ''}" id="briefRefresh"${Brief.busy ? ' disabled' : ''}>${refreshLabel}</button>` : ''}</div>
+      <div class="bearing-headline">${esc(headline)}</div>
+      <div class="bearing-label" style="margin-bottom:.5rem">${isEvening ? "Tomorrow's first moves" : 'Next moves'}</div>
+      <div class="moves">${movesHtml}</div>${wrapHtml}${reflectHtml}${radar}`;
+    const rb = $('briefRefresh'); if (rb) rb.addEventListener('click', () => Brief.generate(true));
+    const rs = $('reflectSave');
+    if (rs) rs.addEventListener('click', async () => {
+      const v = $('reflectInput').value.trim(); if (!v || !db) return;
+      try {
+        await db.collection('reflections').doc(slug('journal')).set({ type: 'journal', journalText: v, prompt: b.reflect, date: todayISO() });
+        await db.doc('brief/main').update({ reflectAnswered: true });
+      } catch (e) { }
+    });
+  }
+
+  /* ================= to-do ================= */
+  let todoFilter = 'today';
+  document.querySelectorAll('#todoFilters .pill').forEach(p => p.addEventListener('click', () => { todoFilter = p.dataset.f; document.querySelectorAll('#todoFilters .pill').forEach(x => x.classList.toggle('active', x === p)); renderTodo(); }));
+  function taskHtml(t) {
+    const w = parseWhen(t.dueDate); const late = w && !t.done && w.date < new Date(new Date().toDateString());
+    const link = t.linkPage ? jump(t.chipLabel || 'Open', t.linkPage === 'network' ? (t.linkTab === 'opportunities' ? 'pipeline' : 'people') : (t.linkPage === 'compass' ? 'today' : t.linkPage), t.linkTab === 'people' ? 'contacts' : (t.linkTab === 'opportunities' ? '' : t.linkTab), t.linkTarget) : '';
+    return `<div class="task${t.done ? ' done' : ''}" data-task="${esc(t.id)}"><div class="box">${CHECK}</div><div style="flex:1;min-width:0"><div class="task-text">${esc(t.text)}</div><div class="task-meta">${t.priority === 'high' ? '<span class="chip rust">high</span>' : ''}${t.dueDate ? `<span class="due${late ? ' late' : ''}">${late ? 'overdue · ' : ''}${esc(fmtDate(t.dueDate))}</span>` : ''}${t.waitingOn ? `<span class="chip amber">waiting · ${esc(t.waitingOnWho || 'someone')}</span>` : ''}${t.linkedProjectName ? `<span class="chip">${esc(t.linkedProjectName)}</span>` : ''}${link}</div></div></div>`;
+  }
+  function renderTodo() {
+    const el = $('todoBody');
+    const now = new Date(); const wk = new Date(now.getTime() + 7 * 86400000);
+    const base = S.tasks.filter(t => !t.agendaLinked);
+    const open = base.filter(t => !t.done);
+    let list;
+    if (todoFilter === 'today') list = open.filter(t => { const w = parseWhen(t.dueDate); return (w && w.date <= new Date(now.toDateString()).getTime() + 86400000 - 1) || (!t.dueDate && t.priority === 'high'); });
+    else if (todoFilter === 'week') list = open.filter(t => { const w = parseWhen(t.dueDate); return w && w.date <= wk; });
+    else if (todoFilter === 'waiting') list = open.filter(t => t.waitingOn);
+    else list = open.slice();
+    const pr = { high: 0, med: 1, low: 2 };
+    list.sort((a, b) => (pr[a.priority] ?? 3) - (pr[b.priority] ?? 3) || String(a.dueDate || '9').localeCompare(String(b.dueDate || '9')));
+    const doneToday = base.filter(t => t.done && t.completedAt && sameDay(new Date(t.completedAt), now));
+    el.innerHTML = (list.length ? `<div class="task-list">${list.map(taskHtml).join('')}</div>` : `<div class="empty">${todoFilter === 'today' ? 'Nothing due today. Check "This week", or ask Bridge what\'s worth doing.' : 'Nothing here.'}</div>`)
+      + (doneToday.length ? `<details class="fold" style="margin-top:.6rem"><summary>Done today (${doneToday.length})</summary><div class="task-list">${doneToday.map(taskHtml).join('')}</div></details>` : '');
+    el.querySelectorAll('[data-task]').forEach(n => n.addEventListener('click', (e) => { if (e.target.closest('.jump')) return; toggleTask(n.dataset.task); }));
+  }
+  async function toggleTask(id) {
+    const t = S.tasks.find(x => x.id === id); if (!t || !db) return;
+    const done = !t.done;
+    try { await db.collection('tasks').doc(id).update({ done, completedAt: done ? new Date().toISOString() : null }); if (done) logActivity('Done: ' + t.text); } catch (e) { }
+  }
+  async function logActivity(label) { if (!db) return; try { await db.collection('activity').doc(slug('a')).set({ label, date: todayISO(), at: new Date().toISOString() }); } catch (e) { } }
+
+  /* ================= pipeline ================= */
+  const OPEN_ST = ['active', 'offer', 'interviewing', 'applied', 'in-progress', 'final-round'];
+  const CLOSED_ST = ['closed', 'passed', 'rejected', 'declined', 'accepted', 'withdrawn', 'lost'];
+  const OPP_TYPES = { role: 'Job', internship: 'Internship', program: 'Program', research: 'Research', class: 'Class', collaboration: 'Collaboration', 'warm-path': 'Warm path' };
+  const ST_CHIP = { offer: 'violet', active: 'route', interviewing: 'route', applied: 'amber', exploring: 'amber', closed: '', rejected: 'rust', passed: 'rust', declined: '' };
+  let oppFilter = 'all';
+  function lane(o) { const s = (o.status || '').toLowerCase(); if (OPEN_ST.includes(s)) return 'open'; if (CLOSED_ST.includes(s)) return 'closed'; return 'potential'; }
+  function peopleFor(o) {
+    const ot = tokens(o.org);
+    return S.network.filter(c => { const ct = tokens(c.company); return ct.some(t => ot.includes(t)) || (o.sourceBridge && norm(o.sourceBridge).includes(norm(c.name).split(' ')[0]) && norm(c.name).split(' ')[0].length > 3); });
+  }
+  function nextFor(o) {
+    const ot = tokens(o.org);
+    const up = agendaItems().find(it => it.prep && tokens((it.prep.company || '') + ' ' + (it.prep.contactName || '')).some(t => ot.includes(t)));
+    if (up) return 'Next: ' + (up.prep.contactName || up.title) + ', ' + whenLabel(up.start, up.allDay, up.end).text;
+    const task = S.tasks.find(t => !t.done && ((t.linkedOpportunityTitle && norm(t.linkedOpportunityTitle).includes(norm(o.title).slice(0, 12))) || tokens(t.text).some(x => ot.includes(x))));
+    if (task) return 'Next: ' + task.text;
+    return '';
+  }
+  function renderPipeline() {
+    const types = ['all'].concat(Object.keys(OPP_TYPES).filter(k => S.opportunities.some(o => o.type === k)));
+    $('oppFilters').innerHTML = types.map(t => `<button class="pill${t === oppFilter ? ' active' : ''}" data-of="${t}">${t === 'all' ? 'All' : OPP_TYPES[t]}</button>`).join('');
+    $('oppFilters').querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => { oppFilter = b.dataset.of; renderPipeline(); }));
+    const opps = S.opportunities.filter(o => oppFilter === 'all' || o.type === oppFilter);
+    const lanes = { open: [], potential: [], closed: [] };
+    opps.forEach(o => lanes[lane(o)].push(o));
+    const L = [['open', 'Open', 'In process: applied, interviewing, offers'], ['potential', 'Potential', 'Warm paths and things worth pursuing'], ['closed', 'Closed', 'Decided either way, kept as evidence']];
+    $('board').innerHTML = L.map(([k, name, desc]) => `<div class="lane"><div class="lane-head"><b>${name}</b><span>${lanes[k].length}</span></div><div class="lane-desc">${desc}</div>${lanes[k].map(o => oppCard(o, k)).join('') || '<div class="empty" style="padding:.9rem">None</div>'}</div>`).join('');
+    $('board').querySelectorAll('.opp').forEach(c => c.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask]')) return; toggleKey(c.dataset.key); }));
+  }
+  function oppCard(o, k) {
+    const open = openKeys.has(o.id);
+    const ppl = peopleFor(o);
+    const nxt = k === 'closed' ? '' : nextFor(o);
+    return `<div class="opp${k === 'closed' ? ' closed' : ''}" data-key="${esc(o.id)}" data-expandable="1">
+      <div class="opp-top"><div><div class="opp-org">${esc(o.org || o.title)}</div><div class="opp-title">${esc(o.title || '')}</div></div><span class="chip ${ST_CHIP[(o.status || '').toLowerCase()] || ''}">${esc(o.status || 'potential')}</span></div>
+      ${nxt ? `<div class="opp-next">${esc(nxt)}</div>` : ''}
+      <div class="opp-foot"><span class="chip">${esc(OPP_TYPES[o.type] || o.type || 'Other')}</span>${ppl.slice(0, 3).map(c => `<span class="chip brass">${esc(c.name.split(' ')[0])}</span>`).join('')}</div>
+      ${open ? `<div class="opp-detail">${o.notes ? `<div>${esc(o.notes)}</div>` : ''}${o.sourceBridge ? `<div><b>Way in:</b> ${esc(o.sourceBridge)}</div>` : ''}${ppl.length ? `<div><b>People:</b> ${ppl.map(c => esc(c.name)).join(', ')}</div>` : ''}<div style="display:flex;gap:.4rem;flex-wrap:wrap">${ppl[0] ? jump('Contacts', 'people', 'contacts', ppl[0].id) : ''}<button class="jump" data-ask="Help me think through ${esc(o.org)} (${esc(o.title)}): ">Think it through with Claude</button></div></div>` : ''}
+    </div>`;
+  }
+
+  /* ================= people ================= */
+  const BUCKETS = [['past-job', 'Past job / activity'], ['personal', 'Personal / family'], ['college', 'College'], ['high-school', 'High school'], ['cold', 'Cold']];
+  const C_ST = { active: 'route', contacted: 'amber', sourced: 'violet', stalled: 'rust' };
+  function interactionsFor(c) {
+    const first = norm(c.name).split(' ')[0]; const ct = tokens(c.company);
+    return S.interactions.filter(i => { const n = norm(i.contactName); return (first.length > 2 && n.includes(first)) || (ct.length && tokens(i.company).some(t => ct.includes(t))); }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
+  function renderPeople() {
+    $('nContacts').textContent = S.network.length;
+    const el = $('contactsBody');
+    if (!S.network.length) el.innerHTML = '<div class="empty">No contacts yet.</div>';
+    else el.innerHTML = `<div class="buckets">${BUCKETS.map(([b, label]) => { const cs = S.network.filter(c => (c.bucket || 'cold') === b); if (!cs.length) return ''; return `<div><div class="bucket-h"><span>${label}</span><span>${cs.length}</span></div><div class="bucket-col">${cs.map(contactCard).join('')}</div></div>`; }).join('')}</div>`;
+    el.querySelectorAll('.contact').forEach(n => n.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask]')) return; toggleKey(n.dataset.key); }));
+    renderCandidates(); renderOutreach(); renderPrep();
+  }
+  function contactCard(c) {
+    const open = openKeys.has(c.id);
+    const ints = open ? interactionsFor(c) : [];
+    const goal = c.goal === 'position' ? 'exploring a role' : c.goal === 'both' ? 'learn → maybe a role' : 'learn';
+    return `<div class="contact" data-key="${esc(c.id)}" data-expandable="1">
+      <div class="contact-top"><div><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc([c.role, c.company].filter(Boolean).join(' · '))}</div></div><span class="chip ${C_ST[c.status] || ''}">${esc(c.status || 'sourced')}</span></div>
+      <div class="c-meta"><span>${esc(goal)}</span><span>${c.nextFollowUp ? 'follow up ' + esc(fmtDate(c.nextFollowUp)) : c.lastContact ? 'last ' + esc(fmtDate(c.lastContact)) : ''}</span></div>
+      ${open ? `<div class="c-detail">${c.bridgePath ? `<div><b style="color:var(--text)">Bridge:</b> ${esc(c.bridgePath)}</div>` : ''}${c.notes ? `<div>${esc(trunc(c.notes, 600))}</div>` : ''}${ints.length ? `<div class="timeline">${ints.map(i => `<div class="tl-item"><div class="tl-date">${esc(fmtDate(i.date))} · ${esc(i.type || '')}</div>${esc(trunc(i.summary || i.materials || '', 220))}</div>`).join('')}</div>` : ''}<div><button class="jump" data-ask="Update on ${esc(c.name)}: ">Log an update</button></div></div>` : ''}
+    </div>`;
+  }
+  function renderCandidates() {
+    const el = $('candidatesBody');
+    const pend = S.candidates.filter(c => !c.status || c.status === 'pending');
+    const appr = S.candidates.filter(c => c.status === 'approved');
+    const den = S.candidates.filter(c => c.status === 'denied');
+    $('nCandidates').textContent = pend.length || '';
+    const today = todayISO();
+    const card = (c) => `<div class="cand${c.batchDate === today ? ' fresh' : ''}"><div class="cand-body"><div class="c-name">${esc(c.name)} ${c.batchDate === today ? '<span class="chip brass">new today</span>' : ''}</div><div class="c-role">${esc([c.title, c.company].filter(Boolean).join(' · '))}</div>${c.why ? `<div class="cand-why">${esc(c.why)}</div>` : ''}${c.source ? `<div class="c-meta"><a href="${esc(c.source)}" target="_blank" rel="noopener">source</a></div>` : ''}</div><div class="cand-acts"><button class="btn-ok" data-cand="${esc(c.id)}" data-st="approved">Approve</button><button class="btn-no" data-cand="${esc(c.id)}" data-st="denied">Pass</button></div></div>`;
+    el.innerHTML = `<p class="muted" style="margin:0 0 1rem;font-size:.84rem;max-width:62ch">A daily scheduled task adds 3–5 people each morning from public sources (company team pages, alumni pages, news). Nothing is sent; approving just moves them to your list to reach out to yourself.</p>`
+      + (pend.length ? `<div class="stack">${pend.sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || ''))).map(card).join('')}</div>` : '<div class="empty">No one waiting for review. Tomorrow\'s batch lands in the morning.</div>')
+      + (appr.length ? `<details class="fold" open style="margin-top:1rem"><summary>Approved, ready for you to reach out (${appr.length})</summary><div class="stack">${appr.map(c => `<div class="row-card" style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><span><b>${esc(c.name)}</b> <span class="muted">${esc([c.title, c.company].filter(Boolean).join(' · '))}</span></span><span style="display:flex;gap:.4rem"><button class="jump" data-ask="Draft a LinkedIn note to ${esc(c.name)} (${esc(c.title || '')}, ${esc(c.company || '')}). Why them: ${esc(c.why || '')}" data-send="1">Draft note</button><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">undo</button></span></div>`).join('')}</div></details>` : '')
+      + (den.length ? `<details class="fold" style="margin-top:.4rem"><summary>Passed (${den.length})</summary><div class="stack">${den.map(c => `<div class="row-card" style="display:flex;justify-content:space-between"><span>${esc(c.name)}</span><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">restore</button></div>`).join('')}</div></details>` : '');
+    el.querySelectorAll('[data-cand]').forEach(b => b.addEventListener('click', async () => { if (!db) return; try { await db.collection('candidates').doc(b.dataset.cand).update({ status: b.dataset.st, decidedAt: new Date().toISOString() }); } catch (e) { } }));
+  }
+  function renderOutreach() {
+    $('nOutreach').textContent = S.outreach.length || '';
+    const el = $('outreachBody');
+    if (!S.outreach.length) { el.innerHTML = '<div class="empty">No outreach yet.</div>'; return; }
+    const now = new Date();
+    const sorted = S.outreach.slice().sort((a, b) => String(a.nextFollowUpDate || '9').localeCompare(String(b.nextFollowUpDate || '9')));
+    el.innerHTML = `<div class="stack">${sorted.map(o => { const f = parseWhen(o.nextFollowUpDate); const due = f && f.date <= now; return `<div class="row-card"><div style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap"><div><b>${esc(o.contactName)}</b> <span class="muted">${esc([o.company, o.channel].filter(Boolean).join(' · '))}</span></div><span class="chip ${due ? 'rust' : o.status === 'replied' ? 'route' : 'amber'}">${due ? 'follow up now' : esc((o.status || 'draft').replace('-', ' '))}</span></div>${o.note ? `<div class="log-sum" style="margin-top:.4rem">${esc(trunc(o.note, 260))}</div>` : ''}<div class="c-meta"><span>sent ${esc(fmtDate(o.sentDate))}</span><span>follow up ${esc(fmtDate(o.nextFollowUpDate))}</span></div></div>`; }).join('')}</div>`;
+  }
+  function renderPrep() {
+    const el = $('prepBody');
+    const now = new Date();
+    const withW = S.prep.map(p => ({ p, w: prepWhen(p) }));
+    const upcoming = withW.filter(x => x.w && (x.w.allDay ? new Date(x.w.date.getTime() + 86400000) : new Date(x.w.date.getTime() + 45 * 60000)) >= now).sort((a, b) => a.w.date - b.w.date);
+    const undated = withW.filter(x => !x.w);
+    const past = withW.filter(x => x.w && !upcoming.includes(x)).sort((a, b) => b.w.date - a.w.date);
+    $('nPrep').textContent = upcoming.length || '';
+    const card = (x, isNext) => { const p = x.p; const wl = x.w ? whenLabel(x.w.date, x.w.allDay, x.w.allDay ? null : new Date(x.w.date.getTime() + 45 * 60000)) : null; return `<div class="prep${isNext ? ' next' : ''}" data-key="${esc(p.id)}"><div class="prep-top"><div><div class="c-name">${esc(p.contactName)}</div><div class="c-role">${esc(p.company || '')}</div></div><span class="prep-when">${isNext ? 'NEXT · ' : ''}${esc(wl ? wl.text : 'not scheduled')}</span></div>${p.purpose ? `<div style="margin-top:.6rem;font-size:.86rem;line-height:1.5">${esc(p.purpose)}</div>` : ''}${p.talkingPoints && p.talkingPoints.length ? `<h4>Talking points</h4><ul>${p.talkingPoints.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${p.questions && p.questions.length ? `<h4>Questions to ask</h4><ul>${p.questions.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${p.background ? `<div class="prep-bg">${esc(p.background)}</div>` : ''}<div style="margin-top:.8rem;display:flex;gap:.4rem;flex-wrap:wrap"><button class="jump" data-ask="Quiz me for my ${esc(p.contactName)} conversation. One question at a time." data-send="1">Rehearse with Claude</button></div></div>`; };
+    el.innerHTML = (upcoming.length ? `<div class="stack">${upcoming.map((x, i) => card(x, i === 0)).join('')}</div>` : '<div class="empty">No upcoming calls with prep. Tell the chat when something gets scheduled.</div>')
+      + (undated.length ? `<details class="fold" style="margin-top:1rem"><summary>Not scheduled yet (${undated.length})</summary><div class="stack">${undated.map(x => card(x, false)).join('')}</div></details>` : '')
+      + (past.length ? `<details class="fold" style="margin-top:.4rem"><summary>Past (${past.length})</summary><div class="stack">${past.map(x => card(x, false)).join('')}</div></details>` : '');
+  }
+
+  /* ================= coaching ================= */
+  function renderCoaching() {
+    const mm = S.mindmap || {};
+    const nextCall = agendaItems().find(i => i.prep);
+    $('coachPitch').innerHTML = mm.elevatorPitch ? `<div class="pitch-card"><div class="eyebrow" style="margin-bottom:.6rem">Your pitch · current draft</div><div class="pitch">“${esc(mm.elevatorPitch)}”</div><div class="pitch-acts"><button class="btn" data-ask="Tighten my elevator pitch for ${esc(nextCall ? nextCall.prep.contactName : 'my next conversation')}. Keep it in my voice, 4-5 sentences." data-send="1">Tailor for ${esc(nextCall ? nextCall.prep.contactName.split(' ')[0] : 'next call')}</button><button class="btn" data-ask="Here's my pitch rewritten in my own words — give me honest feedback: ">Rewrite it myself</button></div></div>` : '<div class="empty">Your pitch gets drafted once the survey and direction are done.</div>';
+    const top = S.opportunities.filter(o => lane(o) !== 'closed').slice(0, 1)[0];
+    const drills = [
+      ['Mock interview', nextCall ? 'For ' + nextCall.prep.contactName + ', ' + whenLabel(nextCall.start, nextCall.allDay, nextCall.end).text : 'Behavioral questions, one at a time', 'Run a mock interview with me' + (nextCall ? ' for ' + nextCall.prep.contactName + ' (' + (nextCall.prep.company || '') + ')' : '') + '. One question at a time, then feedback on my answer.'],
+      ['"Why this company?"', top ? 'Sharpen your answer for ' + top.org : 'Build a specific, honest answer', 'Help me build a sharp "why ' + (top ? top.org : 'this company') + '" answer. Ask me questions first.'],
+      ['Weigh a decision', 'Talk through an offer or a fork honestly', 'Help me weigh my open options against my long-term direction. Be direct.'],
+      ['Find my weak spot', 'Where does your story not hold up yet?', 'Based on my experience and target, where is my story weakest and what would fix it?'],
+    ];
+    $('drills').innerHTML = drills.map(d => `<button class="drill" data-ask="${esc(d[2])}" data-send="1"><b>${esc(d[0])}</b><span>${esc(d[1])}</span></button>`).join('');
+    $('coachSkills').innerHTML = (mm.bridgeSkills || []).map(s => `<div class="skill"><b>${esc(s.skill)}</b><p>${esc(s.why)}</p></div>`).join('') || '<div class="empty">Not built yet.</div>';
+    $('stories').innerHTML = S.experience.slice().sort((a, b) => (b.order || 0) - (a.order || 0)).map(x => `<div class="story"><b>${esc(x.title)}</b> <span class="muted" style="font-size:.78rem">${esc(x.org || '')}</span><p>${esc(trunc(x.highlights || '', 260))}</p>${x.skills ? `<div class="tags">${String(x.skills).split(',').map(s => s.trim()).filter(Boolean).slice(0, 4).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>` : ''}</div>`).join('') || '<div class="empty">Built during the survey.</div>';
+    const wins = S.interactions.filter(i => i.wentWell).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 5);
+    const fixes = S.interactions.filter(i => i.improveNextTime).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 5);
+    $('signals').innerHTML = `<div class="signal-col"><h4>What's landing</h4>${wins.map(i => `<div class="signal">${esc(trunc(i.wentWell, 200))}<small>${esc(i.contactName)} · ${esc(fmtDate(i.date))}</small></div>`).join('') || '<div class="signal muted">Shows up after your first debrief.</div>'}</div><div class="signal-col"><h4>What to adjust</h4>${fixes.map(i => `<div class="signal">${esc(trunc(i.improveNextTime, 200))}<small>${esc(i.contactName)} · ${esc(fmtDate(i.date))}</small></div>`).join('') || '<div class="signal muted">Nothing flagged yet.</div>'}</div>`;
+  }
+
+  /* ================= direction ================= */
+  function renderDirection() {
+    const mm = S.mindmap; const pf = S.profile || {};
+    const surveyed = !!(pf.name); const readout = !!mm;
+    $('stepsBar').innerHTML = `<span class="${surveyed ? 'on' : ''}">${surveyed ? '✓' : '○'} Survey</span><span class="sep">—</span><span class="${readout ? 'on' : ''}">${readout ? '✓' : '○'} Readout</span><span class="sep">—</span><span class="${pf.readoutSeenAt ? 'on' : ''}">${pf.readoutSeenAt ? '✓' : '○'} Live dashboard</span>`;
+    $('readoutBanner').innerHTML = (readout && !pf.readoutSeenAt) ? `<div class="readout-banner"><div><div class="eyebrow" style="color:var(--route)">Your Bridge readout</div><div style="font-family:var(--serif);font-size:1.15rem;margin-top:.3rem">Here's what Bridge worked out from your survey.</div></div><button class="btn primary" id="readoutDone">Open my dashboard →</button></div>` : '';
+    const rd = $('readoutDone'); if (rd) rd.addEventListener('click', async () => { if (db) { try { await db.doc('profile/main').update({ readoutSeenAt: new Date().toISOString() }); } catch (e) { } } go('today'); });
+    if (!mm) { $('routeBody').innerHTML = '<div class="empty">Built once the survey is done.</div>'; return; }
+    const stop = (title, when, why, yields, cls) => `<div class="stop ${cls || ''}"><div class="stop-top"><div class="stop-title">${esc(title)}</div>${when ? `<div class="stop-when">${esc(when)}</div>` : ''}</div>${why || yields ? `<div class="stop-grid">${why ? `<div><h4>Why this stage</h4><p>${esc(why)}</p></div>` : ''}${yields ? `<div><h4>What it yields</h4><p>${esc(yields)}</p></div>` : ''}</div>` : ''}</div>`;
+    let html = '<div class="route">';
+    if (mm.rightNow) html += `<div class="stop"><div class="stop-top"><div class="stop-title">Right now</div></div><p style="margin-top:.5rem">${esc(mm.rightNow)}</p></div>`;
+    if (mm.targetNextStep) html += stop(mm.targetNextStep.title, mm.targetNextStep.timing, mm.targetNextStep.why, mm.targetNextStep.yields);
+    if (mm.nextStage) html += stop(mm.nextStage.title, mm.nextStage.timing, mm.nextStage.why, mm.nextStage.yields);
+    if (mm.forks && mm.forks.length) html += `<div class="stop"><div class="stop-top"><div class="stop-title">The fork</div></div><div class="forks">${mm.forks.map(f => `<div class="fork"><span class="eyebrow">${esc(f.label)}</span><b>${esc(f.title)}</b><p>${esc(f.why)}</p><p><i>Yields:</i> ${esc(f.yields)}</p></div>`).join('')}</div></div>`;
+    if (mm.whatsFixed) html += `<div class="stop fixed"><div class="stop-top"><div class="stop-title" style="color:var(--route)">What's actually fixed</div></div><p style="margin-top:.5rem;color:var(--text)">${esc(mm.whatsFixed)}</p></div>`;
+    html += '</div>';
+    $('routeBody').innerHTML = html;
+  }
+
+  /* ================= projects ================= */
+  function renderProjects() {
+    const el = $('projectsBody');
+    if (!S.projects.length) { el.innerHTML = '<div class="empty">Nothing logged. Anything you\'re building or part of belongs here.</div>'; return; }
+    const sorted = S.projects.slice().sort((a, b) => (a.status === 'closed') - (b.status === 'closed') || (a.order || 0) - (b.order || 0));
+    el.innerHTML = sorted.map(p => { const notes = (p.notes || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))); const tasks = S.tasks.filter(t => !t.done && t.linkedProjectId === p.id);
+      return `<div class="proj${p.status === 'closed' ? ' closed' : ''}" data-key="${esc(p.id)}"><div class="proj-top"><div class="proj-name">${esc(p.name)}</div><span class="chip ${p.status === 'open' ? 'route' : p.status === 'paused' ? 'amber' : ''}">${esc(p.status || 'open')}</span></div>${p.currentStatus ? `<div><div class="lbl">Where it stands</div><p>${esc(p.currentStatus)}</p></div>` : ''}${p.connection ? `<div><div class="lbl">Why it matters for you</div><p class="muted" style="font-style:italic">${esc(p.connection)}</p></div>` : ''}${tasks.length ? `<div><div class="lbl">Open tasks</div>${tasks.map(t => `<p>· ${esc(t.text)}</p>`).join('')}</div>` : ''}<div><div class="lbl">Notes</div><div class="notes">${notes.map(n => `<div><span class="tl-date">${esc(fmtDate(n.date))}</span> ${esc(n.text)}</div>`).join('') || '<span class="muted">None yet.</span>'}</div></div><div class="note-row"><input id="note-${esc(p.id)}" placeholder="Add a note…" /><button class="btn" data-note="${esc(p.id)}">Add</button></div></div>`; }).join('');
+    el.querySelectorAll('[data-note]').forEach(b => {
+      const inp = $('note-' + b.dataset.note);
+      const add = async () => { const v = inp.value.trim(); if (!v || !db) return; const p = S.projects.find(x => x.id === b.dataset.note); const notes = (p.notes || []).concat([{ text: v, date: new Date().toISOString() }]); try { await db.collection('projects').doc(p.id).update({ notes }); } catch (e) { } };
+      b.addEventListener('click', add); inp.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+    });
+  }
+
+  /* ================= records ================= */
+  let logQuery = '';
+  $('logSearch').addEventListener('input', (e) => { logQuery = norm(e.target.value); renderLog(); });
+  function renderLog() {
+    const el = $('logBody');
+    let rows = S.interactions.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    if (logQuery) rows = rows.filter(i => norm([i.contactName, i.company, i.summary, i.context, i.materials].join(' ')).includes(logQuery));
+    el.innerHTML = rows.length ? rows.map(i => { const k = 'log-' + i.id; const open = openKeys.has(k); return `<div class="log-row" data-key="${esc(k)}"><div class="log-date">${esc(fmtDate(i.date))}</div><div><div class="log-who">${esc(i.contactName || '')}${i.company ? ` <span class="muted" style="font-weight:400">· ${esc(i.company)}</span>` : ''}</div><div class="log-sum${open ? '' : ' clamp'}">${esc(i.summary || i.materials || i.context || '')}</div>${open ? `${i.wentWell ? `<div class="log-sum"><b>Went well:</b> ${esc(i.wentWell)}</div>` : ''}${i.improveNextTime ? `<div class="log-sum"><b>Adjust:</b> ${esc(i.improveNextTime)}</div>` : ''}${i.prepForNext ? `<div class="log-sum"><b>Next time:</b> ${esc(i.prepForNext)}</div>` : ''}` : ''}</div><span class="chip">${esc(i.type || '')}</span></div>`; }).join('') : '<div class="empty">Nothing matches.</div>';
+    el.querySelectorAll('.log-row').forEach(r => r.addEventListener('click', () => toggleKey(r.dataset.key)));
+  }
+  function renderRecords() {
+    renderLog();
+    $('resumeBody').innerHTML = S.experience.length ? `<div class="exp-grid">${S.experience.slice().sort((a, b) => (b.order || 0) - (a.order || 0)).map(x => `<div class="story"><div style="display:flex;justify-content:space-between;gap:.5rem"><b>${esc(x.title)}</b><span class="chip">${esc(x.type || '')}</span></div><div class="muted" style="font-size:.78rem">${esc(x.org || '')}${x.dates ? ' · ' + esc(x.dates) : ''}</div><p>${esc(x.highlights || '')}</p>${x.skills ? `<div class="tags">${String(x.skills).split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>` : '<div class="empty">Built in the survey.</div>';
+    const j = S.reflections.filter(r => r.type === 'journal').sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const wk = S.reflections.filter(r => r.type === 'weekly').sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    $('journalBody').innerHTML = `<p class="muted" style="margin:0 0 1rem;font-size:.84rem">Filled from the one evening question on Today, and anything reflective you tell the chat.</p>` + (j.length || wk.length ? `<div class="stack">${j.map(e => `<div class="journal-e"><span class="tl-date">${esc(fmtDate(e.date))}${e.prompt ? ' · ' + esc(e.prompt) : ''}</span><p>“${esc(e.journalText)}”</p></div>`).join('')}${wk.map(r => `<div class="journal-e"><span class="tl-date">Week of ${esc(fmtDate(r.date))}</span><p>${esc([r.movedForward, r.energizing, r.stuck, r.changeNextWeek].filter(Boolean).join(' · '))}</p></div>`).join('')}</div>` : '<div class="empty">Nothing yet.</div>');
+    $('sessionsBody').innerHTML = S.sessions.length ? S.sessions.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).map(s => `<div class="log-row" style="cursor:default"><div class="log-date">${esc(fmtDate(s.date))}</div><div><div class="log-who" style="font-size:.8rem;color:var(--brass);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;font-weight:400">${esc(s.focus || '')}</div><div class="log-sum">${esc(s.summary || '')}</div></div><span></span></div>`).join('') : '<div class="empty">No sessions yet.</div>';
+    const active30 = S.network.filter(c => { const w = parseWhen(c.lastContact); return w && (Date.now() - w.date) < 30 * 86400000; }).length;
+    $('statsBody').innerHTML = `<div class="stats">${[[S.sessions.length, 'Sessions run'], [S.interactions.length, 'Conversations logged'], [S.network.length, 'Contacts'], [S.network.filter(c => c.bucket && c.bucket !== 'cold').length, 'Warm bridges'], [active30, 'Active in 30 days'], [S.opportunities.filter(o => lane(o) === 'open').length, 'Open opportunities']].map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('')}</div>`;
+  }
+
+  /* ================= header + render all ================= */
+  function renderAll() {
+    const p = S.profile;
+    $('whoLine').textContent = p ? [p.name, p.currentChapter ? trunc(p.currentChapter, 120) : ''].filter(Boolean).join(' — ') : 'New here? Say hi in the chat below to start.';
+    renderBearing(); renderAgenda(); renderTodo(); renderPipeline(); renderPeople(); renderCoaching(); renderDirection(); renderProjects(); renderRecords();
+  }
+  setInterval(() => { if (!document.hidden) { renderAgenda(); if (currentPage === 'people') renderPrep(); } }, 30000);
+
+  /* ================= context for Claude ================= */
+  function contextBlock(maxChars) {
+    const now = new Date();
+    const pf = S.profile || {}; const mm = S.mindmap || {};
+    const lines = [];
+    lines.push('NOW: ' + now.toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + '). Today ISO: ' + todayISO());
+    lines.push('PERSON: ' + [pf.name, pf.currentChapter, pf.location ? 'in ' + pf.location : '', pf.targetStart ? 'target start ' + pf.targetStart : ''].filter(Boolean).join(' | '));
+    if (mm.targetNextStep) lines.push('TARGET NEXT STEP: ' + mm.targetNextStep.title);
+    if (mm.forks) lines.push('LONG-TERM FORK: ' + mm.forks.map(f => f.label + ': ' + f.title).join(' / '));
+    if (mm.whatsFixed) lines.push('FIXED: ' + trunc(mm.whatsFixed, 200));
+    lines.push('\nUP NEXT (calendar + prep):'); agendaItems().slice(0, 6).forEach(it => lines.push('- ' + whenLabel(it.start, it.allDay, it.end).text + ': ' + it.title + (it.prep ? ' [prep id ' + it.prep.id + ']' : '')));
+    const db1 = needsDebrief(); if (db1.length) lines.push('NEEDS DEBRIEF: ' + db1.map(p => p.contactName + ' (' + p.meetingDate + ')').join('; '));
+    lines.push('\nOPPORTUNITIES (id | org | title | status | notes):'); S.opportunities.forEach(o => lines.push('- ' + o.id + ' | ' + o.org + ' | ' + o.title + ' | ' + o.status + ' | ' + trunc(o.notes, 220)));
+    lines.push('\nCONTACTS (id | name | company | bucket | goal | status | follow-up | notes):'); S.network.forEach(c => lines.push('- ' + c.id + ' | ' + c.name + ' | ' + (c.company || '') + ' | ' + (c.bucket || '') + ' | ' + (c.goal || '') + ' | ' + (c.status || '') + ' | ' + (c.nextFollowUp || '') + ' | ' + trunc(c.notes, 180)));
+    lines.push('\nPREP DOCS (id | contact | when | purpose):'); S.prep.forEach(p => lines.push('- ' + p.id + ' | ' + p.contactName + ' | ' + (p.meetingDate || 'unscheduled') + ' | ' + trunc(p.purpose, 140)));
+    lines.push('\nOPEN TASKS (id | text | due | priority):'); S.tasks.filter(t => !t.done).forEach(t => lines.push('- ' + t.id + ' | ' + t.text + ' | ' + (t.dueDate || '') + ' | ' + (t.priority || '')));
+    const g = S.guidance.filter(x => !x.done); if (g.length) { lines.push('\nOPEN GUIDANCE:'); g.forEach(x => lines.push('- ' + x.text)); }
+    lines.push('\nPROJECTS: ' + S.projects.map(p => p.id + ' (' + p.name + ', ' + p.status + ')').join('; '));
+    lines.push('\nRECENT CONVERSATIONS:'); S.interactions.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 6).forEach(i => lines.push('- ' + i.date + ' ' + i.contactName + ' (' + (i.company || '') + '): ' + trunc(i.summary, 240)));
+    const act = S.activity.filter(a => a.date === todayISO()); if (act.length) { lines.push('\nACTIVITY TODAY:'); act.forEach(a => lines.push('- ' + a.label)); }
+    const doneToday = S.tasks.filter(t => t.done && t.completedAt && sameDay(new Date(t.completedAt), now)); if (doneToday.length) lines.push('TASKS DONE TODAY: ' + doneToday.map(t => t.text).join('; '));
+    if (mm.elevatorPitch) lines.push('\nPITCH: ' + trunc(mm.elevatorPitch, 500));
+    let s = lines.join('\n');
+    if (s.length > maxChars) s = s.slice(0, maxChars) + '\n…(truncated)';
+    return s;
+  }
+
+  /* ================= brief (compass) generation ================= */
+  const Brief = {
+    busy: false,
+    async generate(manual) {
+      if (!sample || !db || this.busy) return;
+      this.busy = true; renderBearing();
+      const evening = period().endsWith('evening');
+      const prompt = 'You are Bridge, a direct, warm career coach for an early-career person. Read their live dashboard data and decide what they should do next.\n\n'
+        + 'MODE: ' + (evening ? 'EVENING — wrap up today, then set up tomorrow.' : 'MORNING/DAY — point them at what matters now.') + '\n\n'
+        + 'Reply with ONLY JSON: {"headline": string, "moves": [{"text": string, "why": string, "kind": "do"|"coach", "page": string, "tab": string, "target": string}]'
+        + (evening ? ', "wrap": [string], "reflect": string' : '') + '}\n'
+        + '- headline: ONE sentence (max 24 words) that synthesizes where things stand strategically, like a coach would say it. Example of the tone: "The extra time you asked ACE for is your window for Palantir and SYSO to move."\n'
+        + '- moves: exactly 3, most leveraged first. text = a concrete action (max 14 words). why = one short reason tied to their goals or timing (max 20 words). Mix doing (follow-ups, prep, decisions) with coaching (a story to sharpen, a question to think through). Prefer time-sensitive items from UP NEXT and NEEDS DEBRIEF.\n'
+        + '- page/tab/target link each move to where the detail lives: page "pipeline" (target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "" if none.\n'
+        + (evening ? '- wrap: up to 3 short past-tense lines of what actually moved today (from ACTIVITY TODAY, TASKS DONE TODAY, conversations dated today). Empty array if nothing moved; never invent.\n- reflect: one specific, gentle question about today (max 18 words), not generic.\n' : '')
+        + 'Use only facts in the data. Never invent people, dates, or outcomes.\n\nDATA:\n' + contextBlock(40000);
+      try {
+        const r = await sample.json(prompt, { modelTier: 'default', cache: false });
+        const moves = (r && Array.isArray(r.moves) ? r.moves : []).slice(0, 3).map(m => ({ text: String(m.text || ''), why: String(m.why || ''), kind: m.kind === 'coach' ? 'coach' : 'do', page: String(m.page || ''), tab: String(m.tab || ''), target: String(m.target || '') })).filter(m => m.text);
+        await db.doc('brief/main').set({ headline: String((r && r.headline) || ''), moves, wrap: evening && Array.isArray(r.wrap) ? r.wrap.map(String).slice(0, 3) : [], reflect: evening ? String(r.reflect || '') : '', reflectAnswered: false, period: period(), generatedAt: new Date().toISOString(), generatedAtMs: Date.now() });
+      } catch (e) {
+        if (e && (e.code === 'not_granted' || e.code === 'sampling_disabled' || e.code === 'capability_disabled' || e.code === 'not_declared')) sample = null;
+        Chat.status(e && e.code === 'rate_limited' ? 'Compass refresh hit a rate limit — try again in a bit.' : '');
+      } finally { this.busy = false; renderBearing(); }
+    },
+    maybeAuto() { if (!sample || !loaded) return; if (!S.profile) return; if (!S.brief || S.brief.period !== period()) this.generate(false); }
+  };
+
+  /* ================= chat engine ================= */
+  const ACTIONS_DOC = `Available actions (use the exact ids from DATA when updating; "label" = a 3-8 word summary shown to the user, e.g. "ACE → offer, more time requested"):
+- {"type":"update_contact","id":contactId,"notesAppend"?,"status"?:"active|contacted|sourced|stalled","nextFollowUp"?:"YYYY-MM-DD","lastContact"?:"YYYY-MM-DD","bucket"?,"label"}
+- {"type":"add_contact","name","company"?,"role"?,"bucket":"past-job|personal|college|high-school|cold","goal":"learn|position|both","bridgePath"?,"notes"?,"label"}
+- {"type":"add_task","text","dueDate"?:"YYYY-MM-DD","priority":"high|med|low","linkedContactName"?,"linkedProjectId"?,"label"}
+- {"type":"complete_task","id":taskId,"label"}
+- {"type":"update_opportunity","id":oppId,"status"?:"exploring|applied|interviewing|offer|active|closed|rejected|declined|accepted","notesAppend"?,"label"}
+- {"type":"add_opportunity","title","org","kind":"role|internship|program|research|class|collaboration|warm-path","status","sourceBridge"?,"notes"?,"label"}
+- {"type":"schedule_call","prepId"?:existing prep id,"contactName","company"?,"meetingDate":"YYYY-MM-DDTHH:MM" local time,"purpose"?,"label"}  (reschedules if prepId given, else creates prep)
+- {"type":"add_talking_point","prepId","point","label"}
+- {"type":"log_interaction","contactName","company"?,"kind":"call|interview|info-session|materials|message","date":"YYYY-MM-DD","summary","wentWell"?,"improveNextTime"?,"prepForNext"?,"label"}
+- {"type":"add_project_note","projectId","text","label"}
+- {"type":"journal","text","label"}`;
+  function chatRules() {
+    return 'You are Claude, chatting inside Bridge — this person\'s live career dashboard. Talk like a normal Claude conversation: warm, direct, specific to their situation, a real coach (push back when something looks low-value). The dashboard DATA below is your memory; you cannot browse.\n\n'
+      + 'Reply with ONLY a JSON object: {"reply": string, "actions": [ ... ]}\n'
+      + '- reply: your conversational answer to their latest message. Usually 1-4 sentences; longer only when they ask for a draft, prep, or a mock interview. When useful, name the strategic implication (e.g. "The extra time with ACE is your window for Palantir and SYSO to move") and end with ONE concrete question about what to do next. Do NOT restate what you saved; the page shows that.\n'
+      + '- actions: every fact from their LATEST message worth keeping on the dashboard, one action per distinct update (an empty array is fine). Prefer updating existing records over creating duplicates. Reflections or feelings about their path go in "journal". Never invent facts.\n\n'
+      + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
+  }
+  function onboardingRules() {
+    return 'You are Claude, running the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first, then roughly: where they are now (year / time since graduating, status); what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure — "not sure" is a complete answer); the open-ended "tell me anything else about yourself" (the most important question; if the answer is thin, follow up gently, one prompt at a time); schools and communities; location and constraints; what they are building or part of right now.\n\n'
+      + 'Reply with ONLY JSON: {"reply": string, "actions": [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?},"label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"}]}\n'
+      + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
+  }
+
+  const Chat = {
+    messages: [], inFlight: null, startedAt: 0, ready: false, open: false, hideLatest: false,
+    status(t) { $('dockStatus').textContent = t || ''; },
+    setDot() { const d = $('dockDot'); d.className = 'dot' + (!sample ? ' off' : this.inFlight ? ' busy' : ''); $('dockLabel').textContent = !sample ? 'Bridge chat · unavailable here' : this.inFlight ? 'Bridge is thinking…' : 'Bridge chat'; },
+    prefill(text, send) { const i = $('chatInput'); i.value = text; autoGrow(); i.focus(); try { i.setSelectionRange(text.length, text.length); } catch (e) { } if (send) this.send(); },
+    async persist() { if (!db || !this.ready) return; try { await db.doc('chat/main').set({ messages: this.messages.slice(-80), updatedAt: new Date().toISOString() }); } catch (e) { } },
+    msgHtml(m, idx) {
+      if (m.role === 'user') return `<div class="msg user${m.failed ? ' failed' : ''}"><div class="bub">${esc(m.content)}</div>${m.failed ? `<div class="fail-note">Didn't go through. <button class="linkish" data-retry="${idx}">Retry</button></div>` : ''}</div>`;
+      const saved = (m.saved || []);
+      const savedHtml = saved.length ? `<div class="saved">${saved.map((s, si) => `<div class="saved-line ${s.ok ? '' : 'miss'}">${s.ok ? '✓ Saved:' : '✗ Not saved:'} ${esc(s.label)}${s.ok && s.undo && !s.undone ? ` <button class="undo" data-undo="${idx}:${si}">undo</button>` : ''}${s.undone ? ' <span class="muted">(undone)</span>' : ''}</div>`).join('')}${saved.some(s => s.ok) ? '<div class="muted" style="font-size:.68rem;font-family:var(--mono)">dashboard synced</div>' : ''}</div>` : '';
+      return `<div class="msg bot"><div class="bub">${esc(m.content)}</div>${savedHtml}</div>`;
+    },
+    render() {
+      const inner = $('threadInner');
+      inner.innerHTML = this.messages.length ? this.messages.map((m, i) => this.msgHtml(m, i)).join('') + (this.inFlight ? '<div class="thinking">Thinking…</div>' : '') : '<div class="muted" style="font-size:.84rem">Tell Bridge what\'s going on: a reply from someone, a reschedule, a stray thought, a question.</div>';
+      const th = $('thread'); th.scrollTop = th.scrollHeight;
+      // latest exchange (collapsed view)
+      const lastBotIdx = this.messages.map(m => m.role).lastIndexOf('assistant');
+      const lastUserIdx = this.messages.map(m => m.role).lastIndexOf('user');
+      let latest = '';
+      if (this.inFlight) latest = `<div class="thinking">Thinking about “${esc(trunc(this.messages[lastUserIdx] && this.messages[lastUserIdx].content, 60))}”…</div>`;
+      else if (lastUserIdx > lastBotIdx && this.messages[lastUserIdx].failed) latest = this.msgHtml(this.messages[lastUserIdx], lastUserIdx);
+      else if (lastBotIdx >= 0 && !this.hideLatest && (Date.now() - (this.messages[lastBotIdx].ts || 0)) < 6 * 3600000) latest = this.msgHtml(this.messages[lastBotIdx], lastBotIdx);
+      $('latest').innerHTML = latest ? `<div style="display:flex;flex-direction:column;gap:.5rem;max-height:30vh;overflow-y:auto">${latest}</div>` : '';
+      $('latest').style.display = latest ? '' : 'none';
+      $('hideLatestBtn').hidden = !latest || this.open;
+      $('histBtn').textContent = this.open ? 'Collapse' : 'History' + (this.messages.length ? ' (' + this.messages.length + ')' : '');
+      const sb = $('sendBtn'); sb.textContent = this.inFlight ? 'Stop' : 'Send'; sb.classList.toggle('stop', !!this.inFlight); sb.disabled = !sample && !this.inFlight;
+      document.querySelectorAll('[data-retry]').forEach(b => b.onclick = () => this.retry(Number(b.dataset.retry)));
+      document.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => { const [mi, si] = b.dataset.undo.split(':').map(Number); this.undo(mi, si); });
+      this.setDot();
+    },
+    async send(retryIdx) {
+      if (this.inFlight) return;
+      if (!sample) { this.status('Chat needs this page open in Claude with chat allowed.'); return; }
+      let userIdx;
+      if (typeof retryIdx === 'number') { userIdx = retryIdx; this.messages[userIdx].failed = false; }
+      else {
+        const text = $('chatInput').value.trim(); if (!text) return;
+        $('chatInput').value = ''; autoGrow();
+        this.messages.push({ role: 'user', content: text, ts: Date.now() }); userIdx = this.messages.length - 1;
+      }
+      this.hideLatest = false;
+      const ctl = new AbortController(); this.inFlight = ctl; this.startedAt = Date.now();
+      this.status(''); this.render(); this.persist();
+      const onboarding = !S.profile || !S.profile.name;
+      const history = this.messages.slice(0, userIdx + 1).filter(m => !m.failed || m === this.messages[userIdx]).slice(-12).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.role === 'assistant' && m.saved && m.saved.length ? m.content + '\n[saved: ' + m.saved.filter(s => s.ok).map(s => s.label).join('; ') + ']' : m.content }));
+      const turns = [{ role: 'user', content: onboarding ? onboardingRules() : chatRules() }].concat(history);
+      while (turns.length > 1 && turns[1].role === 'assistant') turns.splice(1, 1);
+      let total = turns.reduce((n, t) => n + t.content.length, 0);
+      while (total > 58000 && turns.length > 2) { total -= turns[1].content.length; turns.splice(1, 1); }
+      try {
+        const r = await sample.json(turns, { modelTier: 'default', cache: false, signal: ctl.signal });
+        const reply = r && typeof r.reply === 'string' && r.reply.trim() ? r.reply.trim() : 'Got it.';
+        const acts = r && Array.isArray(r.actions) ? r.actions.slice(0, 12) : [];
+        const saved = [];
+        for (const a of acts) { saved.push(await runAction(a)); }
+        this.messages.push({ role: 'assistant', content: reply, saved, ts: Date.now() });
+      } catch (e) {
+        const code = e && e.code;
+        this.messages[userIdx].failed = true;
+        if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(code)) { sample = null; this.status('Chat isn\'t allowed in this view. Open the page in Claude and allow it when asked.'); }
+        else if (code === 'cancelled') this.status('Stopped.');
+        else if (code === 'rate_limited') this.status('Usage limit or too many requests. Give it a minute, then Retry.');
+        else if (code === 'session_expired') this.status('Your Claude session expired. Reload the page and sign in, then Retry.');
+        else if (code === 'invalid_json') this.status('The reply came back garbled. Retry usually fixes it.');
+        else if (code === 'prompt_too_large') this.status('That was too long. Try a shorter message.');
+        else this.status('Connection hiccup. Tap Retry.');
+      } finally {
+        this.inFlight = null; this.render(); this.persist();
+      }
+    },
+    retry(idx) { this.send(idx); },
+    stop() { if (this.inFlight) this.inFlight.abort(); },
+    async undo(mi, si) { const s = this.messages[mi] && this.messages[mi].saved && this.messages[mi].saved[si]; if (!s || !s.undo || !db) return; try { await applyUndo(s.undo); s.undone = true; this.render(); this.persist(); } catch (e) { this.status('Undo failed.'); } },
+  };
+  function autoGrow() { const i = $('chatInput'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 140) + 'px'; }
+  $('chatInput').addEventListener('input', autoGrow);
+  $('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!Chat.inFlight) Chat.send(); } });
+  $('sendBtn').addEventListener('click', () => { if (Chat.inFlight) Chat.stop(); else Chat.send(); });
+  $('histBtn').addEventListener('click', () => { Chat.open = !Chat.open; $('dock').classList.toggle('open', Chat.open); Chat.render(); });
+  $('hideLatestBtn').addEventListener('click', () => { Chat.hideLatest = true; Chat.render(); });
+  // Coming back to the tab: recover a call that died while hidden, refresh the clock-driven parts.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (Chat.inFlight && Date.now() - Chat.startedAt > 150000) Chat.stop();
+    renderAgenda(); renderBearing(); Brief.maybeAuto(); Chat.setDot();
+  });
+
+  /* ================= actions (what the chat can save) ================= */
+  function findBy(list, id, name) {
+    if (id) { const x = list.find(i => i.id === id); if (x) return x; }
+    const n = norm(name || id); if (!n) return null;
+    return list.find(i => norm(i.name || i.contactName || i.title || i.org || i.text) === n) || list.find(i => norm(i.name || i.contactName || i.org || '').includes(n) || n.includes(norm(i.name || i.contactName || i.org || '__none__')));
+  }
+  function snapshot(item) { const d = Object.assign({}, item); delete d.id; return d; }
+  async function runAction(a) {
+    const label = trunc(String((a && a.label) || (a && a.type) || 'update'), 90);
+    if (!db) return { ok: false, label: label + ' (dashboard not connected)' };
+    try {
+      const t = a.type;
+      const now = new Date().toISOString();
+      if (t === 'update_contact') {
+        const c = findBy(S.network, a.id, a.name); if (!c) throw new Error('no contact');
+        const patch = {}; if (a.notesAppend) patch.notes = (c.notes ? c.notes + '\n' : '') + '[' + todayISO() + '] ' + a.notesAppend;
+        ['status', 'nextFollowUp', 'lastContact', 'bucket'].forEach(k => { if (a[k]) patch[k] = a[k]; });
+        if (!patch.lastContact && a.notesAppend) patch.lastContact = todayISO();
+        await db.collection('network').doc(c.id).update(patch);
+        logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'network', id: c.id, data: snapshot(c) } };
+      }
+      if (t === 'add_contact') {
+        if (!a.name) throw new Error('no name'); const id = slug(a.name);
+        await db.collection('network').doc(id).set({ name: a.name, company: a.company || '', role: a.role || '', bucket: a.bucket || 'cold', goal: a.goal || 'learn', bridgePath: a.bridgePath || '', notes: a.notes || '', status: 'sourced', lastContact: null, nextFollowUp: null });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'network', id } };
+      }
+      if (t === 'add_task') {
+        if (!a.text) throw new Error('no text'); const id = slug(a.text);
+        const proj = a.linkedProjectId && S.projects.find(p => p.id === a.linkedProjectId);
+        await db.collection('tasks').doc(id).set({ text: a.text, dueDate: a.dueDate || null, priority: a.priority || 'med', done: false, waitingOn: false, contextType: proj ? 'project' : 'career', linkedContactName: a.linkedContactName || null, linkedProjectId: proj ? proj.id : null, linkedProjectName: proj ? proj.name : null, createdAt: now });
+        return { ok: true, label, undo: { op: 'delete', col: 'tasks', id } };
+      }
+      if (t === 'complete_task') {
+        const tk = findBy(S.tasks, a.id, a.text); if (!tk) throw new Error('no task');
+        await db.collection('tasks').doc(tk.id).update({ done: true, completedAt: now });
+        logActivity('Done: ' + tk.text); return { ok: true, label, undo: { op: 'set', col: 'tasks', id: tk.id, data: snapshot(tk) } };
+      }
+      if (t === 'update_opportunity') {
+        const o = findBy(S.opportunities, a.id, a.org || a.title); if (!o) throw new Error('no opp');
+        const patch = {}; if (a.status) patch.status = a.status; if (a.notesAppend) patch.notes = (o.notes ? o.notes + ' ' : '') + '[' + todayISO() + '] ' + a.notesAppend;
+        await db.collection('opportunities').doc(o.id).update(patch);
+        logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'opportunities', id: o.id, data: snapshot(o) } };
+      }
+      if (t === 'add_opportunity') {
+        if (!a.org && !a.title) throw new Error('empty'); const id = slug(a.org || a.title);
+        await db.collection('opportunities').doc(id).set({ title: a.title || '', org: a.org || '', type: a.kind || 'role', status: a.status || 'exploring', sourceBridge: a.sourceBridge || '', notes: a.notes || '' });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'opportunities', id } };
+      }
+      if (t === 'schedule_call') {
+        const existing = a.prepId ? S.prep.find(p => p.id === a.prepId) : null;
+        if (existing) { await db.collection('prep').doc(existing.id).update({ meetingDate: a.meetingDate || existing.meetingDate, purpose: a.purpose || existing.purpose || '' }); return { ok: true, label, undo: { op: 'set', col: 'prep', id: existing.id, data: snapshot(existing) } }; }
+        const id = slug((a.contactName || 'call') + '-prep');
+        await db.collection('prep').doc(id).set({ contactName: a.contactName || 'Call', company: a.company || '', meetingDate: a.meetingDate || null, purpose: a.purpose || '', talkingPoints: [], questions: [], background: '' });
+        return { ok: true, label, undo: { op: 'delete', col: 'prep', id } };
+      }
+      if (t === 'add_talking_point') {
+        const p = findBy(S.prep, a.prepId, a.contactName); if (!p || !a.point) throw new Error('no prep');
+        await db.collection('prep').doc(p.id).update({ talkingPoints: (p.talkingPoints || []).concat([a.point]) });
+        return { ok: true, label, undo: { op: 'set', col: 'prep', id: p.id, data: snapshot(p) } };
+      }
+      if (t === 'log_interaction') {
+        const id = slug((a.contactName || 'conversation'));
+        await db.collection('interactions').doc(id).set({ contactName: a.contactName || '', company: a.company || '', type: a.kind || 'call', date: a.date || todayISO(), summary: a.summary || '', wentWell: a.wentWell || '', improveNextTime: a.improveNextTime || '', prepForNext: a.prepForNext || '', source: 'chat' });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'interactions', id } };
+      }
+      if (t === 'add_project_note') {
+        const p = findBy(S.projects, a.projectId, a.project); if (!p || !a.text) throw new Error('no project');
+        await db.collection('projects').doc(p.id).update({ notes: (p.notes || []).concat([{ text: a.text, date: now }]) });
+        return { ok: true, label, undo: { op: 'set', col: 'projects', id: p.id, data: snapshot(p) } };
+      }
+      if (t === 'journal') {
+        if (!a.text) throw new Error('empty'); const id = slug('journal');
+        await db.collection('reflections').doc(id).set({ type: 'journal', journalText: a.text, date: todayISO() });
+        return { ok: true, label, undo: { op: 'delete', col: 'reflections', id } };
+      }
+      if (t === 'profile') {
+        const f = a.fields || {}; const clean = {}; Object.keys(f).forEach(k => { if (f[k]) clean[k] = String(f[k]); }); if (!Object.keys(clean).length) throw new Error('empty');
+        const prev = S.profile ? Object.assign({}, S.profile) : null;
+        await db.doc('profile/main').set(Object.assign({}, S.profile || {}, clean, { updatedAt: todayISO() }));
+        return { ok: true, label, undo: prev ? { op: 'set', col: 'profile', id: 'main', data: prev } : { op: 'delete', col: 'profile', id: 'main' } };
+      }
+      if (t === 'add_project') {
+        if (!a.name) throw new Error('no name'); const id = slug(a.name);
+        await db.collection('projects').doc(id).set({ name: a.name, type: 'other', status: 'open', purpose: a.purpose || '', currentStatus: a.currentStatus || '', connection: '', tags: [], notes: [] });
+        return { ok: true, label, undo: { op: 'delete', col: 'projects', id } };
+      }
+      throw new Error('unknown action');
+    } catch (e) { return { ok: false, label: label + ' — couldn\'t match it; say which one and I\'ll retry' }; }
+  }
+  async function applyUndo(u) { const ref = db.collection(u.col).doc(u.id); if (u.op === 'delete') await ref.delete(); else await ref.set(u.data); }
+
+  /* ================= boot ================= */
+  renderAll(); Chat.render();
+  (async function boot() {
+    try { sample = await claude.use('sample'); } catch (e) { sample = null; }
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (db) {
+      const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
+      const apply = (key, kind, s) => { if (kind === 'doc') S[key] = s.exists ? s.data() : null; else S[key] = s.docs.map(d => Object.assign({}, d.data(), { id: d.id })); };
+      await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); } catch (e) { } }));
+      try { const cs = await db.doc('chat/main').get(); if (cs.exists) Chat.messages = cs.data().messages || []; } catch (e) { }
+      Chat.ready = true; loaded = true;
+      specs.forEach(([key, path, kind]) => { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); ref.onSnapshot(s => { apply(key, kind, s); if (key !== 'brief' && key !== 'activity') lastDataChange = Date.now(); renderAll(); }); });
+      const pf = S.profile;
+      if (!pf || !pf.name) { Chat.open = true; $('dock').classList.add('open'); }
+      else if (S.mindmap && !pf.readoutSeenAt) go('direction');
+    }
+    renderAll(); Chat.render();
+    if (!sample) Chat.status('Chat and the compass need this page opened in Claude.');
+    Brief.maybeAuto();
+    // live calendar
+    try {
+      const mcp = await claude.use('mcp');
+      if (!mcp) { S.calStatus = 'off'; renderAgenda(); return; }
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const end = new Date(start.getTime() + 8 * 86400000);
+      mcp.watchTool('Google Calendar', 'list_events', { startTime: start.toISOString(), endTime: end.toISOString(), orderBy: 'startTime', pageSize: 50 }, (ev) => {
+        if (ev.type === 'data') { const p = ev.result && ev.result.payload; S.calendar = (p && typeof p === 'object') ? p : null; S.calStatus = S.calendar ? 'live' : 'error'; renderAgenda(); renderBearing(); return; }
+        const code = ev.error && ev.error.code;
+        S.calStatus = (code === 'server_not_connected' || code === 'not_granted' || code === 'capability_disabled' || code === 'not_in_manifest' || code === 'blocked_by_policy') ? 'off' : 'error';
+        if (code === 'not_granted' || code === 'server_not_connected') S.calendar = null;
+        renderAgenda();
+      }, { refetchInterval: 300000 });
+    } catch (e) { S.calStatus = 'off'; renderAgenda(); }
+  })();
+})();
+</script>
+
+</body></html>

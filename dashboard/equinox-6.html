@@ -1,0 +1,1917 @@
+<title>Bridge Equinox 6</title>
+<script>
+/* Paint the saved palette + mode before first render (per-device cache; the account copy lives in profile.appearance). */
+(function () {
+  var pal = 'sky', mode = 'system';
+  try { var a = JSON.parse(localStorage.getItem('bridge.appearance') || '{}'); pal = a.palette || pal; mode = a.mode || mode; } catch (e) { }
+  if (['sand', 'sky'].indexOf(pal) < 0) pal = 'sky';
+  var r = document.documentElement; r.setAttribute('data-palette', pal); r.setAttribute('data-bmode', mode);
+  var viewerDark = r.getAttribute('data-theme') === 'dark' || (r.getAttribute('data-theme') !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  r.classList.toggle('b-dark', mode === 'dark' || (mode === 'system' && viewerDark));
+})();
+</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* =====================================================================
+     BRAND TOKENS — the only place palette + type live. Swap here, nowhere else.
+     Bridge palette (from the icon board): Espresso #4A2C1D · Sand #D8CCB6 · Mustard #E7B94E
+     · Coral #E47E7A · Dusty blue #9DB5BB · Cream #F6F1E7.
+     Two variations a person can pick: sky (default, follows the device's light/dark) · sand. (The base :root values are the shared espresso/cream foundation.)
+     Each has light + dark (.b-dark). Status colors stay fixed across variations.
+     --logo-tile / --logo-mark colour the app-icon tile wherever the mark appears.
+     ===================================================================== */
+  :root {
+    --serif: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --quote: 'Fraunces', Georgia, serif;
+    --sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    /* espresso · light (default): Cream ground, Espresso chrome, Coral accent, Mustard highlight */
+    --paper: #F6F1E7; --paper-raised: #FFFCF6; --paper-sunk: #ECE3D2;
+    --ink: #4A2C1D; --ink-2: #5C3A28;
+    --text: #2E1B11; --text-muted: #6E5A4B; --text-faint: #9A8877;
+    --brass: #BD4F49; --brass-soft: #F8DEDA; --on-brass: #FFFFFF;
+    --border: rgba(74,44,29,0.14); --border-strong: rgba(74,44,29,0.26);
+    --chrome-text: #F6F1E7; --chrome-dim: rgba(246,241,231,0.66); --chrome-accent: #E7B94E;
+    --logo-tile: #F6F1E7; --logo-mark: #4A2C1D;
+    --shadow: 0 1px 2px rgba(74,44,29,0.07), 0 6px 20px rgba(74,44,29,0.06);
+    --route: #4F7A5A; --route-soft: #DDEBDF; --amber: #9C7414; --amber-soft: #F7E9C4;
+    --rust: #B04A3F; --rust-soft: #F6D9D4; --slate: #6E5A4B; --slate-soft: #EAE1D2; --violet: #52737A; --violet-soft: #DDE8EA;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-bmode]) {
+      color-scheme: dark;
+      --paper: #24160F; --paper-raised: #30211A; --paper-sunk: #1B100B; --ink: #1A0F09; --text: #F6F1E7; --text-muted: #C4B5A3; --text-faint: #8C7B6B;
+      --brass: #EC8F8A; --brass-soft: #43241F; --on-brass: #1A0F09; --border: rgba(246,241,231,0.12); --border-strong: rgba(246,241,231,0.22);
+    }
+  }
+  :root[data-theme="dark"]:not([data-bmode]) { color-scheme: dark; --paper: #24160F; --paper-raised: #30211A; --paper-sunk: #1B100B; --ink: #1A0F09; --text: #F6F1E7; --text-muted: #C4B5A3; --text-faint: #8C7B6B; --brass: #EC8F8A; --brass-soft: #43241F; }
+  :root.b-dark {
+    color-scheme: dark;
+    --paper: #24160F; --paper-raised: #30211A; --paper-sunk: #1B100B; --ink: #1A0F09; --ink-2: #3A2A20;
+    --text: #F6F1E7; --text-muted: #C4B5A3; --text-faint: #8C7B6B;
+    --brass: #EC8F8A; --brass-soft: #43241F; --on-brass: #1A0F09;
+    --border: rgba(246,241,231,0.12); --border-strong: rgba(246,241,231,0.22);
+    --chrome-text: #F6F1E7; --chrome-dim: rgba(246,241,231,0.6); --chrome-accent: #E7B94E;
+    --logo-tile: #4A2C1D; --logo-mark: #F6F1E7;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 10px 30px rgba(0,0,0,0.4);
+    --route: #8DC39A; --route-soft: #22352A; --amber: #E7B94E; --amber-soft: #3A2E12; --rust: #EC8F8A; --rust-soft: #43241F;
+    --slate: #C4B5A3; --slate-soft: #3A2C22; --violet: #A9C3C9; --violet-soft: #243236;
+  }
+  /* sand: Sand chrome with Espresso type, Mustard accent */
+  :root[data-palette="sand"] {
+    --paper: #F6F1E7; --paper-raised: #FFFCF6; --paper-sunk: #EDE4D3; --ink: #D8CCB6; --ink-2: #CBBDA3;
+    --text: #2E1B11; --text-muted: #6E5A4B; --text-faint: #9A8877; --brass: #9A6B12; --brass-soft: #F6E6C0; --on-brass: #FFFFFF;
+    --chrome-text: #3A2216; --chrome-dim: rgba(58,34,22,0.66); --chrome-accent: #8E3F2F;
+    --logo-tile: #4A2C1D; --logo-mark: #D8CCB6;
+  }
+  :root[data-palette="sand"].b-dark {
+    --paper: #221C15; --paper-raised: #2E271E; --paper-sunk: #19140E; --ink: #3B3226; --ink-2: #4A3F30;
+    --text: #F2EADB; --text-muted: #C2B6A2; --text-faint: #8A7E6C; --brass: #E7B94E; --brass-soft: #3D3116; --on-brass: #221C15;
+    --chrome-text: #F2EADB; --chrome-dim: rgba(242,234,219,0.62); --chrome-accent: #E7B94E;
+    --logo-tile: #D8CCB6; --logo-mark: #3B3226;
+  }
+  /* sky: Dusty-blue chrome with Cream type, Coral accent */
+  :root[data-palette="sky"] {
+    --paper: #F4F3EE; --paper-raised: #FFFFFB; --paper-sunk: #E5E9E6; --ink: #5B7880; --ink-2: #6B878E;
+    --text: #22303A; --text-muted: #56646B; --text-faint: #86939A; --brass: #B8514B; --brass-soft: #F6DCD9; --on-brass: #FFFFFF;
+    --chrome-text: #FBF8F1; --chrome-dim: rgba(251,248,241,0.72); --chrome-accent: #FFE2A6;
+    --logo-tile: #F6F1E7; --logo-mark: #5B7880;
+  }
+  :root[data-palette="sky"].b-dark {
+    --paper: #151B1E; --paper-raised: #1F272B; --paper-sunk: #0F1416; --ink: #26363B; --ink-2: #324449;
+    --text: #EEF2F1; --text-muted: #AAB8BC; --text-faint: #718085; --brass: #9DB5BB; --brass-soft: #243236; --on-brass: #151B1E;
+    --chrome-text: #EEF2F1; --chrome-dim: rgba(238,242,241,0.62); --chrome-accent: #E7B94E;
+    --logo-tile: #9DB5BB; --logo-mark: #F6F1E7;
+  }
+  /* ===================== end brand tokens ===================== */
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; font-size: 14px; }
+  h1, h2, h3 { font-family: var(--serif); text-wrap: balance; margin: 0; font-weight: 700; letter-spacing: -0.01em; font-stretch: 92%; }
+  button { font-family: inherit; color: inherit; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .eyebrow { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); }
+  .muted { color: var(--text-muted); }
+  a { color: inherit; }
+
+  /* chrome */
+  .chrome { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: var(--ink); color: var(--chrome-text); }
+  .chrome-top { display: flex; align-items: center; gap: 0.9rem; padding: 0.75rem 1.4rem 0.25rem; }
+  .brand { display: flex; align-items: center; gap: 0.55rem; flex: none; }
+  .brand svg { width: 32px; height: 32px; }
+  .brand-name { font-family: var(--serif); font-size: 1.2rem; font-weight: 750; letter-spacing: -0.01em; }
+  .brand-v { --pill-h: 1.3rem; --pill-x: 0.5rem; --pill-ls: 0.14em; --pill-fs: 0.56rem; color: var(--chrome-accent); border: 1px solid currentColor; }
+  .who-line { font-size: 0.8rem; color: var(--chrome-dim); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gear { flex: none; background: none; border: 1px solid rgba(255,255,255,0.18); color: var(--chrome-dim); border-radius: 8px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; }
+  .gear:hover { color: var(--chrome-text); border-color: var(--chrome-accent); }
+  .gear svg { width: 16px; height: 16px; }
+  .nav { display: flex; gap: 0.1rem; padding: 0 1rem; overflow-x: auto; scrollbar-width: none; }
+  .nav button { background: none; border: none; color: var(--chrome-dim); font-size: 0.85rem; font-weight: 500; padding: 0.7rem 0.75rem; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+  .nav button:hover { color: var(--chrome-text); }
+  .nav button.active { color: var(--chrome-accent); border-bottom-color: var(--chrome-accent); }
+
+  .page { padding-inline: 16px; padding-block: 1.8rem 9rem; }
+  .page[hidden] { display: none !important; }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+  .page-head h2 { font-size: 1.6rem; margin-top: 0.2rem; }
+  .page-head p { color: var(--text-muted); margin: 0.35rem 0 0; max-width: 62ch; line-height: 1.5; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+  .sec-head h3 { font-size: 1.05rem; font-weight: 600; }
+  .sec-note { font-family: var(--mono); font-size: 0.66rem; color: var(--text-faint); }
+  .empty { padding: 1.2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; border: 1px dashed var(--border-strong); border-radius: 10px; }
+
+  /* Pills with uppercase mono text: fixed height + flex centering, and cap-height trimming so the
+     letters sit in the optical middle (descender space otherwise pushes caps up). */
+  /* Every pill-shaped label uses the same recipe: fixed height, line-height = height, no flex, and the
+     trailing letter-spacing given back on the right so the word is optically centered both ways. */
+  .chip, .jump, .pill, .brand-v, .bearing-refresh, .landing .how span {
+    display: inline-block; vertical-align: middle; box-sizing: border-box; white-space: nowrap; text-align: center;
+    font-family: var(--mono); text-transform: uppercase; border-radius: 100px; flex: none;
+    height: var(--pill-h); line-height: calc(var(--pill-h) - 2px); padding: 1px calc(var(--pill-x) - var(--pill-ls)) 0 var(--pill-x);
+    letter-spacing: var(--pill-ls); font-size: var(--pill-fs);
+  }
+  .chip { --pill-h: 1.45rem; --pill-x: 0.62rem; --pill-ls: 0.05em; --pill-fs: 0.6rem; background: var(--slate-soft); color: var(--slate); border: 0; }
+  .chip.route { background: var(--route-soft); color: var(--route); }
+  .chip.amber { background: var(--amber-soft); color: var(--amber); }
+  .chip.rust { background: var(--rust-soft); color: var(--rust); }
+  .chip.violet { background: var(--violet-soft); color: var(--violet); }
+  .chip.brass { background: var(--brass-soft); color: var(--brass); }
+  .jump { --pill-h: 1.6rem; --pill-x: 0.7rem; --pill-ls: 0.02em; --pill-fs: 0.64rem; text-transform: none; border: 1px solid var(--brass); background: transparent; color: var(--brass); cursor: pointer; text-decoration: none; }
+  .jump:hover { background: var(--brass); color: var(--on-brass); }
+  .btn { font-weight: 600; font-size: 0.8rem; border-radius: 7px; padding: 0.45rem 0.9rem; cursor: pointer; border: 1px solid var(--border-strong); background: var(--paper-raised); display: inline-flex; align-items: center; justify-content: center; gap: .4rem; }
+  .btn:hover { border-color: var(--brass); }
+  .btn.primary { background: var(--brass); color: var(--on-brass); border-color: var(--brass); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .linkish { background: none; border: none; padding: 0; color: var(--brass); cursor: pointer; font-size: 0.72rem; font-family: var(--mono); }
+  @keyframes flash { 0%,100% { box-shadow: var(--shadow); } 30% { box-shadow: 0 0 0 3px var(--brass); } }
+  .flash { animation: flash 1.8s ease; }
+  .tabs { display: flex; gap: 1.2rem; border-bottom: 1px solid var(--border); margin-bottom: 1.2rem; overflow-x: auto; }
+  .tabs button { background: none; border: none; border-bottom: 2px solid transparent; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); padding: 0.55rem 0; cursor: pointer; white-space: nowrap; }
+  .tabs button.active { color: var(--brass); border-bottom-color: var(--brass); }
+  .tabs .n { margin-left: 0.3rem; opacity: 0.7; }
+  .pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .pill { --pill-h: 1.8rem; --pill-x: 0.85rem; --pill-ls: 0.02em; --pill-fs: 0.66rem; text-transform: none; border: 1px solid var(--border-strong); background: var(--paper-raised); color: var(--text-muted); cursor: pointer; }
+  .pill.active { background: var(--ink); color: var(--chrome-accent); border-color: var(--ink); }
+
+  /* ---------- start (first-time) ---------- */
+  .start { background: var(--ink); color: var(--chrome-text); border-radius: 14px; padding: 2rem 1.8rem; display: grid; grid-template-columns: auto 1fr; gap: 1.6rem; align-items: center; }
+  .start svg { width: 84px; height: 84px; }
+  .start h2 { font-size: 1.6rem; }
+  .start p { color: var(--chrome-dim); margin: 0.5rem 0 0; line-height: 1.55; max-width: 56ch; }
+  .start-steps { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .start-steps span { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.18); border-radius: 100px; padding: 0.3rem 0.65rem; color: var(--chrome-dim); }
+  .start-steps span.on { color: var(--chrome-accent); border-color: var(--chrome-accent); }
+
+  /* ---------- TODAY: bearing ---------- */
+  .bearing { background: var(--ink); color: var(--chrome-text); border-radius: 14px; padding: 1.5rem 1.6rem 1.3rem; position: relative; overflow: hidden; }
+  .bearing-top { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .bearing-label { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--chrome-accent); display: flex; align-items: center; gap: 0.5rem; }
+  .needle { width: 14px; height: 14px; display: inline-block; }
+  .bearing-refresh { --pill-h: 1.55rem; --pill-x: 0.7rem; --pill-ls: 0.02em; --pill-fs: 0.62rem; text-transform: none; background: none; border: 1px solid rgba(255,255,255,0.22); color: var(--chrome-dim); cursor: pointer; }
+  .bearing-refresh.stale { border-color: var(--chrome-accent); color: var(--chrome-accent); }
+  .bearing-headline { font-family: var(--serif); font-weight: 600; font-size: 1.4rem; line-height: 1.35; margin: 0.8rem 0 1.1rem; max-width: 42ch; }
+  .moves { display: flex; flex-direction: column; gap: 0.5rem; }
+  .move { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.7rem; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem 0.9rem; }
+  .move.first { background: color-mix(in srgb, var(--chrome-accent) 12%, transparent); border-color: color-mix(in srgb, var(--chrome-accent) 50%, transparent); }
+  .move-n { font-family: var(--mono); font-size: 0.72rem; color: var(--chrome-accent); }
+  .move-text { font-size: 0.95rem; font-weight: 500; line-height: 1.35; }
+  .move.first .move-text { font-size: 1.05rem; }
+  .move-why { font-size: 0.8rem; color: var(--chrome-dim); margin-top: 0.25rem; line-height: 1.45; }
+  .move-kind { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chrome-dim); margin-right: 0.4rem; }
+  .move .jump { border-color: color-mix(in srgb, var(--chrome-accent) 65%, transparent); color: var(--chrome-accent); }
+  .move .jump:hover { background: var(--chrome-accent); color: var(--ink); }
+  .since { margin-top: 0.9rem; font-family: var(--mono); font-size: 0.62rem; color: var(--chrome-dim); display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .since b { color: var(--chrome-accent); font-weight: 500; }
+  .wrapup { margin-top: 1rem; padding-top: 0.9rem; border-top: 1px dashed rgba(255,255,255,0.18); }
+  .wrapup ul { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.86rem; line-height: 1.55; }
+  .reflect { margin-top: 0.9rem; }
+  .reflect-q { font-family: var(--quote); font-style: italic; font-size: 0.98rem; }
+  .reflect-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .reflect-row input { flex: 1; min-width: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); border-radius: 7px; padding: 0.45rem 0.65rem; color: var(--chrome-text); font: inherit; font-size: 0.85rem; }
+  .reflect-row button { background: var(--chrome-accent); color: var(--ink); border: none; border-radius: 7px; padding: 0.45rem 0.8rem; font-weight: 600; font-size: 0.78rem; cursor: pointer; }
+  .radar { margin-top: 0.9rem; }
+  .radar summary { font-family: var(--mono); font-size: 0.64rem; color: var(--chrome-dim); cursor: pointer; letter-spacing: 0.05em; }
+  .radar ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.82rem; color: var(--chrome-dim); line-height: 1.5; }
+
+  /* up next */
+  .agenda { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; background: var(--paper-raised); overflow: hidden; }
+  .ag-row { display: grid; grid-template-columns: 7.2rem 1fr auto; gap: 0.9rem; align-items: center; padding: 0.7rem 1rem; border-top: 1px solid var(--border); }
+  .ag-row:first-child { border-top: none; }
+  .ag-when { font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .ag-row.soon .ag-when, .ag-row.now .ag-when { color: var(--rust); font-weight: 500; }
+  .ag-row.now { background: var(--rust-soft); }
+  .ag-title { font-weight: 600; font-size: 0.88rem; }
+  .ag-sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 0.1rem; }
+  .ag-acts { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .ag-src { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+
+  /* tasks */
+  .task-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .task { display: flex; gap: 0.7rem; align-items: flex-start; padding: 0.6rem 0.85rem; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 9px; cursor: pointer; }
+  .task.done { opacity: 0.55; }
+  .task.done .task-text { text-decoration: line-through; }
+  .box { width: 16px; height: 16px; border: 2px solid var(--border-strong); border-radius: 5px; flex: none; margin-top: 0.1rem; display: grid; place-items: center; }
+  .task.done .box { background: var(--route); border-color: var(--route); }
+  .box svg { width: 10px; height: 10px; display: none; }
+  .task.done .box svg { display: block; }
+  .task-text { font-size: 0.86rem; line-height: 1.4; }
+  .task-meta { display: flex; gap: 0.4rem; margin-top: 0.35rem; flex-wrap: wrap; align-items: center; }
+  .due { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); }
+  .due.late { color: var(--rust); font-weight: 500; }
+
+  /* pipeline */
+  .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+  .lane { background: var(--paper-sunk); border-radius: 12px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+  .lane-head { display: flex; justify-content: space-between; align-items: center; padding: 0.1rem 0.25rem 0; }
+  .lane-head b { font-family: var(--serif); font-size: 0.98rem; font-weight: 600; }
+  .lane-head span { font-family: var(--mono); font-size: 0.66rem; color: var(--text-faint); }
+  .lane-desc { font-size: 0.72rem; color: var(--text-faint); padding: 0 0.25rem 0.2rem; }
+  .opp { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 0.9rem; box-shadow: var(--shadow); cursor: pointer; }
+  .opp.closed { opacity: 0.7; box-shadow: none; }
+  .opp-top { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem; align-items: center; }
+  .opp-org { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+  .opp-title { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.35; }
+  .opp-next { font-size: 0.78rem; margin-top: 0.55rem; line-height: 1.45; }
+  .opp-foot { display: flex; gap: 0.35rem; margin-top: 0.55rem; flex-wrap: wrap; align-items: center; }
+  .opp-detail { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dotted var(--border-strong); font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; display: flex; flex-direction: column; gap: 0.45rem; }
+  .opp-detail b { color: var(--text); font-weight: 600; }
+
+  /* people — compact list rows */
+  .buckets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 1.2rem 1.4rem; align-items: start; }
+  .bucket-h { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); display: flex; justify-content: space-between; padding: 0 0.2rem 0.4rem; }
+  .plist { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .prow { padding: 0.6rem 0.85rem; border-top: 1px solid var(--border); cursor: pointer; }
+  .prow:first-child { border-top: none; }
+  .prow:hover { background: color-mix(in srgb, var(--brass) 5%, transparent); }
+  .prow-main { display: grid; grid-template-columns: 1.7rem 1fr auto; gap: 0.6rem; align-items: center; }
+  .ini { width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--brass-soft); color: var(--brass); font-family: var(--mono); font-size: 0.6rem; display: grid; place-items: center; }
+  .c-name { font-weight: 600; font-size: 0.86rem; line-height: 1.25; }
+  .c-role { font-size: 0.74rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prow-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+  .fu { font-family: var(--mono); font-size: 0.58rem; color: var(--text-faint); white-space: nowrap; }
+  .fu.due { color: var(--rust); }
+  .c-detail { margin: 0.6rem 0 0.1rem 2.3rem; padding-top: 0.6rem; border-top: 1px dotted var(--border-strong); font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.5rem; }
+  .timeline { display: flex; flex-direction: column; gap: 0.35rem; border-left: 2px solid var(--border-strong); padding-left: 0.7rem; }
+  .tl-item { font-size: 0.78rem; }
+  .tl-date { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); }
+  .cand { display: flex; gap: 0.9rem; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; align-items: flex-start; }
+  .cand.fresh { border-color: var(--brass); }
+  .cand-body { flex: 1; min-width: 0; }
+  .cand-why { font-size: 0.82rem; margin-top: 0.4rem; line-height: 1.45; }
+  .cand-meta { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .45rem; align-items: center; font-family: var(--mono); font-size: .62rem; color: var(--text-faint); }
+  .cand-acts { display: flex; flex-direction: column; gap: 0.35rem; flex: none; }
+  .btn-ok { background: var(--route); color: #fff; border: none; border-radius: 7px; padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.76rem; cursor: pointer; }
+  .btn-no { background: none; color: var(--rust); border: 1px solid var(--rust); border-radius: 7px; padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.76rem; cursor: pointer; }
+  .prep { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; }
+  .prep.next { border-color: var(--amber); box-shadow: var(--shadow); }
+  .prep-top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .prep-when { font-family: var(--mono); font-size: 0.72rem; color: var(--amber); font-weight: 500; }
+  .prep h4 { margin: 0.8rem 0 0.3rem; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; }
+  .prep ul { margin: 0; padding-left: 1.1rem; font-size: 0.84rem; line-height: 1.5; color: var(--text-muted); }
+  .prep-bg { margin-top: 0.7rem; font-size: 0.8rem; color: var(--text-muted); border-left: 3px solid var(--slate-soft); padding-left: 0.8rem; line-height: 1.5; }
+  .shape { margin-top: 0.8rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+  .shape div { background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.7rem; }
+  .shape b { display: block; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); font-weight: 500; }
+  .shape span { display: block; font-size: 0.64rem; color: var(--text-faint); font-family: var(--mono); margin-top: .1rem; }
+  .shape p { margin: 0.35rem 0 0; font-size: 0.78rem; line-height: 1.4; color: var(--text); }
+  details.fold > summary { cursor: pointer; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); padding: 0.4rem 0; }
+  .stack { display: flex; flex-direction: column; gap: 0.7rem; }
+  .row-card { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
+  .row-line { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+  /* coaching */
+  .pitch { font-family: var(--quote); font-style: italic; font-size: 1.12rem; line-height: 1.6; max-width: 62ch; }
+  .pitch-card { background: var(--paper-raised); border: 1px solid var(--brass); border-radius: 12px; padding: 1.3rem 1.5rem; }
+  .pitch-acts { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+  .drills { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.6rem; }
+  .drill { text-align: left; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 0.85rem; cursor: pointer; }
+  .drill:hover { border-color: var(--brass); }
+  .drill b { display: block; font-size: 0.84rem; }
+  .drill span { display: block; font-size: 0.74rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
+  .stories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; }
+  .story { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+  .story-skill { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); }
+  .story b { font-family: var(--serif); font-weight: 600; font-size: 0.98rem; line-height: 1.35; }
+  .story p { font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height: 1.45; }
+  .story .use { font-size: 0.74rem; color: var(--text-faint); font-family: var(--mono); }
+  .intel { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .intel-col { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; }
+  .intel-col h4 { margin: 0 0 0.6rem; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; display: flex; align-items: center; gap: 0.4rem; }
+  .intel-col.land h4 { color: var(--route); }
+  .intel-col.adj h4 { color: var(--amber); }
+  .intel-item { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: start; padding: 0.5rem 0; border-top: 1px solid var(--border); }
+  .intel-item:first-of-type { border-top: none; padding-top: 0; }
+  .intel-n { font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: var(--text-faint); min-width: 1.2rem; font-variant-numeric: tabular-nums; }
+  .intel-item b { font-size: 0.86rem; font-weight: 600; line-height: 1.35; display: block; }
+  .intel-item small { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: 0.3rem; }
+  .intel-item small span { font-family: var(--mono); font-size: 0.58rem; color: var(--text-faint); background: var(--paper-sunk); border-radius: 4px; height: 1.2rem; line-height: 1.2rem; padding: 0 0.4rem; display: inline-block; }
+
+  /* direction */
+  .rail { position: relative; padding-left: 2rem; display: flex; flex-direction: column; gap: 1.2rem; }
+  /* rail and dots share one centre line: the rail is 2px wide centred on x = 8px, each dot is 16px centred on the same x */
+  .rail::before { content: ""; position: absolute; left: 7px; top: 1.76rem; bottom: var(--rail-end, 1.7rem); width: 2px; background: linear-gradient(var(--brass), var(--route)); opacity: 0.55; }
+  .stop { position: relative; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.3rem; }
+  .stop::before { content: ""; position: absolute; left: calc(-2rem - 1px + 8px); top: calc(1.1rem + 0.66rem); width: 16px; height: 16px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--paper); border: 3px solid var(--brass); box-sizing: border-box; }
+  .stop.fixed { background: var(--route-soft); border-color: var(--route); }
+  .stop.fixed::before { background: var(--route); border-color: var(--route); }
+  /* the stop you opened from the map: filled dot + accent edge */
+  .stop.active { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
+  .stop.active::before { background: var(--brass); border-color: var(--brass); }
+  .stop.fixed.active::before { background: var(--route); box-shadow: 0 0 0 3px var(--route-soft); }
+  .fork.on { border-style: solid; border-color: var(--brass); background: var(--brass-soft); }
+  .cfixed.on { box-shadow: 0 0 0 2px var(--route); }
+  .stop-top { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: baseline; }
+  .stop-title { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; }
+  .stop-when { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brass); }
+  .stop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.7rem; }
+  .stop-grid h4 { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); font-weight: 400; margin: 0 0 0.2rem; }
+  .stop-grid p, .stop > p { margin: 0; font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+  .forks { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 0.7rem; }
+  .fork { border: 1px dashed var(--border-strong); border-radius: 9px; padding: 0.8rem 0.9rem; }
+  .fork b { font-family: var(--serif); font-weight: 600; font-size: 0.92rem; display: block; margin-top: 0.2rem; }
+  .fork p { font-size: 0.8rem; color: var(--text-muted); margin: 0.4rem 0 0; line-height: 1.45; }
+  .readout-banner { background: var(--ink); color: var(--chrome-text); border-radius: 12px; padding: 1.2rem 1.4rem; display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .readout-banner .eyebrow { color: var(--chrome-accent); }
+  .revised { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); }
+
+  /* projects */
+  .projects { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 1rem; align-items: start; }
+  .proj { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .proj.closed { opacity: 0.7; }
+  .proj-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: center; }
+  .proj-name { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+  .proj p { margin: 0; font-size: 0.83rem; line-height: 1.5; }
+  .lbl { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.2rem; display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+  .ngroups { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ngroup-h { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; gap: .35rem; }
+  .ngroup-h i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .ngroup ul { margin: 0.2rem 0 0; padding-left: 1rem; font-size: 0.8rem; line-height: 1.45; }
+  .ngroup li span { font-family: var(--mono); font-size: 0.58rem; color: var(--text-faint); margin-left: .3rem; }
+  .note-row { display: flex; gap: 0.4rem; }
+  .note-row input { flex: 1; min-width: 0; font: inherit; font-size: 0.8rem; padding: 0.4rem 0.55rem; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--paper); color: var(--text); }
+
+  /* records */
+  .log-row { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 0.9rem; padding: 0.7rem 0.2rem; border-top: 1px solid var(--border); cursor: pointer; align-items: start; }
+  .log-row:first-child { border-top: none; }
+  .log-date { font-family: var(--mono); font-size: 0.68rem; color: var(--text-faint); padding-top: 0.15rem; }
+  .log-who { font-weight: 600; font-size: 0.86rem; }
+  .log-sum { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.45; }
+  .log-sum.clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .rec-tools { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .search { flex: 1; min-width: 200px; max-width: 360px; font: inherit; font-size: 0.84rem; padding: 0.45rem 0.7rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--paper-raised); color: var(--text); }
+  .exp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 0.9rem; }
+  .exp { background: var(--paper-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; }
+  .exp-top { display: flex; justify-content: space-between; gap: .5rem; align-items: center; }
+  .exp b { font-size: 0.88rem; }
+  .exp p { font-size: 0.8rem; color: var(--text-muted); margin: 0.35rem 0 0; line-height: 1.5; }
+  .tags { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .tag { font-family: var(--mono); font-size: 0.6rem; height: 1.3rem; line-height: 1.3rem; padding: 0 0.45rem; display: inline-block; border-radius: 5px; background: var(--brass-soft); color: var(--brass); }
+
+  /* ---------- sheet (settings / welcome) ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(8,10,14,0.5); z-index: 80; display: grid; place-items: center; padding: 16px; }
+  .sheet { background: var(--paper-raised); color: var(--text); border-radius: 14px; width: min(540px, 100%); max-height: calc(100% - 32px); overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+  .sheet-head { background: var(--ink); color: var(--chrome-text); padding: 1.3rem 1.4rem; display: flex; gap: 0.9rem; align-items: center; }
+  .sheet-head svg { width: 44px; height: 44px; flex: none; }
+  .sheet-head h3 { font-size: 1.25rem; }
+  .sheet-head p { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--chrome-dim); line-height: 1.45; }
+  .sheet-body { padding: 1.2rem 1.4rem 1.4rem; display: flex; flex-direction: column; gap: 1.2rem; }
+  .opt-h { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 0.5rem; }
+  .pal-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+  .pal-opt { border: 1.5px solid var(--border); border-radius: 10px; background: var(--paper); padding: 0.55rem; cursor: pointer; text-align: left; display: flex; flex-direction: column; gap: 0.4rem; }
+  .pal-opt.on { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
+  .pal-opt .sw { display: grid; grid-template-columns: 2fr 1fr 1fr; height: 28px; border-radius: 5px; overflow: hidden; }
+  .pal-opt b { font-size: 0.8rem; }
+  .mode-opts { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .conn { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 9px; background: var(--paper); }
+  .conn b { font-size: 0.84rem; }
+  .conn small { display: block; font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.4; }
+  .sheet-foot { display: flex; justify-content: flex-end; gap: 0.5rem; }
+  .sheet-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
+
+  /* ---------- first run: landing ---------- */
+  .landing { min-height: 100vh; min-height: 100dvh; background: var(--ink); color: var(--chrome-text); display: grid; place-items: center; padding: 3rem 16px 4rem; }
+  .landing-in { max-width: 620px; width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 1.2rem; }
+  .landing-mark { width: 124px; height: 124px; }
+  .landing h1 { font-family: var(--serif); font-weight: 750; font-size: clamp(2.2rem, 6vw, 3.3rem); line-height: 1.05; letter-spacing: -0.01em; margin: 0; }
+  .landing .tag1 { font-size: 1.15rem; line-height: 1.5; color: var(--chrome-text); margin: 0; max-width: 34ch; }
+  .landing .tag2 { font-family: var(--quote); font-style: italic; font-size: 1.1rem; color: var(--chrome-accent); margin: 0; }
+  .landing .how { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .landing .how span { --pill-h: 1.65rem; --pill-x: 0.75rem; --pill-ls: 0.08em; --pill-fs: 0.62rem; color: var(--chrome-dim); border: 1px solid rgba(255,255,255,0.16); }
+  .go-btn { margin-top: 0.8rem; background: var(--chrome-accent); color: var(--ink); border: none; border-radius: 10px; padding: 0.85rem 1.5rem; font-weight: 600; font-size: 1rem; cursor: pointer; }
+  .go-btn:hover { filter: brightness(1.06); }
+  body.stage-landing .chrome, body.stage-landing main, body.stage-landing .dock { display: none; }
+  body:not(.stage-landing) #landing { display: none; }
+  /* intake + readout: no dashboard nav yet */
+  body.stage-intake .nav, body.stage-readout .nav, body.stage-intake .gear, body.stage-readout .gear { display: none; }
+  body.stage-intake main { display: none; }
+  body.stage-intake .dock { top: calc(env(safe-area-inset-top, 0px) + 64px); padding-top: 1rem; }
+  body.stage-intake .dock-inner { height: 100%; display: flex; flex-direction: column; max-width: 720px; }
+  body.stage-intake .thread { flex: 1; max-height: none !important; }
+  body.stage-intake .latest, body.stage-intake #minBtn, body.stage-intake #histBtn { display: none !important; }
+  body.stage-intake .dock-pill { display: none !important; }
+  body.stage-intake .dock.min .dock-inner { display: flex; }
+  body.stage-readout .dock { display: none; }
+  .intake-cta { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; margin: 0.4rem 0.8rem 0; padding: 0.6rem 0.8rem; background: var(--brass-soft); border-radius: 10px; font-size: 0.82rem; }
+  .intake-cta[hidden] { display: none; }
+  .intake-note { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); padding: 0.2rem 0.9rem 0; }
+
+  /* ---------- career map (direction) ---------- */
+  .cmap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.15fr); gap: 1.6rem; align-items: center; position: relative; }
+  .cmap-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 0; }
+  .cnode { position: relative; z-index: 1; text-align: left; font: inherit; color: inherit; cursor: pointer; background: var(--paper-raised); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 0.95rem; width: 100%; }
+  .cnode:hover { border-color: var(--brass); }
+  .cnode.on { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
+  .cnode-more { display: block; margin-top: 0.4rem; font-family: var(--mono); font-size: 0.58rem; color: var(--text-faint); }
+  .cnode.now .cnode-more { color: var(--chrome-dim); }
+  .cnode .eyebrow { display: block; margin-bottom: 0.3rem; }
+  .cnode b { font-family: var(--serif); font-weight: 600; font-size: 0.98rem; line-height: 1.3; display: block; }
+  .cnode small { display: block; font-family: var(--mono); font-size: 0.6rem; color: var(--brass); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .cnode.now { background: var(--ink); color: var(--chrome-text); border-color: var(--ink); }
+  .cnode.now .eyebrow { color: var(--chrome-accent); }
+  .cforks { display: flex; flex-direction: column; gap: 0.8rem; position: relative; }
+  .cnode.fork { border-style: dashed; }
+  .cmap-hint { margin: 0 0 0.9rem; font-size: 0.84rem; color: var(--text-muted); }
+  .cdetail { margin-top: 1rem; background: var(--paper-raised); border: 1px solid var(--brass); border-radius: 12px; padding: 1.1rem 1.3rem; }
+  .cdetail-top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  .cdetail h3 { font-size: 1.15rem; margin: 0.3rem 0 0.2rem; }
+  .cdetail > p { margin: 0.5rem 0 0; font-size: 0.88rem; line-height: 1.55; color: var(--text); max-width: 70ch; }
+  .cfixed { display: block; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; margin-top: 1rem; background: var(--route-soft); border: 1px solid var(--route); border-radius: 12px; padding: 0.85rem 1rem; font-size: 0.86rem; line-height: 1.5; }
+  .cfixed .eyebrow { color: var(--route); display: block; margin-bottom: 0.25rem; }
+
+  /* ---------- projects capture ---------- */
+  .capture { background: var(--paper-raised); border: 1px solid var(--border-strong); border-radius: 12px; padding: 0.8rem; display: flex; gap: 0.5rem; align-items: flex-end; }
+  .capture textarea { flex: 1; min-width: 0; resize: none; font: inherit; font-size: 0.88rem; line-height: 1.4; border: none; background: transparent; color: var(--text); padding: 0.35rem 0.4rem; min-height: 2.4rem; }
+  .capture textarea:focus-visible { outline: none; }
+  .capture-note { font-size: 0.74rem; color: var(--text-faint); font-family: var(--mono); margin-top: 0.4rem; min-height: 1em; }
+  .story .next { font-size: 0.76rem; color: var(--text); background: var(--brass-soft); border-radius: 6px; padding: 0.35rem 0.5rem; line-height: 1.4; }
+  .story .next b { font-family: var(--mono); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brass); display: inline; }
+
+  /* ---------- chat dock ---------- */
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 0 16px calc(0.8rem + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+  .dock-inner { max-width: 760px; margin: 0 auto; pointer-events: auto; background: var(--paper-raised); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); overflow: hidden; }
+  .dock.min .dock-inner { display: none; }
+  .dock-pill { display: none; pointer-events: auto; margin-left: auto; width: fit-content; background: var(--ink); color: var(--chrome-text); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; padding: 0.6rem 1rem; font-weight: 600; font-size: 0.82rem; cursor: pointer; box-shadow: 0 8px 26px rgba(0,0,0,0.25); align-items: center; gap: 0.5rem; }
+  .dock.min .dock-pill { display: flex; }
+  .dock-pill .dot { background: var(--chrome-accent); }
+  .dock-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--border); gap: 0.5rem; }
+  .dock-bar .eyebrow { color: var(--brass); display: flex; gap: 0.45rem; align-items: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--route); display: inline-block; flex: none; }
+  .dot.off { background: var(--text-faint); }
+  .dot.busy { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .dot.busy, .flash { animation: none; } }
+  .dock-btns { display: flex; gap: 0.8rem; align-items: center; }
+  .thread { max-height: 0; overflow-y: auto; transition: max-height .2s ease; }
+  .dock.open .thread { max-height: 48vh; }
+  .thread-inner { padding: 0.8rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .latest { padding: 0.7rem 0.9rem 0; }
+  .dock.open .latest { display: none; }
+  .msg { max-width: 88%; display: flex; flex-direction: column; gap: 0.3rem; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .bub { padding: 0.55rem 0.8rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.5; white-space: pre-wrap; }
+  .msg.user .bub { background: var(--ink); color: var(--chrome-text); border-bottom-right-radius: 3px; }
+  .msg.bot .bub { background: var(--paper); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+  .msg.failed .bub { opacity: 0.7; }
+  .saved { font-size: 0.76rem; color: var(--route); line-height: 1.45; display: flex; flex-direction: column; gap: 0.15rem; }
+  .saved .miss { color: var(--rust); }
+  .saved-line { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
+  .undo { background: none; border: none; color: var(--text-faint); font-family: var(--mono); font-size: 0.62rem; cursor: pointer; text-decoration: underline; padding: 0; }
+  .fail-note { font-size: 0.74rem; color: var(--rust); display: flex; gap: 0.5rem; align-items: center; }
+  .dock-input { display: flex; gap: 0.5rem; padding: 0.6rem 0.8rem 0.7rem; align-items: flex-end; }
+  .dock-input textarea { flex: 1; min-width: 0; resize: none; font: inherit; font-size: 0.88rem; line-height: 1.4; border: 1px solid var(--border-strong); border-radius: 9px; padding: 0.55rem 0.7rem; background: var(--paper); color: var(--text); max-height: 140px; }
+  .send { background: var(--brass); color: var(--on-brass); border: none; border-radius: 9px; padding: 0.55rem 1rem; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
+  .send.stop { background: var(--rust); color: #fff; }
+  .send:disabled { opacity: 0.45; cursor: default; }
+  .thinking { font-family: var(--mono); font-size: 0.72rem; color: var(--text-faint); }
+  .dock-status { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); padding: 0 0.9rem 0.5rem; }
+  .dock-status:empty { display: none; }
+
+  @media (max-width: 760px) {
+    .board, .intel, .stories, .stop-grid, .forks { grid-template-columns: 1fr; }
+    .drills, .shape { grid-template-columns: 1fr 1fr; }
+    .ag-row { grid-template-columns: 1fr; gap: 0.3rem; }
+    .ag-acts { justify-content: flex-start; }
+    .log-row { grid-template-columns: 1fr auto; }
+    .log-row .log-date { grid-column: 1 / -1; }
+    .move { grid-template-columns: 1.3rem 1fr; }
+    .move .jump { grid-column: 2; justify-self: start; }
+    .cand { flex-direction: column; }
+    .cand-acts { flex-direction: row; }
+    .chrome-top { padding-inline: 16px; }
+    .start { grid-template-columns: 1fr; }
+    .pal-opts { grid-template-columns: 1fr; }
+    .cmap { grid-template-columns: 1fr; gap: 1rem; }
+  }
+</style>
+
+<section id="landing" class="landing" aria-label="Welcome to Bridge">
+  <div class="landing-in">
+    <svg viewBox="0 0 64 64" class="landing-mark" aria-hidden="true" data-logo></svg>
+    <h1>Welcome to Bridge</h1>
+    <p class="tag1">Bridging the gap between where you are now and where you want to go.</p>
+    <p class="tag2">The what's next is planned so you can ask yourself what now</p>
+    <div class="how"><span>A short conversation</span><span>Your career map</span><span>Your dashboard</span></div>
+    <button class="go-btn" id="getStarted">Get started →</button>
+  </div>
+</section>
+
+<header class="chrome">
+  <div class="chrome-top">
+    <span class="brand"><svg viewBox="0 0 64 64" aria-hidden="true" data-logo></svg><span class="brand-name">Bridge</span><span class="brand-v">Equinox 6</span></span>
+    <span class="who-line" id="whoLine">Loading…</span>
+    <button class="gear" id="gearBtn" aria-label="Settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg></button>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-page="today" class="active">Today</button>
+    <button data-page="pipeline">Pipeline</button>
+    <button data-page="people">People</button>
+    <button data-page="coaching">Coaching</button>
+    <button data-page="direction">Direction</button>
+    <button data-page="projects">Projects</button>
+    <button data-page="records">Records</button>
+  </nav>
+</header>
+
+<main>
+  <section class="page" id="page-today">
+    <div class="wrap">
+      <div id="startPanel"></div>
+      <div class="bearing" id="bearing"></div>
+      <div id="agendaWrap">
+        <div class="sec-head"><h3>Up next</h3><span class="sec-note" id="agendaNote"></span></div>
+        <div id="agendaBody"></div>
+      </div>
+      <div id="todoWrap">
+        <div class="sec-head"><h3>To-do</h3>
+          <div class="pills" id="todoFilters">
+            <button class="pill active" data-f="today">Today</button>
+            <button class="pill" data-f="week">This week</button>
+            <button class="pill" data-f="waiting">Waiting</button>
+            <button class="pill" data-f="all">All open</button>
+          </div>
+        </div>
+        <div id="todoBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-pipeline" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">What you're pursuing</div><h2>Pipeline</h2><p id="pipeDesc"></p></div>
+      <div class="pills" id="oppFilters"></div>
+      <div class="board" id="board"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-people" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">Who can bridge you there</div><h2>People</h2><p>Your contacts, new people to approve, outreach in flight, and prep for the next conversation.</p></div>
+      <div>
+        <div class="tabs" id="peopleTabs">
+          <button data-tab="contacts">Contacts<span class="n" id="nContacts"></span></button>
+          <button data-tab="candidates">Candidates<span class="n" id="nCandidates"></span></button>
+          <button data-tab="outreach">Outreach<span class="n" id="nOutreach"></span></button>
+          <button data-tab="prep">Call prep<span class="n" id="nPrep"></span></button>
+        </div>
+        <div data-panel="contacts" id="contactsBody"></div>
+        <div data-panel="candidates" id="candidatesBody" hidden></div>
+        <div data-panel="outreach" id="outreachBody" hidden></div>
+        <div data-panel="prep" id="prepBody" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page" id="page-coaching" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">How you tell it</div><h2>Coaching</h2><p>Your pitch, the stories that prove it, and what real conversations are teaching you.</p></div>
+      <div id="coachPitch"></div>
+      <div><div class="sec-head"><h3>Practice</h3><span class="sec-note">runs in the chat below</span></div><div class="drills" id="drills"></div></div>
+      <div><div class="sec-head"><h3>Stories to tell</h3><button class="linkish" id="storyMatch">match to my next calls</button></div><div class="stories" id="stories"></div></div>
+      <div><div class="sec-head"><h3>What conversations are telling you</h3><button class="linkish" id="intelRefresh">re-read my conversations</button></div><div class="intel" id="intel"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-direction" hidden>
+    <div class="wrap">
+      <div id="readoutBanner"></div>
+      <div class="page-head"><div class="eyebrow">Long-term direction</div><h2>Where this is heading</h2><p>A working map, not a commitment. Each stop gets revised as real conversations bring evidence in.</p><div class="revised" id="revisedNote" style="margin-top:.5rem"></div></div>
+      <div id="cmapBody"></div>
+      <div><div class="sec-head"><h3>The detail behind each stop</h3></div><div id="routeBody"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-projects" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">What you're building</div><h2>Projects</h2><p>Everything live beyond the search itself. Every note you add gets sorted, turned into a task when it needs one, and folded into where the project stands.</p></div>
+      <div><div class="capture"><textarea id="captureInput" rows="1" placeholder="Toss in a new idea, or a project you've already started…"></textarea><button class="btn primary" id="captureBtn">Add</button></div><div class="capture-note" id="captureNote"></div></div>
+      <div class="projects" id="projectsBody"></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-records" hidden>
+    <div class="wrap">
+      <div class="page-head"><div class="eyebrow">The record</div><h2>Records</h2><p>For looking things up. Bridge reads these too: they're its memory of everything so far.</p></div>
+      <div>
+        <div class="tabs" id="recTabs">
+          <button data-tab="resume">Resume breakdown</button>
+          <button data-tab="log">Conversations &amp; sessions</button>
+        </div>
+        <div data-panel="resume" id="resumeBody"></div>
+        <div data-panel="log" hidden><div class="rec-tools"><input class="search" id="logSearch" placeholder="Search people, companies, notes…" /><div class="pills" id="logFilters"></div></div><div id="logBody"></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="sheetHost"></div>
+
+<div class="dock" id="dock">
+  <button class="dock-pill" id="dockPill"><span class="dot"></span>Ask Bridge</button>
+  <div class="dock-inner">
+    <div class="dock-bar">
+      <span class="eyebrow"><span class="dot off" id="dockDot"></span><span id="dockLabel">Bridge chat</span></span>
+      <div class="dock-btns"><button class="linkish" id="histBtn">History</button><button class="linkish" id="minBtn">Hide chat</button></div>
+    </div>
+    <div class="thread" id="thread"><div class="thread-inner" id="threadInner"></div></div>
+    <div class="latest" id="latest"></div>
+    <div class="intake-cta" id="intakeCta" hidden><span>Told Bridge enough? Your map takes about a minute.</span><button class="btn primary" id="buildMap">Build my career map →</button></div>
+    <div class="dock-input">
+      <textarea id="chatInput" rows="1" placeholder="Tell Bridge anything: a reply, a reschedule, a question…"></textarea>
+      <button class="send" id="sendBtn">Send</button>
+    </div>
+    <div class="dock-status" id="dockStatus"></div>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  /* ================= BRAND (swap the mark here) ================= */
+  const BRAND = {
+    edition: 'Equinox 6',
+    // Concept A "Pylon": the Dames Point tower — leaning legs + bow-tie crossbeams. currentColor so it follows any ground.
+    // App-icon mark: a cable-stayed bridge on a rounded tile. Colours come from --logo-tile / --logo-mark.
+    logo: '<rect x="0" y="0" width="64" height="64" rx="15" fill="var(--logo-tile)"/><g transform="translate(32 33) scale(1.1) translate(-32 -33)"><g stroke="var(--logo-mark)" stroke-width="1.15" stroke-linecap="round"><line x1="27.8" y1="18.5" x2="10" y2="40.22"/><line x1="27.8" y1="18.5" x2="14.5" y2="39.68"/><line x1="27.8" y1="18.5" x2="19" y2="39.26"/><line x1="27.8" y1="18.5" x2="23.5" y2="38.97"/><line x1="36.2" y1="18.5" x2="40.5" y2="38.97"/><line x1="36.2" y1="18.5" x2="45" y2="39.26"/><line x1="36.2" y1="18.5" x2="49.5" y2="39.68"/><line x1="36.2" y1="18.5" x2="54" y2="40.22"/></g><path d="M8 40.5Q32 37 56 40.5" fill="none" stroke="var(--logo-mark)" stroke-width="2.6" stroke-linecap="round"/><g stroke="var(--logo-mark)" stroke-width="3.6"><line x1="28" y1="15" x2="26.4" y2="50"/><line x1="36" y1="15" x2="37.6" y2="50"/></g><g fill="none" stroke="var(--logo-mark)" stroke-width="2.3" stroke-linejoin="round"><path d="M27.6 26.5L32 30.5L36.4 26.5"/><path d="M26.9 45L32 41.2L37.1 45"/></g></g>',
+    logoViewBox: '0 0 64 64',
+    palettes: [
+      { id: 'sky', name: 'Sky', note: 'Dusty blue on Cream, Coral accent. Calm.', sw: ['#9DB5BB', '#E47E7A', '#F6F1E7'] },
+      { id: 'sand', name: 'Sand', note: 'Sand with Espresso and Mustard. Warm.', sw: ['#D8CCB6', '#E7B94E', '#4A2C1D'] },
+    ],
+  };
+  document.querySelectorAll('[data-logo]').forEach(s => { s.innerHTML = BRAND.logo; });
+  const logoSvg = (cls) => `<svg viewBox="${BRAND.logoViewBox}" aria-hidden="true"${cls ? ` class="${cls}"` : ''}>${BRAND.logo}</svg>`;
+
+  /* ================= helpers ================= */
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  const slug = (b) => (String(b || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '').slice(0, 60) || 'item') + '-' + Date.now().toString(36).slice(-5);
+  const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const addDaysISO = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const CHECK = '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function parseWhen(s) {
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y, m, d] = s.split('-').map(Number); return { date: new Date(y, m - 1, d), allDay: true }; }
+    const d = new Date(s); if (isNaN(d)) return null; return { date: d, allDay: false };
+  }
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  function fmtDate(s) { const w = typeof s === 'string' ? parseWhen(s) : (s ? { date: s } : null); if (!w) return '—'; return w.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  function fmtTime(d) { return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' ', '').toLowerCase(); }
+  function whenLabel(start, allDay, end) {
+    const now = new Date();
+    const mins = Math.round((start - now) / 60000);
+    if (!allDay && end && start <= now && now < end) return { text: 'now', cls: 'now' };
+    if (!allDay && mins >= 0 && mins < 60) return { text: 'in ' + Math.max(mins, 1) + ' min', cls: 'soon' };
+    if (!allDay && mins >= 60 && mins < 180) return { text: 'in ' + Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm', cls: 'soon' };
+    const tmr = new Date(now); tmr.setDate(now.getDate() + 1);
+    const day = sameDay(start, now) ? 'today' : sameDay(start, tmr) ? 'tomorrow' : start.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    return { text: allDay ? day : day + ' ' + fmtTime(start), cls: '' };
+  }
+  function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function tokens(s) { return norm(s).split(' ').filter(t => t.length >= 3 && !['the', 'and', 'with', 'call', 'interview', 'team', 'program', 'prep'].includes(t)); }
+  const initials = (n) => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
+
+  /* ================= state ================= */
+  const S = { profile: null, mindmap: null, brief: null, coach: null, experience: [], network: [], interactions: [], sessions: [], prep: [], candidates: [], projects: [], opportunities: [], outreach: [], tasks: [], reflections: [], guidance: [], activity: [], calendar: null, calStatus: 'loading' };
+  let db = null, sample = null, loaded = false, bootDone = false;
+  const TAB = Math.random().toString(36).slice(2, 10);
+  let pendingNav = null;
+  let lastDataChange = 0;
+
+  /* ================= appearance ================= */
+  const Look = {
+    palette: document.documentElement.getAttribute('data-palette') || 'sky',
+    mode: document.documentElement.getAttribute('data-bmode') || 'system',
+    apply(pal, mode, save) {
+      if (pal) this.palette = BRAND.palettes.some(x => x.id === pal) ? pal : 'sky'; if (mode) this.mode = mode;
+      const r = document.documentElement;
+      r.setAttribute('data-palette', this.palette); r.setAttribute('data-bmode', this.mode);
+      const vt = r.getAttribute('data-theme');
+      const viewerDark = vt === 'dark' || (vt !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+      r.classList.toggle('b-dark', this.mode === 'dark' || (this.mode === 'system' && viewerDark));
+      lsSet('bridge.appearance', { palette: this.palette, mode: this.mode });
+      if (save && db) { saveProfile(Object.assign({}, { appearance: { palette: this.palette, mode: this.mode } })).catch(() => { }); }
+    },
+  };
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Look.apply()); } catch (e) { }
+  try { new MutationObserver(() => Look.apply()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) { }
+
+  // Profile writes merge into the local copy first, so back-to-back saves (several in one chat reply,
+  // or the readout right after the survey) never overwrite each other with a stale profile.
+  // Data read from the dashboard database arrives frozen; anything we change later must be our own copy.
+  const clone = (v) => JSON.parse(JSON.stringify(v == null ? null : v));
+  function saveProfile(patch) {
+    const next = Object.assign({}, S.profile || {}, patch);
+    S.profile = next;
+    return db ? db.doc('profile/main').set(next) : Promise.resolve();
+  }
+
+  /* ================= navigation ================= */
+  let currentPage = 'today';
+  function go(page, tab, target) {
+    if (!page || !$('page-' + page)) page = 'today';
+    currentPage = page;
+    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+    document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== 'page-' + page; });
+    if (tab) { const tb = document.querySelector('#page-' + page + ' .tabs button[data-tab="' + tab + '"]'); if (tb) tb.click(); }
+    window.scrollTo(0, 0);
+    if (page === 'direction') requestAnimationFrame(() => typeof drawCmap === 'function' && drawCmap());
+    if (target) setTimeout(() => {
+      let el = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]');
+      if (!el) return;
+      if (el.dataset.expandable && !openKeys.has(target)) { openKeys.add(target); renderAll(); el = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]'); if (!el) return; }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1900);
+    }, 80);
+  }
+  document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.page)));
+  document.addEventListener('click', (e) => {
+    const j = e.target.closest('[data-go]');
+    if (j) { e.stopPropagation(); go(j.dataset.go, j.dataset.tab || '', j.dataset.target || ''); return; }
+    const a = e.target.closest('[data-ask]');
+    if (a) { e.stopPropagation(); Chat.prefill(a.dataset.ask, a.dataset.send === '1', a.dataset.hint || ''); return; }
+    const r = e.target.closest('[data-retry]');
+    if (r) { e.stopPropagation(); Chat.send(Number(r.dataset.retry)); return; }
+    const u = e.target.closest('[data-undo]');
+    if (u) { e.stopPropagation(); const [mi, si] = u.dataset.undo.split(':').map(Number); Chat.undo(mi, si); }
+  });
+  function jump(label, page, tab, target) { return '<button class="jump" data-go="' + esc(page) + '" data-tab="' + esc(tab || '') + '" data-target="' + esc(target || '') + '">' + esc(label) + ' →</button>'; }
+  function initTabs(barId) {
+    const bar = $(barId); const btns = bar.querySelectorAll('button'); const host = bar.parentElement;
+    btns.forEach(b => b.addEventListener('click', () => {
+      btns.forEach(x => x.classList.toggle('active', x === b));
+      host.querySelectorAll(':scope > [data-panel]').forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+    }));
+    btns[0].click();
+  }
+  initTabs('peopleTabs'); initTabs('recTabs');
+  const openKeys = new Set();
+  function toggleKey(k) { if (openKeys.has(k)) openKeys.delete(k); else openKeys.add(k); renderAll(); }
+
+  /* ================= stage (tailors pipeline + copy) ================= */
+  function stage() {
+    const pf = S.profile || {};
+    const now = new Date();
+    let yr = parseInt(String(pf.classYear || '').replace(/[^0-9]/g, ''), 10);
+    if (yr && yr < 100) yr += 2000;
+    const want = norm(pf.opportunityType || '');
+    let student = false;
+    if (yr) student = yr > now.getFullYear() || (yr === now.getFullYear() && now.getMonth() < 5);
+    if (/intern/.test(want) && !/full/.test(want)) student = true;
+    return student
+      ? { kind: 'student', primary: ['internship', 'research', 'class', 'program'], desc: 'Internships, research, classes and programs, sorted by where each one stands. Tap a card for its history and the people attached to it.' }
+      : { kind: 'grad', primary: ['role', 'program', 'warm-path'], desc: 'Roles, programs and warm paths, sorted by where each one stands. Tap a card for its history and the people attached to it.' };
+  }
+
+  /* ================= agenda (calendar + prep, one clock) ================= */
+  function prepWhen(p) { return parseWhen(p.meetingDate); }
+  function calendarItems() {
+    const out = [];
+    const evs = (S.calendar && S.calendar.events) || [];
+    evs.forEach(ev => {
+      if (ev.status === 'cancelled' || ev.eventType === 'BIRTHDAY' || ev.eventType === 'WORKING_LOCATION') return;
+      const s = ev.start || {}, e = ev.end || {};
+      const allDay = !!s.date && !s.dateTime;
+      const start = allDay ? parseWhen(s.date).date : new Date(s.dateTime);
+      const end = allDay ? null : new Date(e.dateTime || s.dateTime);
+      if (isNaN(start)) return;
+      out.push({ id: ev.id || '', title: ev.summary || '(busy)', start, end, allDay, link: ev.htmlLink || '', src: 'cal', where: ev.location || '' });
+    });
+    return out;
+  }
+  function matchPrep(item) {
+    const byId = item.id && S.prep.find(p => p.calendarEventId === item.id); if (byId) return byId;
+    const itemToks = new Set(tokens(item.title));
+    return S.prep.find(p => {
+      const w = prepWhen(p); if (!w || !sameDay(w.date, item.start)) return false;
+      return tokens((p.contactName || '') + ' ' + (p.company || '')).some(t => itemToks.has(t));
+    });
+  }
+  function agendaItems() {
+    const now = new Date();
+    const items = calendarItems();
+    const used = new Set();
+    items.forEach(it => { const p = matchPrep(it); if (p) { it.prep = p; used.add(p.id); } });
+    const seen = new Set();
+    S.prep.forEach(p => {
+      if (used.has(p.id)) return;
+      const w = prepWhen(p); if (!w) return;
+      const key = norm(p.contactName) + '|' + w.date.getTime();   // two preps for the same call show once
+      if (seen.has(key)) return; seen.add(key);
+      const end = w.allDay ? null : new Date(w.date.getTime() + 45 * 60000);
+      items.push({ title: p.contactName || 'Call', sub: p.company || '', start: w.date, end, allDay: w.allDay, src: 'prep', prep: p });
+    });
+    return items.filter(it => {
+      if (it.allDay) { const eod = new Date(it.start); eod.setHours(23, 59, 59); return eod >= now; }
+      return (it.end || it.start) >= now;
+    }).sort((a, b) => a.start - b.start);
+  }
+  function needsDebrief() {
+    const now = new Date();
+    return S.prep.filter(p => {
+      const w = prepWhen(p); if (!w) return false;
+      const endish = w.allDay ? new Date(w.date.getTime() + 86400000) : new Date(w.date.getTime() + 45 * 60000);
+      if (endish > now || (now - endish) > 4 * 86400000) return false;
+      const pt = tokens((p.contactName || '') + ' ' + (p.company || ''));
+      const logged = S.interactions.some(i => { const iw = parseWhen(i.date); if (!iw || iw.date < new Date(w.date.getFullYear(), w.date.getMonth(), w.date.getDate())) return false; const it = tokens((i.contactName || '') + ' ' + (i.company || '')); return pt.some(t => it.includes(t)); });
+      return !logged && !p.debriefed;
+    });
+  }
+  function renderAgenda() {
+    const items = agendaItems().slice(0, 6);
+    const rows = [];
+    needsDebrief().forEach(p => rows.push(`<div class="ag-row"><div class="ag-when">needs debrief</div><div><div class="ag-title">${esc(p.contactName)}</div><div class="ag-sub">${esc(p.company || '')} · ${esc(fmtDate(p.meetingDate))}</div></div><div class="ag-acts"><button class="jump" data-ask="Debrief my ${esc(p.contactName)} conversation: ">Debrief →</button></div></div>`));
+    items.forEach(it => {
+      const w = whenLabel(it.start, it.allDay, it.end);
+      const sub = it.prep ? trunc(it.prep.purpose || it.prep.company || '', 110) : (it.sub || it.where || '');
+      rows.push(`<div class="ag-row ${w.cls}"><div class="ag-when">${esc(w.text)}</div><div><div class="ag-title">${esc(it.title)}</div>${sub ? `<div class="ag-sub">${esc(sub)}</div>` : ''}</div><div class="ag-acts"><span class="ag-src">${it.src === 'cal' ? 'calendar' : 'not on calendar'}</span>${it.prep ? jump('Prep', 'people', 'prep', it.prep.id) : ''}</div></div>`);
+    });
+    $('agendaBody').innerHTML = rows.length ? `<div class="agenda">${rows.join('')}</div>` : '<div class="empty">Nothing scheduled in the next week. When a call gets booked, it shows up here with a countdown.</div>';
+    $('agendaNote').textContent = { live: 'Google Calendar · live', loading: 'connecting calendar…', off: 'calendar not connected · showing call prep only', error: 'calendar unreachable · showing call prep only' }[S.calStatus] || '';
+  }
+
+  /* ================= first-run flow: landing → intake → readout → dashboard ================= */
+  function flowStage() {
+    const pf = S.profile || {};
+    if (!db || !loaded) return db === null && bootDone ? 'landing' : 'loading';
+    if (!pf.name && !Chat.messages.length && !startedNow) return 'landing';
+    if (!S.mindmap) return 'intake';
+    if (!pf.readoutSeenAt) return 'readout';
+    return 'dash';
+  }
+  let lastStage = '', startedNow = false;
+  function applyStage() {
+    const st = flowStage();
+    ['landing', 'intake', 'readout', 'dash', 'loading'].forEach(s => document.body.classList.toggle('stage-' + s, s === st));
+    if (st === lastStage) return;
+    const prev = lastStage; lastStage = st;
+    if (st === 'intake') { Chat.view = 'bar'; $('dock').classList.remove('min'); Chat.open = true; $('dock').classList.add('open'); Chat.render(); setTimeout(() => $('chatInput').focus(), 50); }
+    if (st === 'readout') { go('direction'); }
+    if (st === 'dash' && (prev === 'readout' || prev === 'intake')) { Chat.open = false; $('dock').classList.remove('open'); go('today'); Chat.render(); }
+  }
+  $('getStarted').addEventListener('click', () => {
+    startedNow = true; applyStage();
+    if (!Chat.messages.length) { $('chatInput').value = "Hi! I'm ready to get started."; Chat.send(); }
+  });
+
+  /* ================= start panel (first-time) ================= */
+  function renderStart() {
+    const pf = S.profile || {};
+    const isNew = !pf.name;
+    $('startPanel').innerHTML = isNew ? `<div class="start">${logoSvg()}<div><div class="eyebrow" style="color:var(--chrome-accent)">Welcome to Bridge</div><h2 style="margin-top:.35rem">Let's find the people between you and what's next.</h2><p>Bridge works out what you already know how to do, what it points to, and who can get you there. It starts with a conversation, not a form. Say hi in the chat below. Oversharing is welcome, and "not sure yet" is a complete answer.</p></div></div>` : '';
+    $('bearing').hidden = isNew; $('agendaWrap').hidden = isNew; $('todoWrap').hidden = isNew;
+  }
+
+  /* ================= bearing (the compass) ================= */
+  function period() { const h = new Date().getHours(); return todayISO() + (h >= 17 ? '-evening' : '-morning'); }
+  function dataStamp() {
+    let m = lastDataChange;
+    S.activity.forEach(a => { const t = Date.parse(a.at || ''); if (t > m) m = t; });
+    S.tasks.forEach(t => { [t.createdAt, t.completedAt].forEach(x => { const v = Date.parse(x || ''); if (v > m) m = v; }); });
+    Chat.messages.forEach(x => { if (x.role === 'assistant' && x.saved && x.saved.some(s => s.ok) && x.ts > m) m = x.ts; });
+    return m;
+  }
+  function briefStale() { const b = S.brief; return !!(b && b.generatedAtMs && dataStamp() > b.generatedAtMs + 1000); }
+  function fallbackMoves() {
+    const moves = [];
+    const next = agendaItems()[0];
+    S.guidance.filter(g => !g.done).slice(0, 2).forEach(g => moves.push({ text: g.text, why: g.relatedTo || '', kind: g.type === 'nudge' ? 'do' : 'coach' }));
+    if (next && next.prep) moves.push({ text: 'Get ready for ' + next.prep.contactName, why: whenLabel(next.start, next.allDay, next.end).text, kind: 'do', page: 'people', tab: 'prep', target: next.prep.id });
+    S.tasks.filter(t => !t.done && t.priority === 'high').slice(0, 2).forEach(t => moves.push({ text: t.text, why: t.dueDate ? 'due ' + fmtDate(t.dueDate) : '', kind: 'do' }));
+    return moves.slice(0, 3);
+  }
+  function renderBearing() {
+    const el = $('bearing');
+    const b = S.brief;
+    const per = period();
+    const isEvening = per.endsWith('evening');
+    const fresh = b && b.period === per;
+    const stale = briefStale();
+    const moves = (b && Array.isArray(b.moves) && b.moves.length) ? b.moves : fallbackMoves();
+    const headline = (b && b.headline) || (S.profile && S.profile.currentChapter) || 'Bridge is getting its bearings.';
+    const label = (isEvening ? 'Evening wrap' : 'Bearing') + ' · ' + new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    const needle = '<svg class="needle" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1"/><path d="M7 2 L9 7 L7 12 L5 7 Z" fill="currentColor" opacity=".9"/></svg>';
+    const movesHtml = moves.map((m, i) => {
+      const link = m.page && $('page-' + m.page) ? jump(i === 0 ? 'Go' : 'Open', m.page, m.tab, m.target) : '';
+      return `<div class="move${i === 0 ? ' first' : ''}"><div class="move-n">${i + 1}</div><div><div class="move-text">${esc(m.text)}</div>${m.why ? `<div class="move-why"><span class="move-kind">${m.kind === 'coach' ? 'coaching' : 'to do'}</span>${esc(m.why)}</div>` : ''}</div>${link}</div>`;
+    }).join('') || '<div class="move-why">No open moves right now.</div>';
+    let extra = '';
+    if (isEvening && fresh && b.wrap && b.wrap.length) extra += `<div class="wrapup"><div class="bearing-label">What moved today</div><ul>${b.wrap.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
+    if (isEvening && fresh && b.reflect && !b.reflectAnswered) extra += `<div class="reflect"><div class="reflect-q">${esc(b.reflect)}</div><div class="reflect-row"><input id="reflectInput" placeholder="One line is plenty. It goes to your records." /><button id="reflectSave">Save</button></div></div>`;
+    const openG = S.guidance.filter(g => !g.done);
+    if (openG.length) extra += `<details class="radar"><summary>Also on Bridge's radar (${openG.length})</summary><ul>${openG.map(g => `<li>${esc(g.text)}</li>`).join('')}</ul></details>`;
+    const refreshLabel = !sample ? '' : Brief.busy ? 'updating…' : stale ? 'new info · update' : 'refresh';
+    const since = b && b.generatedAt ? `<div class="since">Updated ${esc(fmtTime(new Date(b.generatedAt)))}${b.trigger ? ` · after <b>${esc(trunc(b.trigger, 70))}</b>` : ''}</div>` : '';
+    el.innerHTML = `<div class="bearing-top"><div class="bearing-label">${needle}${esc(label)}</div>${refreshLabel ? `<button class="bearing-refresh${stale ? ' stale' : ''}" id="briefRefresh"${Brief.busy ? ' disabled' : ''}>${refreshLabel}</button>` : ''}</div>
+      <div class="bearing-headline">${esc(headline)}</div>
+      <div class="bearing-label" style="margin-bottom:.5rem">${isEvening ? "Tomorrow's first moves" : 'Next moves'}</div>
+      <div class="moves">${movesHtml}</div>${extra}${since}`;
+    const rb = $('briefRefresh'); if (rb) rb.addEventListener('click', () => Brief.generate('manual refresh'));
+    const rs = $('reflectSave');
+    if (rs) rs.addEventListener('click', async () => {
+      const v = $('reflectInput').value.trim(); if (!v || !db) return;
+      try { await db.collection('reflections').doc(slug('journal')).set({ type: 'journal', journalText: v, prompt: b.reflect, date: todayISO() }); await db.doc('brief/main').update({ reflectAnswered: true }); } catch (e) { }
+    });
+  }
+
+  /* ================= to-do ================= */
+  let todoFilter = 'today';
+  document.querySelectorAll('#todoFilters .pill').forEach(p => p.addEventListener('click', () => { todoFilter = p.dataset.f; document.querySelectorAll('#todoFilters .pill').forEach(x => x.classList.toggle('active', x === p)); renderTodo(); }));
+  function taskLink(t) {
+    if (t.linkPage) return jump(t.chipLabel || 'Open', t.linkPage === 'network' ? (t.linkTab === 'opportunities' ? 'pipeline' : 'people') : (t.linkPage === 'compass' ? 'today' : t.linkPage), t.linkTab === 'people' ? 'contacts' : (t.linkTab === 'opportunities' ? '' : t.linkTab), t.linkTarget);
+    if (t.linkedContactName) { const c = findBy(S.network, null, t.linkedContactName); if (c) return jump(c.name.split(' ')[0], 'people', 'contacts', c.id); }
+    return '';
+  }
+  function taskHtml(t) {
+    const w = parseWhen(t.dueDate); const late = w && !t.done && w.date < new Date(new Date().toDateString());
+    return `<div class="task${t.done ? ' done' : ''}" data-task="${esc(t.id)}"><div class="box">${CHECK}</div><div style="flex:1;min-width:0"><div class="task-text">${esc(t.text)}</div><div class="task-meta">${t.priority === 'high' ? '<span class="chip rust">high</span>' : ''}${t.dueDate ? `<span class="due${late ? ' late' : ''}">${late ? 'overdue · ' : ''}${esc(fmtDate(t.dueDate))}</span>` : ''}${t.waitingOn ? `<span class="chip amber">waiting · ${esc(t.waitingOnWho || 'someone')}</span>` : ''}${t.linkedProjectName ? `<span class="chip">${esc(t.linkedProjectName)}</span>` : ''}${taskLink(t)}</div></div></div>`;
+  }
+  function renderTodo() {
+    const el = $('todoBody');
+    const now = new Date(); const wk = new Date(now.getTime() + 7 * 86400000);
+    const base = S.tasks.filter(t => !t.agendaLinked);
+    const open = base.filter(t => !t.done);
+    let list;
+    if (todoFilter === 'today') list = open.filter(t => { const w = parseWhen(t.dueDate); return (w && w.date.getTime() <= new Date(now.toDateString()).getTime() + 86400000 - 1) || (!t.dueDate && t.priority === 'high'); });
+    else if (todoFilter === 'week') list = open.filter(t => { const w = parseWhen(t.dueDate); return w && w.date <= wk; });
+    else if (todoFilter === 'waiting') list = open.filter(t => t.waitingOn);
+    else list = open.slice();
+    const pr = { high: 0, med: 1, low: 2 };
+    list.sort((a, b) => (pr[a.priority] ?? 3) - (pr[b.priority] ?? 3) || String(a.dueDate || '9').localeCompare(String(b.dueDate || '9')));
+    const doneToday = base.filter(t => t.done && t.completedAt && sameDay(new Date(t.completedAt), now));
+    // Finished today stays on the list, crossed out, until tomorrow: visible progress.
+    const shown = list.concat(todoFilter === 'waiting' ? [] : doneToday.sort((a, b) => String(a.completedAt).localeCompare(String(b.completedAt))));
+    el.innerHTML = (doneToday.length ? `<div class="sec-note" style="margin:-.3rem 0 .6rem">${doneToday.length} done today</div>` : '')
+      + (shown.length ? `<div class="task-list">${shown.map(taskHtml).join('')}</div>` : `<div class="empty">${todoFilter === 'today' ? 'Nothing due today. Check "This week", or ask Bridge what\'s worth doing.' : 'Nothing here.'}</div>`);
+    el.querySelectorAll('[data-task]').forEach(n => n.addEventListener('click', (e) => { if (e.target.closest('.jump')) return; toggleTask(n.dataset.task); }));
+  }
+  async function toggleTask(id) {
+    const t = S.tasks.find(x => x.id === id); if (!t || !db) return;
+    const done = !t.done;
+    try { await db.collection('tasks').doc(id).update({ done, completedAt: done ? new Date().toISOString() : null }); if (done) logActivity('Done: ' + t.text); } catch (e) { }
+  }
+  async function logActivity(label) { if (!db) return; try { await db.collection('activity').doc(slug('a')).set({ label, date: todayISO(), at: new Date().toISOString() }); } catch (e) { } }
+
+  /* ================= pipeline ================= */
+  const OPEN_ST = ['active', 'offer', 'interviewing', 'applied', 'in-progress', 'final-round'];
+  const CLOSED_ST = ['closed', 'passed', 'rejected', 'declined', 'accepted', 'withdrawn', 'lost'];
+  const OPP_TYPES = { role: 'Roles', internship: 'Internships', program: 'Programs', research: 'Research', class: 'Classes', collaboration: 'Collaborations', 'warm-path': 'Warm paths' };
+  const OPP_ONE = { role: 'Role', internship: 'Internship', program: 'Program', research: 'Research', class: 'Class', collaboration: 'Collaboration', 'warm-path': 'Warm path' };
+  const ST_CHIP = { offer: 'violet', active: 'route', interviewing: 'route', applied: 'amber', exploring: 'amber', closed: '', rejected: 'rust', passed: 'rust', declined: '' };
+  let oppFilter = 'all';
+  function lane(o) { const s = (o.status || '').toLowerCase(); if (OPEN_ST.includes(s)) return 'open'; if (CLOSED_ST.includes(s)) return 'closed'; return 'potential'; }
+  function peopleFor(o) {
+    const ot = tokens(o.org);
+    return S.network.filter(c => { const ct = tokens(c.company); const first = norm(c.name).split(' ')[0]; return ct.some(t => ot.includes(t)) || (o.sourceBridge && first.length > 3 && norm(o.sourceBridge).includes(first)); });
+  }
+  function nextFor(o) {
+    const ot = tokens(o.org);
+    const up = agendaItems().find(it => it.prep && tokens((it.prep.company || '') + ' ' + (it.prep.contactName || '')).some(t => ot.includes(t)));
+    if (up) return 'Next: ' + (up.prep.contactName || up.title) + ', ' + whenLabel(up.start, up.allDay, up.end).text;
+    const task = S.tasks.find(t => !t.done && tokens(t.text).some(x => ot.includes(x)));
+    return task ? 'Next: ' + task.text : '';
+  }
+  function renderPipeline() {
+    const st = stage();
+    $('pipeDesc').textContent = st.desc;
+    const present = Object.keys(OPP_TYPES).filter(k => S.opportunities.some(o => o.type === k));
+    const types = ['all'].concat(st.primary, present.filter(k => !st.primary.includes(k)));
+    $('oppFilters').innerHTML = types.map(t => `<button class="pill${t === oppFilter ? ' active' : ''}" data-of="${t}">${t === 'all' ? 'All' : OPP_TYPES[t]}</button>`).join('');
+    $('oppFilters').querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => { oppFilter = b.dataset.of; renderPipeline(); }));
+    const opps = S.opportunities.filter(o => oppFilter === 'all' || o.type === oppFilter);
+    const lanes = { open: [], potential: [], closed: [] };
+    opps.forEach(o => lanes[lane(o)].push(o));
+    const L = [['open', 'Open', st.kind === 'student' ? 'Applied, interviewing, accepted into' : 'Applied, interviewing, offers'], ['potential', 'Potential', 'Warm paths and things worth pursuing'], ['closed', 'Closed', 'Decided either way, kept as evidence']];
+    const emptyMsg = oppFilter === 'all' ? 'None' : 'No ' + (OPP_TYPES[oppFilter] || '').toLowerCase() + ' yet';
+    $('board').innerHTML = L.map(([k, name, desc]) => `<div class="lane"><div class="lane-head"><b>${name}</b><span>${lanes[k].length}</span></div><div class="lane-desc">${desc}</div>${lanes[k].map(o => oppCard(o, k)).join('') || `<div class="empty" style="padding:.9rem">${esc(emptyMsg)}</div>`}</div>`).join('');
+    $('board').querySelectorAll('.opp').forEach(c => c.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask]')) return; toggleKey(c.dataset.key); }));
+  }
+  function oppCard(o, k) {
+    const open = openKeys.has(o.id);
+    const ppl = peopleFor(o);
+    const nxt = k === 'closed' ? '' : nextFor(o);
+    return `<div class="opp${k === 'closed' ? ' closed' : ''}" data-key="${esc(o.id)}" data-expandable="1">
+      <div class="opp-top"><div><div class="opp-org">${esc(o.org || o.title)}</div><div class="opp-title">${esc(o.title || '')}</div></div><span class="chip ${ST_CHIP[(o.status || '').toLowerCase()] || ''}">${esc(o.status || 'potential')}</span></div>
+      ${nxt ? `<div class="opp-next">${esc(nxt)}</div>` : ''}
+      <div class="opp-foot"><span class="chip">${esc(OPP_ONE[o.type] || o.type || 'Other')}</span>${ppl.slice(0, 3).map(c => `<span class="chip brass">${esc(c.name.split(' ')[0])}</span>`).join('')}</div>
+      ${open ? `<div class="opp-detail">${o.notes ? `<div>${esc(o.notes)}</div>` : ''}${o.sourceBridge ? `<div><b>Way in:</b> ${esc(o.sourceBridge)}</div>` : ''}${ppl.length ? `<div><b>People:</b> ${ppl.map(c => esc(c.name)).join(', ')}</div>` : ''}<div style="display:flex;gap:.4rem;flex-wrap:wrap">${ppl[0] ? jump('Contacts', 'people', 'contacts', ppl[0].id) : ''}<button class="jump" data-ask="Help me think through ${esc(o.org)} (${esc(o.title)}): ">Think it through with Bridge</button></div></div>` : ''}
+    </div>`;
+  }
+
+  /* ================= people ================= */
+  const BUCKETS = [['past-job', 'Past job / activity'], ['personal', 'Personal / family'], ['college', 'College'], ['high-school', 'High school'], ['cold', 'Cold']];
+  const C_ST = { active: 'route', contacted: 'amber', sourced: 'violet', stalled: 'rust' };
+  function interactionsFor(c) {
+    const first = norm(c.name).split(' ')[0]; const ct = tokens(c.company);
+    return S.interactions.filter(i => { const n = norm(i.contactName); return (first.length > 2 && n.includes(first)) || (ct.length && tokens(i.company).some(t => ct.includes(t))); }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
+  function renderPeople() {
+    $('nContacts').textContent = S.network.length || '';
+    const el = $('contactsBody');
+    if (!S.network.length) el.innerHTML = '<div class="empty">No contacts yet. Mention someone in the chat and Bridge adds them.</div>';
+    else el.innerHTML = `<div class="buckets">${BUCKETS.map(([b, label]) => { const cs = S.network.filter(c => (c.bucket || 'cold') === b); if (!cs.length) return ''; cs.sort((x, y) => String(x.nextFollowUp || '9').localeCompare(String(y.nextFollowUp || '9'))); return `<div><div class="bucket-h"><span>${label}</span><span>${cs.length}</span></div><div class="plist">${cs.map(contactRow).join('')}</div></div>`; }).join('')}</div>`;
+    el.querySelectorAll('.prow').forEach(n => n.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask], a')) return; toggleKey(n.dataset.key); }));
+    renderCandidates(); renderOutreach(); renderPrep();
+  }
+  function contactRow(c) {
+    const open = openKeys.has(c.id);
+    const ints = open ? interactionsFor(c) : [];
+    const fuW = parseWhen(c.nextFollowUp); const fuDue = fuW && fuW.date <= new Date();
+    const side = c.nextFollowUp ? `<span class="fu${fuDue ? ' due' : ''}">follow up ${esc(fmtDate(c.nextFollowUp))}</span>` : c.lastContact ? `<span class="fu">last ${esc(fmtDate(c.lastContact))}</span>` : '';
+    return `<div class="prow" data-key="${esc(c.id)}" data-expandable="1">
+      <div class="prow-main"><span class="ini">${esc(initials(c.name))}</span><div style="min-width:0"><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc([c.role, c.company].filter(Boolean).join(' · ') || '—')}</div></div><div class="prow-side"><span class="chip ${C_ST[c.status] || ''}">${esc(c.status || 'sourced')}</span>${side}</div></div>
+      ${open ? `<div class="c-detail">${c.bridgePath ? `<div><b style="color:var(--text)">The bridge:</b> ${esc(c.bridgePath)}</div>` : ''}${c.notes ? `<div>${esc(trunc(c.notes, 600))}</div>` : ''}${ints.length ? `<div class="timeline">${ints.map(i => `<div class="tl-item"><div class="tl-date">${esc(fmtDate(i.date))} · ${esc(i.type || '')}</div>${esc(trunc(i.summary || i.materials || '', 220))}</div>`).join('')}</div>` : ''}<div style="display:flex;gap:.4rem;flex-wrap:wrap"><button class="jump" data-ask="Update on ${esc(c.name)}: ">Log an update</button>${c.linkedin ? `<a class="jump" href="${esc(c.linkedin)}" target="_blank" rel="noopener">Profile ↗</a>` : ''}</div></div>` : ''}
+    </div>`;
+  }
+  function renderCandidates() {
+    const el = $('candidatesBody');
+    const pend = S.candidates.filter(c => !c.status || c.status === 'pending');
+    const appr = S.candidates.filter(c => c.status === 'approved');
+    const den = S.candidates.filter(c => c.status === 'denied');
+    $('nCandidates').textContent = pend.length || '';
+    const today = todayISO();
+    const card = (c) => `<div class="cand${c.batchDate === today ? ' fresh' : ''}"><div class="cand-body"><div class="c-name">${esc(c.name)} ${c.batchDate === today ? '<span class="chip brass">new today</span>' : ''}</div><div class="c-role" style="white-space:normal">${esc([c.title, c.company].filter(Boolean).join(' · '))}</div>${c.why ? `<div class="cand-why">${esc(c.why)}</div>` : ''}<div class="cand-meta">${(c.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}${c.source ? `<a href="${esc(c.source)}" target="_blank" rel="noopener">source ↗</a>` : ''}</div></div><div class="cand-acts"><button class="btn-ok" data-cand="${esc(c.id)}" data-st="approved">Approve</button><button class="btn-no" data-cand="${esc(c.id)}" data-st="denied">Pass</button></div></div>`;
+    el.innerHTML = `<p class="muted" style="margin:0 0 1rem;font-size:.84rem;max-width:62ch">New people land here from public sources (team pages, alumni pages, news). Nothing is ever sent: approving moves them to your list for you to reach out yourself.</p>`
+      + (pend.length ? `<div class="stack">${pend.sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || ''))).map(card).join('')}</div>` : '<div class="empty">No one waiting for review.</div>')
+      + (appr.length ? `<details class="fold" open style="margin-top:1rem"><summary>Approved, ready for you to reach out (${appr.length})</summary><div class="stack">${appr.map(c => `<div class="row-card row-line"><span><b>${esc(c.name)}</b> <span class="muted">${esc([c.title, c.company].filter(Boolean).join(' · '))}</span></span><span style="display:flex;gap:.5rem;align-items:center"><button class="jump" data-ask="Draft a LinkedIn note to ${esc(c.name)}." data-hint="${esc(c.name)} is ${esc(c.title || '')} at ${esc(c.company || '')}. Why them: ${esc(c.why || '')} Keep it under 300 characters, in my voice, with one specific ask." data-send="1">Draft note</button><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">undo</button></span></div>`).join('')}</div></details>` : '')
+      + (den.length ? `<details class="fold" style="margin-top:.4rem"><summary>Passed (${den.length})</summary><div class="stack">${den.map(c => `<div class="row-card row-line"><span>${esc(c.name)}</span><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">restore</button></div>`).join('')}</div></details>` : '');
+    el.querySelectorAll('[data-cand]').forEach(b => b.addEventListener('click', async () => { if (!db) return; try { await db.collection('candidates').doc(b.dataset.cand).update({ status: b.dataset.st, decidedAt: new Date().toISOString() }); } catch (e) { } }));
+  }
+  function renderOutreach() {
+    $('nOutreach').textContent = S.outreach.length || '';
+    const el = $('outreachBody');
+    if (!S.outreach.length) { el.innerHTML = '<div class="empty">No outreach yet.</div>'; return; }
+    const now = new Date();
+    const sorted = S.outreach.slice().sort((a, b) => String(a.nextFollowUpDate || '9').localeCompare(String(b.nextFollowUpDate || '9')));
+    el.innerHTML = `<div class="stack">${sorted.map(o => { const f = parseWhen(o.nextFollowUpDate); const due = f && f.date <= now; return `<div class="row-card"><div class="row-line"><div><b>${esc(o.contactName)}</b> <span class="muted">${esc([o.company, o.channel].filter(Boolean).join(' · '))}</span></div><span class="chip ${due ? 'rust' : o.status === 'replied' ? 'route' : 'amber'}">${due ? 'follow up now' : esc((o.status || 'draft').replace('-', ' '))}</span></div>${o.note ? `<div class="log-sum" style="margin-top:.4rem">${esc(trunc(o.note, 260))}</div>` : ''}<div class="cand-meta" style="justify-content:space-between"><span>sent ${esc(fmtDate(o.sentDate))}</span><span>follow up ${esc(fmtDate(o.nextFollowUpDate))}</span></div></div>`; }).join('')}</div>`;
+  }
+  function callShape(p) {
+    const mm = S.mindmap || {};
+    const pitch = mm.elevatorPitch ? mm.elevatorPitch.split(/(?<=[.!?])\s+/)[0] : 'Who you are in one line, and why you wanted to talk to them.';
+    const qs = (p.questions || []).slice(0, 2);
+    const ask = p.ask || (p.purpose ? trunc(p.purpose, 150) : 'One specific, easy-to-say-yes-to ask.');
+    return `<div class="shape">
+      <div><b>Open</b><span>~1 min</span><p>${esc(trunc(pitch, 160))}</p></div>
+      <div><b>Learn</b><span>most of it</span><p>${qs.length ? qs.map(q => esc(trunc(q, 110))).join('<br>') : 'Let them talk: how they got there, what they\'d do in your shoes.'}</p></div>
+      <div><b>Ask</b><span>1 thing</span><p>${esc(ask)}</p></div>
+      <div><b>Close</b><span>last 2 min</span><p>Thank them, repeat back one thing you'll act on, say when you'll follow up.</p></div>
+    </div>`;
+  }
+  function renderPrep() {
+    const el = $('prepBody');
+    const now = new Date();
+    const withW = S.prep.map(p => ({ p, w: prepWhen(p) }));
+    const upcoming = withW.filter(x => x.w && (x.w.allDay ? new Date(x.w.date.getTime() + 86400000) : new Date(x.w.date.getTime() + 45 * 60000)) >= now).sort((a, b) => a.w.date - b.w.date);
+    const undated = withW.filter(x => !x.w);
+    const past = withW.filter(x => x.w && !upcoming.includes(x)).sort((a, b) => b.w.date - a.w.date);
+    $('nPrep').textContent = upcoming.length || '';
+    const card = (x, isNext) => {
+      const p = x.p; const wl = x.w ? whenLabel(x.w.date, x.w.allDay, x.w.allDay ? null : new Date(x.w.date.getTime() + 45 * 60000)) : null;
+      const shapeOpen = openKeys.has('shape-' + p.id);
+      return `<div class="prep${isNext ? ' next' : ''}" data-key="${esc(p.id)}"><div class="prep-top"><div><div class="c-name">${esc(p.contactName)}</div><div class="c-role">${esc(p.company || '')}</div></div><span class="prep-when">${isNext ? 'NEXT · ' : ''}${esc(wl ? wl.text : 'not scheduled')}</span></div>${p.purpose ? `<div style="margin-top:.6rem;font-size:.86rem;line-height:1.5">${esc(p.purpose)}</div>` : ''}${p.talkingPoints && p.talkingPoints.length ? `<h4>Talking points</h4><ul>${p.talkingPoints.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${p.questions && p.questions.length ? `<h4>Questions to ask</h4><ul>${p.questions.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${p.background ? `<div class="prep-bg">${esc(p.background)}</div>` : ''}${shapeOpen ? `<h4>How to run the call</h4>${callShape(p)}` : ''}<div style="margin-top:.8rem;display:flex;gap:.4rem;flex-wrap:wrap"><button class="jump" data-shape="${esc(p.id)}">${shapeOpen ? 'Hide call structure' : 'Get more from Bridge'}</button>${p.meetingDate && !p.calendarEventId && Cal.mcp && x.w && !x.w.allDay && !calendarItems().some(c => matchPrep(c) === p) ? `<button class="jump" data-calsync="${esc(p.id)}">Add to Google Calendar</button>` : ''}${shapeOpen ? `<button class="jump" data-ask="Help me practice for my call with ${esc(p.contactName.split(' ')[0])}." data-hint="Use the prep doc and the call structure. Ask one question at a time as ${esc(p.contactName)} might, then give short feedback." data-send="1">Practice it in chat</button>` : ''}</div></div>`;
+    };
+    el.innerHTML = (upcoming.length ? `<div class="stack">${upcoming.map((x, i) => card(x, i === 0)).join('')}</div>` : '<div class="empty">No upcoming calls with prep. Tell the chat when something gets scheduled.</div>')
+      + (undated.length ? `<details class="fold" style="margin-top:1rem"><summary>Not scheduled yet (${undated.length})</summary><div class="stack">${undated.map(x => card(x, false)).join('')}</div></details>` : '')
+      + (past.length ? `<details class="fold" style="margin-top:.4rem"><summary>Past (${past.length})</summary><div class="stack">${past.map(x => card(x, false)).join('')}</div></details>` : '');
+    el.querySelectorAll('[data-shape]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); toggleKey('shape-' + b.dataset.shape); }));
+    el.querySelectorAll('[data-calsync]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); b.disabled = true; b.textContent = 'Adding…'; Cal.sync(S.prep.find(x => x.id === b.dataset.calsync)); }));
+  }
+
+  /* ================= coaching ================= */
+  function storyList() {
+    const mm = S.mindmap || {};
+    if (Array.isArray(mm.stories) && mm.stories.length) return mm.stories.slice(0, 4);
+    return (mm.bridgeSkills || []).slice(0, 4).map(s => ({ skill: s.skill, title: s.skill, story: trunc(s.why, 170), useWhen: '' }));
+  }
+  function renderCoaching() {
+    const mm = S.mindmap || {};
+    const nextCall = agendaItems().find(i => i.prep);
+    $('coachPitch').innerHTML = mm.elevatorPitch ? `<div class="pitch-card"><div class="eyebrow" style="margin-bottom:.6rem">Your pitch · current draft</div><div class="pitch">“${esc(mm.elevatorPitch)}”</div><div class="pitch-acts"><button class="btn" data-ask="Tailor my pitch for ${esc(nextCall ? 'my call with ' + nextCall.prep.contactName.split(' ')[0] : 'my next conversation')}." data-hint="Keep it in my voice, 4-5 sentences, and say what you changed." data-send="1">Tailor for ${esc(nextCall ? nextCall.prep.contactName.split(' ')[0] : 'next call')}</button><button class="btn" data-ask="Here's my pitch rewritten in my own words. Give me honest feedback: ">Rewrite it myself</button></div></div>` : '<div class="empty">Your pitch gets drafted with your readout.</div>';
+    const top = S.opportunities.filter(o => lane(o) !== 'closed')[0];
+    const who = nextCall ? nextCall.prep.contactName.split(' ')[0] : '';
+    // [title, subtitle, what the student "says" (shown in chat), how Bridge should run it (sent, not shown)]
+    const drills = [
+      ['Mock interview', who ? 'For ' + who : 'One question at a time', who ? 'Help me with a mock interview for my call with ' + who + '.' : 'Help me with a mock interview.', 'Run a live mock interview' + (nextCall ? ' tailored to ' + nextCall.prep.contactName + ' (' + (nextCall.prep.company || '') + ') and its prep doc' : '') + '. Ask ONE question now, then wait for my answer and give short feedback before the next one.'],
+      ['"Why us?"', top ? 'Sharpen it for ' + top.org : 'Specific and honest', 'Help me sharpen my "why ' + (top ? top.org : 'this company') + '" answer.', 'Ask me 1-2 questions first, then help me build a specific, honest answer in my voice.'],
+      ['Weigh a decision', 'Offers and forks, honestly', 'Help me weigh my open options.', 'Compare my open options against my long-term direction. Be direct, then ask what I am leaning toward.'],
+      ['Find my weak spot', 'Where the story wobbles', 'Where is my story weakest right now?', 'Based on my experience and target, name the weakest point in my story and what would fix it. Be specific.'],
+    ];
+    $('drills').innerHTML = drills.map(d => `<button class="drill" data-ask="${esc(d[2])}" data-hint="${esc(d[3])}" data-send="1"><b>${esc(d[0])}</b><span>${esc(d[1])}</span></button>`).join('');
+    const st = storyList();
+    const matches = (mm.storyMatches && Array.isArray(mm.storyMatches.items)) ? mm.storyMatches.items : [];
+    $('stories').innerHTML = st.length ? st.map(s => { const m = matches.find(x => norm(x.title) === norm(s.title)); return `<div class="story"><span class="story-skill">${esc(s.skill || '')}</span><b>${esc(s.title || '')}</b><p>${esc(s.story || '')}</p>${s.useWhen ? `<span class="use">Use it when: ${esc(s.useWhen)}</span>` : ''}${m ? `<div class="next"><b>Next up · ${esc(m.call)}</b> ${esc(m.how)}</div>` : ''}</div>`; }).join('') : '<div class="empty">Built with your career map.</div>';
+    const sm = $('storyMatch'); sm.hidden = !sample || !st.length; sm.textContent = Stories.busy ? 'matching…' : (matches.length ? 're-match to my next calls' : 'match to my next calls');
+    renderIntel();
+  }
+  function renderIntel() {
+    const c = S.coach;
+    let land = [], adj = [];
+    if (c && (c.landing || c.adjust)) { land = c.landing || []; adj = c.adjust || []; }
+    else {
+      const byDate = (a, b) => String(b.date).localeCompare(String(a.date));
+      land = S.interactions.filter(i => i.wentWell).sort(byDate).slice(0, 3).map(i => ({ point: trunc(i.wentWell.split(/(?<=[.!?—])\s/)[0], 110), sources: [i.contactName] }));
+      adj = S.interactions.filter(i => i.improveNextTime).sort(byDate).slice(0, 3).map(i => ({ point: trunc(i.improveNextTime.split(/(?<=[.!?—])\s/)[0], 110), sources: [i.contactName] }));
+    }
+    const item = (x, i) => `<div class="intel-item"><span class="intel-n">${i + 1}</span><div><b>${esc(x.point)}</b>${x.detail ? `<div class="muted" style="font-size:.78rem;margin-top:.2rem;line-height:1.4">${esc(x.detail)}</div>` : ''}<small>${(x.sources || []).map(s => `<span>${esc(s)}</span>`).join('')}</small></div></div>`;
+    $('intel').innerHTML = `<div class="intel-col land"><h4><span class="dot"></span>What's landing</h4>${land.map(item).join('') || '<div class="muted" style="font-size:.82rem">Shows up after your first debrief.</div>'}</div><div class="intel-col adj"><h4><span class="dot" style="background:var(--amber)"></span>What to adjust</h4>${adj.map(item).join('') || '<div class="muted" style="font-size:.82rem">Nothing flagged yet. After each call, tell Bridge one thing you\'d do differently.</div>'}</div>`;
+    const rb = $('intelRefresh'); rb.hidden = !sample || !S.interactions.length; rb.textContent = Coach.busy ? 'reading…' : 're-read my conversations';
+  }
+  $('intelRefresh').addEventListener('click', () => Coach.generate());
+  $('storyMatch').addEventListener('click', () => Stories.match());
+
+  /* ================= direction ================= */
+  function renderDirection() {
+    const mm = S.mindmap; const pf = S.profile || {};
+    const readout = !!mm;
+    $('readoutBanner').innerHTML = (readout && !pf.readoutSeenAt) ? `<div class="readout-banner"><div><div class="eyebrow">Your readout</div><div style="font-family:var(--serif);font-size:1.2rem;margin-top:.3rem">Your potential career path, from everything you told Bridge. It's a working map, not a commitment.</div></div><button class="btn primary" id="readoutDone">Open my dashboard →</button></div>` : (Readout.busy ? `<div class="readout-banner"><div><div class="eyebrow">Your readout</div><div style="font-family:var(--serif);font-size:1.2rem;margin-top:.3rem">Bridge is putting your readout together…</div></div></div>` : '');
+    const rd = $('readoutDone'); if (rd) rd.addEventListener('click', async () => { if (db) { try { await saveProfile({ readoutSeenAt: new Date().toISOString() }); applyStage(); maybeWelcome(); } catch (e) { } } go('today'); });
+    $('revisedNote').textContent = mm && mm.revisedAt ? 'Last revised ' + fmtDate(mm.revisedAt.slice(0, 10)) : '';
+    if (!mm) { $('cmapBody').innerHTML = ''; $('routeBody').innerHTML = '<div class="empty">Built from your first conversation with Bridge.</div>'; return; }
+    const act = activeStop;
+    const node = (key, cls, label, title, when) => `<button class="cnode ${cls}${act === key ? ' on' : ''}" data-stop="${key}"><span class="eyebrow">${esc(label)}</span><b>${esc(title || '—')}</b>${when ? `<small>${esc(when)}</small>` : ''}<span class="cnode-more">details ↓</span></button>`;
+    const shortNow = mm.rightNow ? trunc(mm.rightNow.split(/(?<=[.;—])\s/)[0], 90) : '';
+    const forks = mm.forks || [];
+    $('cmapBody').innerHTML = `<p class="cmap-hint">Your path, left to right. Tap any stop to jump to its details below.</p><div class="cmap" id="cmap"><svg class="cmap-lines" id="cmapLines" aria-hidden="true"></svg>${node('now', 'now', 'Right now', shortNow)}${mm.targetNextStep ? node('next', '', 'Next step', mm.targetNextStep.title, mm.targetNextStep.timing) : ''}${mm.nextStage ? node('stage', '', 'Then', mm.nextStage.title, mm.nextStage.timing) : ''}<div class="cforks">${forks.map((f, i) => node('fork-' + i, 'fork', f.label || 'Path', f.title)).join('')}</div></div>${mm.whatsFixed ? `<button class="cfixed${act === 'fixed' ? ' on' : ''}" data-stop="fixed"><span class="eyebrow">What stays fixed, whichever path</span>${esc(mm.whatsFixed)}</button>` : ''}`;
+    const stop = (key, title, when, why, yields, cls) => `<div class="stop ${cls || ''}${act === key ? ' active' : ''}" data-stopkey="${key}"><div class="stop-top"><div class="stop-title">${esc(title)}</div>${when ? `<div class="stop-when">${esc(when)}</div>` : ''}</div>${why || yields ? `<div class="stop-grid">${why ? `<div><h4>Why this stage</h4><p>${esc(why)}</p></div>` : ''}${yields ? `<div><h4>What it yields</h4><p>${esc(yields)}</p></div>` : ''}</div>` : ''}</div>`;
+    let html = '<div class="rail">';
+    if (mm.rightNow) html += `<div class="stop${act === 'now' ? ' active' : ''}" data-stopkey="now"><div class="stop-top"><div class="stop-title">Right now</div></div><p style="margin-top:.5rem">${esc(mm.rightNow)}</p></div>`;
+    if (mm.targetNextStep) html += stop('next', mm.targetNextStep.title, mm.targetNextStep.timing, mm.targetNextStep.why, mm.targetNextStep.yields);
+    if (mm.nextStage) html += stop('stage', mm.nextStage.title, mm.nextStage.timing, mm.nextStage.why, mm.nextStage.yields);
+    const forkAct = /^fork-/.test(act || '');
+    if (forks.length) html += `<div class="stop${forkAct ? ' active' : ''}" data-stopkey="fork"><div class="stop-top"><div class="stop-title">The fork</div></div><div class="forks">${forks.map((f, i) => `<div class="fork${act === 'fork-' + i ? ' on' : ''}" data-stopkey="fork-${i}"><span class="eyebrow">${esc(f.label)}</span><b>${esc(f.title)}</b><p>${esc(f.why)}</p><p><i>Yields:</i> ${esc(f.yields)}</p></div>`).join('')}</div></div>`;
+    if (mm.whatsFixed) html += `<div class="stop fixed${act === 'fixed' ? ' active' : ''}" data-stopkey="fixed"><div class="stop-top"><div class="stop-title" style="color:var(--route)">What's actually fixed</div></div><p style="margin-top:.5rem;color:var(--text)">${esc(mm.whatsFixed)}</p></div>`;
+    $('routeBody').innerHTML = html + '</div>';
+    // The rail line stops exactly at the last stop's dot, whatever that card's height.
+    const railEl = $('routeBody').querySelector('.rail');
+    const fitRail = () => { const last = railEl && railEl.lastElementChild; if (!last) return; const dotY = (1.1 + 0.66) * parseFloat(getComputedStyle(document.documentElement).fontSize); railEl.style.setProperty('--rail-end', Math.max(0, last.offsetHeight - dotY) + 'px'); };
+    if (railEl) { fitRail(); if (window.ResizeObserver) { if (window.__railRO) window.__railRO.disconnect(); window.__railRO = new ResizeObserver(fitRail); window.__railRO.observe(railEl); } }
+    $('cmapBody').querySelectorAll('[data-stop]').forEach(b => b.addEventListener('click', () => {
+      activeStop = b.dataset.stop; renderDirection();
+      const k = /^fork-/.test(activeStop) ? activeStop : activeStop;
+      const el = document.querySelector('#routeBody [data-stopkey="' + k + '"]') || document.querySelector('#routeBody [data-stopkey="fork"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }));
+    requestAnimationFrame(drawCmap);
+  }
+  let activeStop = '';
+  // Connectors are drawn from the boxes' real positions, so every line meets a box edge exactly.
+  function drawCmap() {
+    const wrap = $('cmap'), svg = $('cmapLines'); if (!wrap || !svg) return;
+    const W = wrap.getBoundingClientRect(); if (!W.width) return;
+    const rel = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - W.left, r: r.right - W.left, t: r.top - W.top, b: r.bottom - W.top, cy: (r.top + r.bottom) / 2 - W.top, cx: (r.left + r.right) / 2 - W.left }; };
+    const main = [...wrap.querySelectorAll(':scope > .cnode')].map(rel);
+    const forks = [...wrap.querySelectorAll('.cforks .cnode')].map(rel);
+    const stacked = main.length > 1 && main[1].t >= main[0].b - 1;
+    const d = [];
+    const r1 = (v) => Math.round(v) + 0.5;
+    if (!stacked) {
+      for (let i = 0; i < main.length - 1; i++) { const a = main[i], b = main[i + 1]; const xm = (a.r + b.l) / 2; d.push(`M${a.r} ${r1(a.cy)} H${xm} V${r1(b.cy)} H${b.l}`); }
+      if (forks.length && main.length) {
+        const a = main[main.length - 1], xm = r1((a.r + forks[0].l) / 2);
+        d.push(`M${a.r} ${r1(a.cy)} H${xm}`);
+        d.push(`M${xm} ${r1(forks[0].cy)} V${r1(forks[forks.length - 1].cy)}`);
+        forks.forEach(f => d.push(`M${xm} ${r1(f.cy)} H${f.l}`));
+      }
+    } else {
+      const x = r1(main[0] ? main[0].l + 22 : 22);
+      const all = main.concat(forks);
+      for (let i = 0; i < all.length - 1; i++) d.push(`M${x} ${all[i].b} V${all[i + 1].t}`);
+    }
+    svg.setAttribute('viewBox', `0 0 ${W.width} ${W.height}`); svg.setAttribute('width', W.width); svg.setAttribute('height', W.height);
+    svg.innerHTML = `<path d="${d.join(' ')}" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="square" opacity=".55"/>`;
+  }
+  window.addEventListener('resize', () => { if (currentPage === 'direction') drawCmap(); });
+
+  /* ================= projects ================= */
+  const NOTE_KINDS = [['decision', 'Decisions', 'var(--violet)'], ['progress', 'Progress', 'var(--route)'], ['question', 'Open questions', 'var(--amber)'], ['idea', 'Ideas', 'var(--brass)']];
+  function noteKind(n) {
+    if (n.kind && NOTE_KINDS.some(k => k[0] === n.kind)) return n.kind;
+    const t = String(n.text || '').toLowerCase();
+    if (/\?\s*$|should (i|we)|not sure|unsure|figure out|whether/.test(t)) return 'question';
+    if (/decid|going with|chose|we'll|we will|agreed|settled|launch/.test(t)) return 'decision';
+    if (/idea|maybe|could |what if|someday/.test(t)) return 'idea';
+    return 'progress';
+  }
+  function renderProjects() {
+    const el = $('projectsBody');
+    if (!S.projects.length) { el.innerHTML = '<div class="empty">Nothing logged. Anything you\'re building or part of belongs here.</div>'; return; }
+    const rank = (s) => s === 'closed' ? 2 : s === 'idea' ? 1 : 0;
+    const sorted = S.projects.slice().sort((a, b) => rank(a.status) - rank(b.status) || (a.order || 0) - (b.order || 0));
+    el.innerHTML = sorted.map(p => {
+      const notes = (p.notes || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      const tasks = S.tasks.filter(t => !t.done && t.linkedProjectId === p.id);
+      const groups = NOTE_KINDS.map(([k, label, col]) => ({ k, label, col, items: notes.filter(n => noteKind(n) === k) })).filter(g => g.items.length);
+      const allOpen = openKeys.has('notes-' + p.id);
+      const notesHtml = groups.length ? `<div class="ngroups">${groups.map(g => `<div class="ngroup"><div class="ngroup-h" style="color:${g.col}"><i style="background:${g.col}"></i>${g.label} · ${g.items.length}</div><ul>${(allOpen ? g.items : g.items.slice(0, 2)).map(n => `<li>${esc(n.text)}<span>${esc(fmtDate(n.date))}</span></li>`).join('')}</ul></div>`).join('')}</div>${notes.length > groups.reduce((s, g) => s + Math.min(2, g.items.length), 0) ? `<button class="linkish" data-allnotes="${esc(p.id)}">${allOpen ? 'show less' : 'show all ' + notes.length + ' notes'}</button>` : ''}` : '<span class="muted" style="font-size:.8rem">No notes yet.</span>';
+      return `<div class="proj${p.status === 'closed' ? ' closed' : ''}" data-key="${esc(p.id)}"><div class="proj-top"><div class="proj-name">${esc(p.name)}</div><span class="chip ${p.status === 'open' ? 'route' : p.status === 'paused' ? 'amber' : p.status === 'idea' ? 'violet' : ''}">${esc(p.status || 'open')}</span></div>${p.digest && p.digest.summary ? `<p style="font-family:var(--serif);font-size:.95rem">${esc(p.digest.summary)}</p>` : ''}${p.currentStatus ? `<div><div class="lbl">Where it stands</div><p>${esc(p.currentStatus)}</p></div>` : ''}${p.connection ? `<div><div class="lbl">Why it matters for you</div><p class="muted" style="font-style:italic">${esc(p.connection)}</p></div>` : ''}${tasks.length ? `<div><div class="lbl">Open tasks</div>${tasks.map(t => `<p>· ${esc(t.text)}</p>`).join('')}</div>` : ''}<div><div class="lbl"><span>Notes</span>${sample && notes.length > 2 ? `<button class="linkish" data-tidy="${esc(p.id)}">${Projects.busy === p.id ? 'sorting…' : 'tidy with Bridge'}</button>` : ''}</div>${notesHtml}</div><div class="note-row"><input id="note-${esc(p.id)}" placeholder="Add a note: a decision, progress, a question…" /><button class="btn" data-note="${esc(p.id)}">Add</button></div></div>`;
+    }).join('');
+    el.querySelectorAll('[data-note]').forEach(b => {
+      const inp = $('note-' + b.dataset.note);
+      const add = async () => { const v = inp.value.trim(); if (!v || !db) return; inp.value = ''; const p = S.projects.find(x => x.id === b.dataset.note); const n = { text: v, date: new Date().toISOString() }; n.kind = noteKind(n); try { await db.collection('projects').doc(p.id).update({ notes: (p.notes || []).concat([n]) }); Projects.process(p.id, n); } catch (e) { } };
+      b.addEventListener('click', add); inp.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+    });
+    el.querySelectorAll('[data-allnotes]').forEach(b => b.addEventListener('click', () => toggleKey('notes-' + b.dataset.allnotes)));
+    el.querySelectorAll('[data-tidy]').forEach(b => b.addEventListener('click', () => Projects.tidy(b.dataset.tidy)));
+  }
+
+  /* ================= records ================= */
+  let logQuery = '', logFilter = 'all';
+  $('logSearch').addEventListener('input', (e) => { logQuery = norm(e.target.value); renderLog(); });
+  function timeline() {
+    const rows = [];
+    S.interactions.forEach(i => rows.push({ k: 'log-' + i.id, kind: 'conversation', date: i.date, who: i.contactName || '', sub: i.company || '', chip: i.type || 'conversation', text: i.summary || i.materials || i.context || '', more: [['Went well', i.wentWell], ['Adjust', i.improveNextTime], ['Next time', i.prepForNext]], hay: [i.contactName, i.company, i.summary, i.context, i.materials, i.wentWell].join(' ') }));
+    S.sessions.forEach(s => rows.push({ k: 'ses-' + s.id, kind: 'session', date: s.date, who: s.focus || 'Bridge session', sub: '', chip: 'session', text: s.summary || '', more: [], hay: [s.focus, s.summary].join(' ') }));
+    S.reflections.forEach(r => rows.push({ k: 'ref-' + r.id, kind: 'reflection', date: r.date, who: r.type === 'weekly' ? 'Weekly reflection' : 'Reflection', sub: r.prompt || '', chip: 'reflection', text: r.journalText || [r.movedForward, r.energizing, r.stuck, r.changeNextWeek].filter(Boolean).join(' · '), more: [], hay: [r.journalText, r.prompt].join(' ') }));
+    return rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
+  function renderLog() {
+    const all = timeline();
+    const counts = { all: all.length, conversation: 0, session: 0, reflection: 0 }; all.forEach(r => counts[r.kind]++);
+    $('logFilters').innerHTML = [['all', 'All'], ['conversation', 'Conversations'], ['session', 'Sessions'], ['reflection', 'Reflections']].filter(([k]) => k === 'all' || counts[k]).map(([k, l]) => `<button class="pill${logFilter === k ? ' active' : ''}" data-lf="${k}">${l} ${counts[k]}</button>`).join('');
+    $('logFilters').querySelectorAll('[data-lf]').forEach(b => b.addEventListener('click', () => { logFilter = b.dataset.lf; renderLog(); }));
+    let rows = all.filter(r => logFilter === 'all' || r.kind === logFilter);
+    if (logQuery) rows = rows.filter(r => norm(r.hay).includes(logQuery));
+    const el = $('logBody');
+    el.innerHTML = rows.length ? rows.map(r => { const open = openKeys.has(r.k); return `<div class="log-row" data-key="${esc(r.k)}"><div class="log-date">${esc(fmtDate(r.date))}</div><div style="min-width:0"><div class="log-who">${esc(r.who)}${r.sub ? ` <span class="muted" style="font-weight:400">· ${esc(r.sub)}</span>` : ''}</div><div class="log-sum${open ? '' : ' clamp'}">${esc(r.text)}</div>${open ? r.more.filter(m => m[1]).map(m => `<div class="log-sum"><b>${m[0]}:</b> ${esc(m[1])}</div>`).join('') : ''}</div><span class="chip">${esc(r.chip)}</span></div>`; }).join('') : '<div class="empty">Nothing matches.</div>';
+    el.querySelectorAll('.log-row').forEach(r => r.addEventListener('click', () => toggleKey(r.dataset.key)));
+  }
+  function renderRecords() {
+    renderLog();
+    $('resumeBody').innerHTML = S.experience.length ? `<div class="exp-grid">${S.experience.slice().sort((a, b) => (b.order || 0) - (a.order || 0)).map(x => `<div class="exp"><div class="exp-top"><b>${esc(x.title)}</b>${x.type ? `<span class="chip">${esc(x.type)}</span>` : ''}</div><div class="muted" style="font-size:.78rem">${esc(x.org || '')}${x.dates ? ' · ' + esc(x.dates) : ''}</div><p>${esc(x.highlights || '')}</p>${x.skills ? `<div class="tags">${String(x.skills).split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>` : '<div class="empty">Built from your first conversation with Bridge.</div>';
+  }
+
+  /* ================= sheets: settings + Equinox 6 welcome ================= */
+  function sheet(kind) {
+    const isWelcome = kind === 'welcome';
+    const cal = S.calStatus === 'live';
+    const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Equinox 6' : 'Settings'}">
+      <div class="sheet-head">${logoSvg()}<div><h3>${isWelcome ? 'Welcome to Equinox 6' : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div></div>
+      <div class="sheet-body">
+        <div><div class="opt-h">Palette</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
+        <div><div class="opt-h">Mode</div><div class="mode-opts">${[['system', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
+        <div><div class="opt-h">Connections</div><div class="conn"><div><b>Google Calendar</b><small>${cal ? 'Connected. Calls on your calendar show up in Up next with a countdown.' : 'Not connected. When this page asks to use Google Calendar, allow it, and Up next fills in on its own.'}</small></div><span class="chip ${cal ? 'route' : ''}">${cal ? 'on' : 'off'}</span></div></div>
+        ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
+        <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetDone">Done</button>'}</div>
+      </div></div></div>`;
+    $('sheetHost').innerHTML = html;
+    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } } };
+    $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
+    $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
+    $('sheetDone').addEventListener('click', close);
+    $('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim' && !isWelcome) close(); });
+  }
+  $('gearBtn').addEventListener('click', () => sheet('settings'));
+  const capAdd = () => { const v = $('captureInput').value.trim(); if (!v || Projects.capturing) return; $('captureInput').value = ''; Projects.capture(v); };
+  $('captureBtn').addEventListener('click', capAdd);
+  $('captureInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); capAdd(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('scrim') && !$('sheetDone').classList.contains('primary')) $('sheetHost').innerHTML = ''; });
+  function maybeWelcome() {
+    const pf = S.profile;
+    if (!pf || !pf.name || pf.e6SeenAt || $('scrim')) return;
+    if (!S.mindmap || !pf.readoutSeenAt) return; // new users finish the survey and see their map first
+    sheet('welcome');
+  }
+
+  /* ================= header + render all ================= */
+  function renderAll() {
+    const p = S.profile;
+    const bits = p ? [p.name, p.school, p.major ? p.major.split('(')[0].trim() + (p.classYear ? " '" + String(p.classYear).slice(-2) : '') : ''].filter(Boolean) : [];
+    const stg = flowStage();
+    $('whoLine').textContent = stg === 'intake' ? 'Getting to know you · a few questions at a time' : stg === 'readout' ? 'Your career map' : (p && p.name ? bits.join(' · ') : '');
+    applyStage(); renderStart(); renderBearing(); renderAgenda(); renderTodo(); renderPipeline(); renderPeople(); renderCoaching(); renderDirection(); renderProjects(); renderRecords();
+  }
+  setInterval(() => { if (!document.hidden) { renderAgenda(); if (currentPage === 'people') renderPrep(); } }, 30000);
+
+  /* ================= context for Claude ================= */
+  function contextBlock(maxChars) {
+    const now = new Date();
+    const pf = S.profile || {}; const mm = S.mindmap || {};
+    const lines = [];
+    lines.push('NOW: ' + now.toLocaleString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + '). Today ISO: ' + todayISO());
+    lines.push('PERSON: ' + [pf.name, pf.currentChapter, pf.location ? 'in ' + pf.location : '', pf.targetStart ? 'target start ' + pf.targetStart : ''].filter(Boolean).join(' | '));
+    if (mm.targetNextStep) lines.push('TARGET NEXT STEP: ' + mm.targetNextStep.title);
+    if (mm.forks) lines.push('LONG-TERM FORK: ' + mm.forks.map(f => f.label + ': ' + f.title).join(' / '));
+    if (mm.whatsFixed) lines.push('FIXED: ' + trunc(mm.whatsFixed, 200));
+    lines.push('\nUP NEXT (calendar + prep):'); agendaItems().slice(0, 6).forEach(it => lines.push('- ' + whenLabel(it.start, it.allDay, it.end).text + ': ' + it.title + (it.prep ? ' [prep id ' + it.prep.id + ']' : '')));
+    const db1 = needsDebrief(); if (db1.length) lines.push('NEEDS DEBRIEF: ' + db1.map(p => p.contactName + ' (' + p.meetingDate + ')').join('; '));
+    lines.push('\nOPPORTUNITIES (id | org | title | status | notes):'); S.opportunities.forEach(o => lines.push('- ' + o.id + ' | ' + o.org + ' | ' + o.title + ' | ' + o.status + ' | ' + trunc(o.notes, 220)));
+    lines.push('\nCONTACTS (id | name | company | bucket | goal | status | last | follow-up | notes):'); S.network.forEach(c => lines.push('- ' + c.id + ' | ' + c.name + ' | ' + (c.company || '') + ' | ' + (c.bucket || '') + ' | ' + (c.goal || '') + ' | ' + (c.status || '') + ' | ' + (c.lastContact || '') + ' | ' + (c.nextFollowUp || '') + ' | ' + trunc(c.notes, 180)));
+    lines.push('\nPREP DOCS (id | contact | when | purpose):'); S.prep.forEach(p => lines.push('- ' + p.id + ' | ' + p.contactName + ' | ' + (p.meetingDate || 'unscheduled') + ' | ' + trunc(p.purpose, 140)));
+    lines.push('\nOPEN TASKS (id | text | due | priority):'); S.tasks.filter(t => !t.done).forEach(t => lines.push('- ' + t.id + ' | ' + t.text + ' | ' + (t.dueDate || '') + ' | ' + (t.priority || '')));
+    const g = S.guidance.filter(x => !x.done); if (g.length) { lines.push('\nOPEN GUIDANCE:'); g.forEach(x => lines.push('- ' + x.text)); }
+    lines.push('\nPROJECTS: ' + S.projects.map(p => p.id + ' (' + p.name + ', ' + p.status + ')').join('; '));
+    lines.push('\nRECENT CONVERSATIONS:'); S.interactions.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 6).forEach(i => lines.push('- ' + i.date + ' ' + i.contactName + ' (' + (i.company || '') + '): ' + trunc(i.summary, 240)));
+    const act = S.activity.filter(a => a.date === todayISO()); if (act.length) { lines.push('\nACTIVITY TODAY:'); act.forEach(a => lines.push('- ' + a.label)); }
+    const doneToday = S.tasks.filter(t => t.done && t.completedAt && sameDay(new Date(t.completedAt), now)); if (doneToday.length) lines.push('TASKS DONE TODAY: ' + doneToday.map(t => t.text).join('; '));
+    const recentSaves = Chat.messages.filter(m => m.role === 'assistant' && m.saved && m.saved.some(s => s.ok) && (Date.now() - (m.ts || 0)) < 2 * 86400000).flatMap(m => m.saved.filter(s => s.ok && !s.undone).map(s => s.label));
+    if (recentSaves.length) lines.push('SAVED FROM CHAT (last 2 days): ' + recentSaves.slice(-12).join('; '));
+    if (mm.elevatorPitch) lines.push('\nPITCH: ' + trunc(mm.elevatorPitch, 500));
+    let s = lines.join('\n');
+    if (s.length > maxChars) s = s.slice(0, maxChars) + '\n…(truncated)';
+    return s;
+  }
+  function isCapErr(e) { return e && ['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(e.code); }
+
+  /* ================= brief (bearing) generation ================= */
+  const Brief = {
+    busy: false, lastRun: 0, timer: null,
+    // Background refreshes share the viewer's Claude usage with the chat, so they are spaced out:
+    // at most one bearing rewrite every 2 minutes, however many updates land.
+    schedule(trigger) { clearTimeout(this.timer); const wait = Math.max(1800, 120000 - (Date.now() - this.lastRun)); this.timer = setTimeout(() => this.generate(trigger), wait); },
+    async generate(trigger) {
+      if (!sample || !db || this.busy || !S.mindmap) return;
+      if (Chat.inFlight) { this.schedule(trigger); return; }
+      this.busy = true; this.lastRun = Date.now(); renderBearing();
+      const evening = period().endsWith('evening');
+      const prompt = 'You are Bridge, a direct, warm career coach for an early-career person. Read their live dashboard data and decide what they should do next.\n\n'
+        + 'MODE: ' + (evening ? 'EVENING: wrap up today, then set up tomorrow.' : 'DAY: point them at what matters now.') + '\n\n'
+        + 'Reply with ONLY JSON: {"headline": string, "moves": [{"text": string, "why": string, "kind": "do"|"coach", "page": string, "tab": string, "target": string}]'
+        + (evening ? ', "wrap": [string], "reflect": string' : '') + '}\n'
+        + '- headline: a direction, not a story. Max 12 words, imperative, no narration or "you bought time" framing. Good: "Push Palantir forward; hold ACE until Nov 1." / "Book two alumni calls this week." Bad: anything describing what already happened.\n'
+        + '- moves: exactly 3, most leveraged first. text = a concrete action starting with a verb (max 10 words). why = max 12 words, the reason only. Mix doing with coaching. Prefer time-sensitive items from UP NEXT, NEEDS DEBRIEF, and follow-up dates.\n'
+        + '- NEVER suggest something already done: check TASKS DONE TODAY, SAVED FROM CHAT and RECENT CONVERSATIONS. If they are waiting on someone, the move is the follow-up on its date, not the original ask.\n'
+        + '- page/tab/target link each move to where the detail lives: page "pipeline" (target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "".\n'
+        + (evening ? '- wrap: up to 3 short past-tense lines of what actually moved today. Empty array if nothing moved; never invent.\n- reflect: one specific, gentle question about today (max 18 words).\n' : '')
+        + 'Use only facts in the data. Never invent people, dates, or outcomes.\n\nDATA:\n' + contextBlock(40000);
+      try {
+        const r = await sample.json(prompt, { modelTier: 'default', cache: false });
+        const moves = (r && Array.isArray(r.moves) ? r.moves : []).slice(0, 3).map(m => ({ text: String(m.text || ''), why: String(m.why || ''), kind: m.kind === 'coach' ? 'coach' : 'do', page: String(m.page || ''), tab: String(m.tab || ''), target: String(m.target || '') })).filter(m => m.text);
+        await db.doc('brief/main').set({ headline: String((r && r.headline) || ''), moves, wrap: evening && Array.isArray(r.wrap) ? r.wrap.map(String).slice(0, 3) : [], reflect: evening ? String(r.reflect || '') : '', reflectAnswered: false, period: period(), generatedAt: new Date().toISOString(), generatedAtMs: Date.now(), trigger: trigger && trigger !== 'manual refresh' && trigger !== 'auto' ? String(trigger) : '' });
+      } catch (e) {
+        if (isCapErr(e)) sample = null;
+        Chat.status(e && e.code === 'rate_limited' ? 'Bearing update hit a rate limit. Try again in a bit.' : '');
+      } finally { this.busy = false; renderBearing(); }
+    },
+    maybeAuto() {
+      if (!sample || !loaded || !S.profile || !S.profile.name || !S.mindmap || this.busy || Chat.inFlight) return;
+      if (!S.brief || S.brief.period !== period()) return this.generate('auto');
+      if (briefStale() && Date.now() - this.lastRun > 90000) this.generate('auto');
+    },
+  };
+
+  /* ================= coach intel ================= */
+  const Coach = {
+    busy: false,
+    async generate() {
+      if (!sample || !db || this.busy) return; this.busy = true; renderIntel();
+      const src = S.interactions.filter(i => i.wentWell || i.improveNextTime || i.summary).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 20).map(i => `- ${i.date} ${i.contactName} (${i.company || ''}): WENT WELL: ${trunc(i.wentWell, 300)} | ADJUST: ${trunc(i.improveNextTime, 300)} | SUMMARY: ${trunc(i.summary, 300)}`).join('\n');
+      const prompt = 'You are Bridge, a career coach. Turn these debriefs into short, useful intel. Reply ONLY JSON: {"landing":[{"point":string,"detail":string,"sources":[string]}],"adjust":[{"point":string,"detail":string,"sources":[string]}]}\n- Max 3 each, most important first. point = a pattern in max 10 words, stated as a takeaway ("Your build-from-scratch story is the hook"), not a quote. detail = max 18 words: how to use it next. sources = first names of who it came from.\n- Group repeats into one pattern. Only use what is in the data; adjust may be empty.\n\nDEBRIEFS:\n' + src;
+      try { const r = await sample.json(prompt, { modelTier: 'default', cache: false }); await db.doc('coach/main').set({ landing: (r.landing || []).slice(0, 3), adjust: (r.adjust || []).slice(0, 3), generatedAt: new Date().toISOString() }); }
+      catch (e) { if (isCapErr(e)) sample = null; Chat.status('Couldn\'t re-read conversations just now. Try again in a bit.'); }
+      finally { this.busy = false; renderIntel(); }
+    },
+  };
+
+  /* ================= stories matched to upcoming calls ================= */
+  const Stories = {
+    busy: false,
+    async match() {
+      if (!sample || !db || this.busy || Chat.inFlight) return; this.busy = true; renderCoaching();
+      const st = storyList();
+      const calls = agendaItems().filter(i => i.prep).slice(0, 4).map(i => `- ${i.prep.contactName} (${i.prep.company || ''}), ${whenLabel(i.start, i.allDay, i.end).text}: ${trunc(i.prep.purpose, 160)}`).join('\n') || '- (no calls scheduled)';
+      const open = S.opportunities.filter(o => lane(o) !== 'closed').map(o => `- ${o.org}: ${o.title} (${o.status})`).join('\n');
+      const intel = S.coach ? JSON.stringify({ landing: S.coach.landing, adjust: S.coach.adjust }) : '';
+      const prompt = 'You are Bridge, a career coach. Match each story to the upcoming conversation where it will land best. Reply ONLY JSON: {"items":[{"title": string (exactly one of the story titles), "call": string (who, max 4 words), "how": string (max 16 words: when to use it in that conversation)}]}\n- At most one item per story; skip a story if nothing fits. Use conversations first, then open opportunities. Use what is landing in past conversations.\n\nSTORIES:\n' + st.map(s => '- ' + s.title + ': ' + s.story).join('\n') + '\n\nUPCOMING CONVERSATIONS:\n' + calls + '\n\nOPEN OPPORTUNITIES:\n' + open + '\n\nWHAT HAS LANDED SO FAR: ' + intel;
+      try { const r = await sample.json(prompt, { modelTier: 'default', cache: false }); await db.doc('mindmap/main').update({ storyMatches: { items: (r.items || []).slice(0, 6), at: new Date().toISOString() } }); }
+      catch (e) { if (isCapErr(e)) sample = null; Chat.status('Couldn\'t match stories just now. Try again in a bit.'); }
+      finally { this.busy = false; renderCoaching(); }
+    },
+  };
+
+  /* ================= project note tidy ================= */
+  const Projects = {
+    busy: '', capturing: false,
+    async capture(text) {
+      if (!db || !text) return;
+      if (!sample) { await db.collection('projects').doc(slug(text)).set({ name: trunc(text, 60), type: 'other', status: 'idea', purpose: text, currentStatus: '', connection: '', tags: [], notes: [], createdAt: new Date().toISOString() }); return; }
+      this.capturing = true; $('captureNote').textContent = 'Bridge is setting it up…';
+      const mm = S.mindmap || {};
+      const prompt = 'Someone is adding a project to their career dashboard. Turn their note into a project card. Reply ONLY JSON: {"name": string (max 5 words), "status": "idea"|"open", "purpose": string (max 20 words), "currentStatus": string (max 20 words, "Just an idea so far." if not started), "connection": string (max 22 words: how it helps their direction, specific to them), "firstTask": string or "" (one concrete next step, max 12 words)}\n- status "open" only if they have already started it.\n\nTHEIR DIRECTION: ' + (mm.targetNextStep ? mm.targetNextStep.title : '') + ' / ' + (mm.forks || []).map(f => f.title).join(' or ') + '\nEXISTING PROJECTS: ' + S.projects.map(x => x.name).join(', ') + '\n\nTHEIR NOTE: ' + text;
+      try {
+        const r = await sample.json(prompt, { modelTier: 'quick', cache: false });
+        const id = slug(r.name || text);
+        await db.collection('projects').doc(id).set({ name: String(r.name || trunc(text, 40)), type: 'other', status: r.status === 'open' ? 'open' : 'idea', purpose: String(r.purpose || ''), currentStatus: String(r.currentStatus || ''), connection: String(r.connection || ''), tags: [], notes: [{ text, date: new Date().toISOString(), kind: 'idea' }], createdAt: new Date().toISOString(), order: S.projects.length + 1 });
+        if (r.firstTask) await db.collection('tasks').doc(slug(r.firstTask)).set({ text: String(r.firstTask), dueDate: addDaysISO(7), priority: 'low', done: false, waitingOn: false, contextType: 'project', linkedProjectId: id, linkedProjectName: String(r.name || ''), createdAt: new Date().toISOString() });
+        $('captureNote').textContent = 'Added ' + (r.name || 'it') + (r.firstTask ? ', with a first step on your to-do list.' : '.');
+      } catch (e) { if (isCapErr(e)) sample = null; $('captureNote').textContent = 'Couldn\'t set it up just now. Try again in a bit.'; }
+      finally { this.capturing = false; }
+    },
+    // Every note gets sorted, tightened, turned into a task if it implies one, and folded into "Where it stands".
+    async process(pid, note) {
+      const p = S.projects.find(x => x.id === pid); if (!p || !sample || !db || Chat.inFlight) return;
+      const prompt = 'A note was just added to a project. Reply ONLY JSON: {"kind": "decision"|"progress"|"question"|"idea", "text": string (the note tightened, max 16 words, keep every fact), "task": string or "" (a concrete to-do ONLY if the note implies one, max 12 words), "dueInDays": number, "currentStatus": string (one updated line, max 22 words, on where the project stands now)}\n\nPROJECT: ' + p.name + '\nWHERE IT STOOD: ' + (p.currentStatus || '') + '\nRECENT NOTES: ' + (p.notes || []).slice(-6).map(n => n.text).join(' | ') + '\nNEW NOTE: ' + note.text;
+      try {
+        const r = await sample.json(prompt, { modelTier: 'quick', cache: false });
+        const fresh = S.projects.find(x => x.id === pid) || p;
+        const notes = (fresh.notes || []).map(n => (n.date === note.date && n.text === note.text) ? Object.assign({}, n, { kind: ['decision', 'progress', 'question', 'idea'].includes(r.kind) ? r.kind : n.kind, text: r.text || n.text, original: n.text }) : n);
+        const patch = { notes }; if (r.currentStatus) patch.currentStatus = String(r.currentStatus);
+        await db.collection('projects').doc(pid).update(patch);
+        if (r.task) await db.collection('tasks').doc(slug(r.task)).set({ text: String(r.task), dueDate: addDaysISO(Number(r.dueInDays) || 5), priority: 'med', done: false, waitingOn: false, contextType: 'project', linkedProjectId: pid, linkedProjectName: p.name, createdAt: new Date().toISOString() });
+      } catch (e) { if (isCapErr(e)) sample = null; }
+    },
+    async tidy(id) {
+      const p = S.projects.find(x => x.id === id); if (!p || !sample || !db || this.busy) return;
+      this.busy = id; renderProjects();
+      const prompt = 'Organize these project notes. Reply ONLY JSON: {"summary": string, "notes": [{"i": number, "kind": "decision"|"progress"|"question"|"idea", "text": string}]}\n- summary: one sentence (max 22 words) on where the project stands.\n- notes: one entry per input note, same index i; tighten text to max 16 words without losing facts; merge nothing.\n\nPROJECT: ' + p.name + '\nNOTES:\n' + (p.notes || []).map((n, i) => i + ': ' + n.text).join('\n');
+      try {
+        const r = await sample.json(prompt, { modelTier: 'default', cache: false });
+        const notes = (p.notes || []).map((n, i) => { const m = (r.notes || []).find(x => Number(x.i) === i); return m ? Object.assign({}, n, { kind: m.kind, text: m.text || n.text, original: n.original || n.text }) : n; });
+        await db.collection('projects').doc(p.id).update({ notes, digest: { summary: String(r.summary || ''), at: new Date().toISOString() } });
+      } catch (e) { if (isCapErr(e)) sample = null; } finally { this.busy = ''; renderProjects(); }
+    },
+  };
+
+  /* ================= readout (first-time users) ================= */
+  // The career map is built from the whole survey conversation in one structured call, so it never
+  // depends on the chat having saved each fact along the way. It also fills in profile, experience and projects.
+  const Readout = {
+    busy: false,
+    transcript() {
+      return Chat.messages.filter(m => !m.failed).slice(-40).map(m => (m.role === 'user' ? 'STUDENT: ' : 'BRIDGE: ') + String(m.content).replace(/@@ACTIONS@@[\s\S]*$/, '').slice(0, 1200)).join('\n');
+    },
+    async ask(prompt) {
+      try { return await sample.json(prompt, { modelTier: 'default', cache: false }); }
+      catch (e1) { if (e1 && e1.code === 'invalid_json') { diag('readout', e1, e1.text); return await sample.json(prompt + '\n\nReply with the JSON object only. No prose, no code fences.', { modelTier: 'default', cache: false }); } throw e1; }
+    },
+    async generate() {
+      if (!db || this.busy) return;
+      if (!(await Chat.ensureSample())) { Chat.status('Chat needs this page open in Claude to build your map.'); return; }
+      this.busy = true; Chat.status('Building your career map… this takes about a minute.'); Chat.render();
+      const prompt = 'You are Bridge, a career platform. Below is a get-to-know-you conversation with a student or recent grad. Build their profile and career map from it. Be specific to them; no generic advice; never invent facts they did not say.\n'
+        + 'Reply ONLY with JSON:\n{"profile":{"name","school","classYear","major","location","opportunityType","targetStart","currentChapter"},'
+        + '"experience":[{"title","org","dates","highlights","skills":"comma list","type":"job|leadership|research|project|volunteer"}],'
+        + '"projects":[{"name","purpose","currentStatus"}],'
+        + '"rightNow": string, "targetNextStep": {"title","timing","why","yields"}, "nextStage": {"title","timing","why","yields"}, "forks": [{"label":"Path A","title","why","yields"},{"label":"Path B","title","why","yields"}], "whatsFixed": string, "bridgeSkills": [{"skill","why"}], "elevatorPitch": string, "stories": [{"skill","title","story","useWhen"}], "firstMoves": [{"text","dueInDays":number,"priority":"high"|"med"}]}\n'
+        + '- profile.currentChapter: one line. classYear: the year they finish. Leave a field "" if unknown.\n- experience: every job, internship, project or role they described. projects: things they are building now.\n'
+        + '- bridgeSkills: 3-4 transferable skills proven by their experience. stories: 3-4, each tied to one skill: title max 10 words, story max 30 words, useWhen max 10 words. elevatorPitch: 4-5 sentences in their voice. firstMoves: exactly 3 concrete networking actions for this week.\n\n'
+        + 'ALREADY SAVED: ' + JSON.stringify({ profile: S.profile || {}, experience: S.experience.map(x => x.title + ' @ ' + x.org) }) + '\n\nCONVERSATION:\n' + this.transcript();
+      try {
+        const r = await this.ask(prompt);
+        const now = new Date().toISOString();
+        const pfIn = (r && r.profile) || {}; const clean = {}; Object.keys(pfIn).forEach(k => { if (pfIn[k] && !(S.profile || {})[k]) clean[k] = String(pfIn[k]); });
+        if (pfIn.currentChapter) clean.currentChapter = String(pfIn.currentChapter);
+        await saveProfile(Object.assign(clean, { e6NewUser: true, readoutReadyAt: now, updatedAt: todayISO() }));
+        const haveExp = new Set(S.experience.map(x => norm(x.title + x.org)));
+        for (const x of (r.experience || []).slice(0, 10)) { if (!x || !x.title || haveExp.has(norm(x.title + (x.org || '')))) continue; await db.collection('experience').doc(slug(x.org || x.title)).set({ title: String(x.title), org: String(x.org || ''), dates: String(x.dates || ''), highlights: String(x.highlights || ''), skills: String(x.skills || ''), type: String(x.type || ''), order: S.experience.length + 1 }); }
+        const haveProj = new Set(S.projects.map(x => norm(x.name)));
+        for (const x of (r.projects || []).slice(0, 5)) { if (!x || !x.name || haveProj.has(norm(x.name))) continue; await db.collection('projects').doc(slug(x.name)).set({ name: String(x.name), type: 'other', status: 'open', purpose: String(x.purpose || ''), currentStatus: String(x.currentStatus || ''), connection: '', tags: [], notes: [] }); }
+        for (const m of (r.firstMoves || []).slice(0, 3)) { if (!m || !m.text) continue; await db.collection('tasks').doc(slug(m.text)).set({ text: String(m.text), dueDate: addDaysISO(Number(m.dueInDays) || 3), priority: m.priority === 'high' ? 'high' : 'med', done: false, waitingOn: false, contextType: 'career', createdAt: now }); }
+        const mm = { rightNow: r.rightNow || '', targetNextStep: r.targetNextStep || null, nextStage: r.nextStage || null, forks: r.forks || [], whatsFixed: r.whatsFixed || '', bridgeSkills: r.bridgeSkills || [], elevatorPitch: r.elevatorPitch || '', stories: r.stories || [], revisedAt: now };
+        await db.doc('mindmap/main').set(mm);
+        S.mindmap = mm;
+        Chat.status(''); applyStage();
+      } catch (e) { diag('readout', e, e && e.text); if (isCapErr(e)) sample = null; Chat.status(e && e.code === 'rate_limited' ? 'Claude is busy right now. Wait a minute, then tap "Build my career map" again.' : 'Your career map didn\'t finish. Tap "Build my career map" to try again.'); }
+      finally { this.busy = false; Chat.render(); renderDirection(); }
+    },
+  };
+
+  /* ================= Google Calendar: two-way ================= */
+  // Calendar → Bridge: the list_events watch feeds Up next. Bridge → Calendar: every scheduled call
+  // becomes (or updates) an event, and the event id is stored on the prep so the two stay matched.
+  const Cal = {
+    mcp: null,
+    localISO(s, addMin) {
+      const w = parseWhen(s); if (!w || w.allDay) return null;
+      const d = new Date(w.date.getTime() + (addMin || 0) * 60000);
+      const off = -d.getTimezoneOffset(), sign = off >= 0 ? '+' : '-', pad = (n) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':00' + sign + pad(off / 60) + ':' + pad(off % 60);
+    },
+    async sync(prep) {
+      if (!this.mcp || !prep || !prep.meetingDate || !prep.id) return;
+      const startTime = this.localISO(prep.meetingDate, 0), endTime = this.localISO(prep.meetingDate, 45);
+      if (!startTime) return;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      try {
+        if (prep.calendarEventId) {
+          await this.mcp.callTool('Google Calendar', 'update_event', { eventId: prep.calendarEventId, startTime, endTime, timeZone: tz });
+        } else {
+          const r = await this.mcp.callTool('Google Calendar', 'create_event', { summary: 'Call: ' + prep.contactName + (prep.company ? ' (' + prep.company + ')' : ''), startTime, endTime, timeZone: tz, description: (prep.purpose || '') + '\n\nAdded by Bridge. Your prep is on the People → Call prep tab.' });
+          const pl = r && r.payload; const eid = pl && (pl.id || pl.eventId || (pl.event && pl.event.id));
+          if (eid) await db.collection('prep').doc(prep.id).update({ calendarEventId: String(eid) });
+        }
+        try { await this.mcp.invalidate('Google Calendar', 'list_events'); } catch (e) { }
+        Chat.status('Added to your Google Calendar.'); setTimeout(() => { if (/Google Calendar/.test($('dockStatus').textContent)) Chat.status(''); }, 4000);
+      } catch (e) {
+        diag('calendar', e);
+        const c = e && e.code;
+        Chat.status(c === 'server_not_connected' ? 'Connect Google Calendar in claude.ai Settings → Connectors to sync calls.' : c === 'needs_reauth' ? 'Reconnect Google Calendar in claude.ai Settings → Connectors.' : c === 'not_in_manifest' ? 'Calendar access is off for this page. Allow it when asked to sync calls.' : 'Couldn\'t add that call to Google Calendar just now.');
+      }
+    },
+  };
+
+  /* ================= chat engine ================= */
+  const ACTIONS_DOC = `Available actions (use exact ids from DATA when updating; "label" = a 3-8 word summary shown to the user):
+- {"type":"update_contact","id":contactId,"notesAppend"?,"status"?:"active|contacted|sourced|stalled","nextFollowUp"?:"YYYY-MM-DD","lastContact"?:"YYYY-MM-DD","bucket"?,"label"}
+- {"type":"add_contact","name","company"?,"role"?,"bucket":"past-job|personal|college|high-school|cold","goal":"learn|position|both","bridgePath"?,"notes"?,"label"}
+- {"type":"add_task","text","dueDate"?:"YYYY-MM-DD","priority":"high|med|low","linkedContactName"?,"linkedProjectId"?,"waitingOn"?:boolean,"waitingOnWho"?,"label"}
+- {"type":"complete_task","id":taskId,"label"}
+- {"type":"update_opportunity","id":oppId,"status"?:"exploring|applied|interviewing|offer|active|closed|rejected|declined|accepted","notesAppend"?,"label"}
+- {"type":"add_opportunity","title","org","kind":"role|internship|program|research|class|collaboration|warm-path","status","sourceBridge"?,"notes"?,"label"}
+- {"type":"schedule_call","prepId"?:existing prep id,"contactName","company"?,"meetingDate":"YYYY-MM-DDTHH:MM" local time,"purpose"?,"label"}
+- {"type":"add_talking_point","prepId","point","label"}
+- {"type":"log_interaction","contactName","company"?,"kind":"call|interview|info-session|materials|message","date":"YYYY-MM-DD","summary","wentWell"?,"improveNextTime"?,"prepForNext"?,"label"}
+- {"type":"add_project_note","projectId","text","kind":"decision|progress|question|idea","label"}
+- {"type":"add_project","name","purpose"?,"currentStatus"?,"status":"idea|open","label"}
+- {"type":"journal","text","label"}
+- {"type":"navigate","page":"people|pipeline|coaching|direction|projects|records|today","tab"?:"prep|contacts|candidates|outreach","target"?: prep id, contact, company or project name,"label"}  (use when they ask to see / open / show something: "show me the prep" → page people, tab prep, target that call)`;
+  const RIPPLE = `RIPPLE RULE: one message usually changes several places. Emit every update it implies, not just the obvious one:
+- Reached out to / heard from someone: log_interaction + update_contact (lastContact today, status, notesAppend) + complete_task for the matching open task.
+- Waiting on someone or asked for a reminder: update_contact nextFollowUp + add_task (dueDate = that date, waitingOn true, linkedContactName).
+- Anything about a company in OPPORTUNITIES: update_opportunity notesAppend (and status if it changed).
+- A call got booked or moved: schedule_call (it also puts the call on their Google Calendar). Never create a second prep for the same person; pass prepId when one exists.
+- They ask to see something ("show me the prep", "open Alex's card", "take me to my pipeline"): navigate, and say where you took them.
+The dashboard's bearing refreshes itself after you save, so make the data complete.`;
+  const REPLY_FORMAT = 'FORMAT (exactly this, nothing before or after):\n<your reply to them, plain text, no JSON, no code fences>\n@@ACTIONS@@\n<a JSON array of actions, or [] if none>\n';
+  function chatRules() {
+    return 'You are Claude, chatting inside Bridge, this person\'s live career dashboard. Talk like a normal Claude conversation: warm, direct, specific, a real coach (push back when something looks low-value). The dashboard DATA below is your memory; you cannot browse.\n\n'
+      + REPLY_FORMAT
+      + '- reply: 1-4 sentences usually; longer only for drafts, prep, or mock interviews. Name the strategic implication when useful and end with ONE concrete question. Do NOT restate what you saved; the page shows that.\n'
+      + '- actions: every fact from their LATEST message worth keeping. Prefer updating existing records over duplicates. Never invent facts.\n'
+      + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for the three palettes and light/dark.\n\n'
+      + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
+  }
+  function onboardingRules() {
+    return 'You are Claude, running the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first, then roughly: where they are now (year / time since graduating, status); what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure, which is a complete answer); the open-ended "tell me anything else about yourself" (the most important question; if thin, follow up gently, one prompt at a time); their experiences (jobs, teams, clubs, research, projects: for each, what they did and what they\'re proud of); schools and communities; location and constraints; what they are building or part of right now.\n'
+      + 'Save facts AS YOU GO: every turn that reveals their name, school, year, goals or an experience gets its action in that same turn. Each action is one complete JSON object with a "label" key.\n'
+      + 'When you have their name, stage, what they want, and at least two experiences, ask if they\'re ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. Keep the whole intake to about 8-10 questions.\n'
+      + 'Style requests: Bridge looks the same for everyone; there are three palettes and light/dark under the gear icon.\n\n'
+      + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","type"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"intake_done","label"}]\n'
+      + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nExperience so far: ' + S.experience.map(x => x.title + ' @ ' + x.org).join('; ') + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
+  }
+
+  // Pull every well-formed {...} object out of a broken JSON array, skipping the bad ones.
+  function salvageObjects(s) {
+    const out = []; let depth = 0, start = -1, inStr = false, esc2 = false;
+    for (let k = 0; k < s.length; k++) {
+      const ch = s[k];
+      if (inStr) { if (esc2) esc2 = false; else if (ch === '\\') esc2 = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') { inStr = true; continue; }
+      if (ch === '{') { if (depth === 0) start = k; depth++; }
+      else if (ch === '}') { depth--; if (depth === 0 && start >= 0) { try { out.push(JSON.parse(s.slice(start, k + 1))); } catch (e) { } start = -1; } if (depth < 0) depth = 0; }
+    }
+    return out;
+  }
+  function parseReply(text) {
+    let raw = String(text || '');
+    const intakeFlag = /"type"\s*:\s*"intake_done"/.test(raw);
+    raw = raw.replace(/\{\s*"type"\s*:\s*"intake_done"[^}]*\}\s*/g, (m0, off) => (raw.indexOf('@@ACTIONS@@') < 0 || off < raw.indexOf('@@ACTIONS@@')) ? '' : m0);
+    const i = raw.indexOf('@@ACTIONS@@');
+    let reply = (i >= 0 ? raw.slice(0, i) : raw).trim();
+    let actions = [], actionsBroken = false;
+    if (i >= 0) {
+      let a = raw.slice(i + 11).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+      if (a) {
+        try { const v = JSON.parse(a); actions = Array.isArray(v) ? v : (v && Array.isArray(v.actions) ? v.actions : []); }
+        catch (e) { const s = a.indexOf('['), t = a.lastIndexOf(']'); try { actions = JSON.parse(a.slice(s, t + 1)); } catch (e2) { actions = salvageObjects(a); actionsBroken = true; } }
+      }
+    } else if (/^\s*\{/.test(raw)) {          // model fell back to the old JSON shape
+      try { const v = JSON.parse(raw); reply = String(v.reply || ''); actions = Array.isArray(v.actions) ? v.actions : []; } catch (e) { }
+    }
+    if (intakeFlag && !actions.some(x => x && x.type === 'intake_done')) actions.push({ type: 'intake_done' });
+    return { reply, actions, actionsBroken };
+  }
+  // Last few failures, kept in the dashboard's own database so a broken chat can be diagnosed later.
+  async function diag(where, e, text) {
+    if (!db) return;
+    try { await db.doc('diag/chat').set({ at: new Date().toISOString(), where, code: (e && e.code) || String(e && e.message || e || ''), message: String((e && e.message) || '').slice(0, 300), raw: String(text || '').slice(0, 1500), tab: TAB, ua: navigator.userAgent.slice(0, 120) }); } catch (x) { }
+  }
+  const Chat = {
+    messages: [], inFlight: null, startedAt: 0, ready: false, open: false, hideLatest: false, streamText: '', userStopped: false,
+    view: lsGet('bridge.dock', 'bar'),
+    status(t) { $('dockStatus').textContent = t || ''; },
+    setView(v) { this.view = v; lsSet('bridge.dock', v); $('dock').classList.toggle('min', v === 'min'); if (v === 'min') { this.open = false; $('dock').classList.remove('open'); } this.render(); },
+    setDot() { const d = $('dockDot'); d.className = 'dot' + (!sample ? ' off' : this.inFlight ? ' busy' : ''); $('dockLabel').textContent = !sample ? 'Bridge chat · reconnecting on send' : this.inFlight ? 'Bridge is thinking…' : 'Bridge chat'; },
+    prefill(text, send, hint) {
+      if (this.view === 'min') this.setView('bar');
+      const i = $('chatInput'); i.value = text; autoGrow();
+      if (send) { this.open = true; $('dock').classList.add('open'); this.pendingHint = hint || ''; this.render(); this.send(); return; }
+      i.focus(); try { i.setSelectionRange(text.length, text.length); } catch (e) { }
+    },
+    // The conversation lives in the dashboard's database, not the tab: another tab, a reload or another
+    // device picks it up. `inflight` says which tab is waiting on Claude (with a heartbeat), so a
+    // question asked in a tab that was closed gets re-asked once by the next tab that opens.
+    remoteInflight: null, sending: false, lastRemoteAt: '',
+    async persist() {
+      if (!db || !this.ready) return;
+      const inflight = this.inFlight ? { tab: TAB, at: Date.now() } : null;
+      const updatedAt = new Date().toISOString(); this.lastRemoteAt = updatedAt;
+      try { await db.doc('chat/main').set({ messages: this.messages.slice(-80), updatedAt, writer: TAB, inflight }); } catch (e) { diag('persist', e); }
+    },
+    onRemote(d) {
+      if (!d || d.writer === TAB) return;
+      this.remoteInflight = d.inflight && d.inflight.tab !== TAB ? d.inflight : null;
+      // Never swap the conversation out from under a message that is being sent from this tab.
+      if (!this.sending && !this.inFlight && d.updatedAt && d.updatedAt !== this.lastRemoteAt) { this.messages = clone(d.messages || []); this.lastRemoteAt = d.updatedAt; }
+      this.render(); this.maybeResume();
+    },
+    maybeResume() {
+      if (this.sending || this.inFlight || !sample || !this.ready) return;
+      const lastUser = this.messages.map(m => m.role).lastIndexOf('user');
+      const lastBot = this.messages.map(m => m.role).lastIndexOf('assistant');
+      if (lastUser < 0 || lastUser < lastBot) return;
+      const m = this.messages[lastUser];
+      if (!m.pending || m.failed || m.resumed) return;
+      const ri = this.remoteInflight;
+      if (ri && Date.now() - ri.at < 150000) return;        // another open tab is still working on it
+      m.resumed = true;
+      this.status('Picking up your question where you left off…');
+      this.send(lastUser);
+    },
+    msgHtml(m, idx) {
+      if (m.role === 'user') return `<div class="msg user${m.failed ? ' failed' : ''}"><div class="bub">${esc(m.content)}</div>${m.failed ? `<div class="fail-note">Didn't go through. <button class="linkish" data-retry="${idx}">Retry</button></div>` : ''}</div>`;
+      const saved = (m.saved || []);
+      const savedHtml = saved.length ? `<div class="saved">${saved.map((s, si) => `<div class="saved-line ${s.ok ? '' : 'miss'}">${s.ok ? '✓ Saved:' : '✗ Not saved:'} ${esc(s.label)}${s.ok && s.undo && !s.undone ? ` <button class="undo" data-undo="${idx}:${si}">undo</button>` : ''}${s.undone ? ' <span class="muted">(undone)</span>' : ''}</div>`).join('')}${saved.some(s => s.ok) ? '<div class="muted" style="font-size:.68rem;font-family:var(--mono)">dashboard + bearing updating</div>' : ''}</div>` : '';
+      return `<div class="msg bot"><div class="bub">${esc(m.content)}</div>${savedHtml}</div>`;
+    },
+    render() {
+      const inner = $('threadInner');
+      inner.innerHTML = this.messages.length ? this.messages.map((m, i) => this.msgHtml(m, i)).join('') + (!this.inFlight && this.remoteInflight && Date.now() - this.remoteInflight.at < 150000 ? '<div class="msg bot"><div class="bub thinking">Bridge is answering in your other tab…</div></div>' : '') + (this.inFlight ? (this.streamText ? `<div class="msg bot"><div class="bub" id="streamBub">${esc(this.streamText)}</div></div>` : '<div class="msg bot"><div class="bub thinking" id="streamBub">Thinking…</div></div>') : '') : '<div class="muted" style="font-size:.84rem">Tell Bridge what\'s going on: a reply from someone, a reschedule, a stray thought, a question.</div>';
+      const th = $('thread'); th.scrollTop = th.scrollHeight;
+      const lastBotIdx = this.messages.map(m => m.role).lastIndexOf('assistant');
+      const lastUserIdx = this.messages.map(m => m.role).lastIndexOf('user');
+      let latest = '';
+      if (this.inFlight) latest = `<div class="msg bot"><div class="bub${this.streamText ? '' : ' thinking'}" id="streamLatest">${this.streamText ? esc(this.streamText) : 'Thinking…'}</div></div>`;
+      else if (lastUserIdx > lastBotIdx && this.messages[lastUserIdx].failed) latest = this.msgHtml(this.messages[lastUserIdx], lastUserIdx);
+      else if (lastBotIdx >= 0 && !this.hideLatest && (Date.now() - (this.messages[lastBotIdx].ts || 0)) < 6 * 3600000) latest = this.msgHtml(this.messages[lastBotIdx], lastBotIdx) + '<button class="linkish" data-dismiss style="align-self:flex-start">dismiss</button>';
+      $('latest').innerHTML = latest ? `<div style="display:flex;flex-direction:column;gap:.5rem;max-height:30vh;overflow-y:auto">${latest}</div>` : '';
+      $('latest').hidden = !latest;
+      const dz = $('latest').querySelector('[data-dismiss]'); if (dz) dz.onclick = () => { this.hideLatest = true; this.render(); };
+      $('histBtn').textContent = this.open ? 'Collapse' : 'History' + (this.messages.length ? ' (' + this.messages.length + ')' : '');
+      const cta = $('intakeCta');
+      if (cta) {
+        const users = this.messages.filter(m => m.role === 'user' && !m.failed).length;
+        const show = lastStage === 'intake' && (users >= 5 || Readout.busy);
+        cta.hidden = !show;
+        const bm = $('buildMap'); bm.disabled = Readout.busy || !!this.inFlight; bm.textContent = Readout.busy ? 'Building your career map…' : 'Build my career map →';
+      }
+      const sb = $('sendBtn'); sb.textContent = this.inFlight ? 'Stop' : 'Send'; sb.classList.toggle('stop', !!this.inFlight); sb.disabled = false;
+      this.setDot();
+    },
+    async ensureSample() { if (sample) return sample; try { sample = await claude.use('sample'); } catch (e) { sample = null; } return sample; },
+    async send(retryIdx) {
+      if (this.sending || this.inFlight) return;
+      this.sending = true;                                   // set before any await: no double sends, no remote swaps
+      let msg = null, ctl = null, beat = null, savedAny = false, intakeDone = false;
+      try {
+        if (typeof retryIdx === 'number') { msg = this.messages[retryIdx]; if (!msg) return; msg.failed = false; }
+        else {
+          const text = $('chatInput').value.trim(); if (!text) return;
+          $('chatInput').value = ''; autoGrow(); lsSet('bridge.draft', '');
+          msg = { role: 'user', content: text, ts: Date.now() }; if (this.pendingHint) { msg.hint = this.pendingHint; this.pendingHint = ''; }
+          this.messages.push(msg);
+        }
+        if (!(await this.ensureSample())) { msg.failed = true; this.status('Chat needs this page open in Claude with chat allowed. Reload, allow it when asked, then Retry.'); return; }
+        this.hideLatest = false; this.streamText = ''; this.remoteInflight = null;
+        ctl = new AbortController(); this.inFlight = ctl; this.startedAt = Date.now();
+        msg.pending = true;
+        beat = setInterval(() => { if (this.inFlight === ctl) { this.persist(); if (!this.streamText && Date.now() - this.startedAt > 60000) this.status('Still waiting on Claude… you can tap Stop and Retry.'); } }, 20000);
+        if (!/Picking up/.test($('dockStatus').textContent)) this.status('');
+        this.render(); this.persist();
+        const idx = this.messages.indexOf(msg);
+        const onboarding = !S.profile || !S.profile.name || !S.mindmap;
+        const history = this.messages.slice(0, idx + 1).filter(m => !m.failed || m === msg).slice(-14).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.role === 'assistant' && m.saved && m.saved.length ? m.content + '\n[saved: ' + m.saved.filter(s => s.ok).map(s => s.label).join('; ') + ']' : m.content + (m.hint ? '\n\n[How to help: ' + m.hint + ']' : '') }));
+        const turns = [{ role: 'user', content: onboarding ? onboardingRules() : chatRules() }].concat(history);
+        while (turns.length > 1 && turns[1].role === 'assistant') turns.splice(1, 1);
+        let total = turns.reduce((n, t) => n + t.content.length, 0);
+        while (total > 56000 && turns.length > 2) { total -= turns[1].content.length; turns.splice(1, 1); }
+        // Plain text + a delimited actions block: the reply always shows, even if the actions part is malformed.
+        const res = await sample(turns, { modelTier: 'quick', cache: false, signal: ctl.signal, onText: ({ text }) => this.onStream(text) });
+        const { reply, actions, actionsBroken } = parseReply(res && res.text);
+        const saved = [];
+        for (const a of actions.slice(0, 14)) { if (a && a.type === 'intake_done') { intakeDone = true; continue; } saved.push(await runAction(a)); }
+        if (actionsBroken) { diag('actions_parse', { code: 'actions_parse' }, res && res.text); if (!onboarding) saved.push({ ok: false, label: 'Some updates didn\'t come through. Say "save that" to try again.' }); }
+        savedAny = saved.some(s => s.ok && !s.nav);
+        this.messages.push({ role: 'assistant', content: reply || 'Got it.', saved, ts: Date.now() });
+      } catch (e) {
+        const code = (e && e.code) || 'upstream_error';
+        diag('send', e, e && e.text);
+        if (msg) msg.failed = true;
+        if (isCapErr(e)) { sample = null; this.status('Chat lost its connection to Claude. Reload the page, allow it when asked, then Retry.'); }
+        else if (code === 'cancelled') this.status(this.userStopped ? 'Stopped. Tap Retry to ask again.' : 'The connection dropped. Tap Retry.');
+        else if (code === 'rate_limited') this.status('Usage limit or too many requests. Give it a minute, then Retry.');
+        else if (code === 'session_expired') this.status('Your Claude session expired. Reload the page and sign in, then Retry.');
+        else if (code === 'prompt_too_large') this.status('That was too long. Try a shorter message.');
+        else if (code === 'refused') this.status('Claude couldn\'t answer that one. Try rewording it.');
+        else this.status('Claude had a hiccup (' + code + '). Tap Retry.');
+      } finally {
+        if (beat) clearInterval(beat);
+        if (msg) delete msg.pending;
+        if (/Picking up|Still waiting/.test($('dockStatus').textContent)) this.status('');
+        this.userStopped = false; this.inFlight = null; this.streamText = ''; this.sending = false;
+        this.render(); this.persist();
+        if (pendingNav) { const n = pendingNav; pendingNav = null; setTimeout(() => go(n.page, n.tab, n.target), 150); }
+        if (savedAny) Brief.schedule(trunc(msg.content, 80));
+        if (intakeDone) Readout.generate();
+      }
+    },
+    onStream(raw) {
+      const t = String(raw || '').split('@@ACTIONS@@')[0].replace(/\s+$/, '');
+      if (!t) return;
+      this.streamText = t;
+      const b = document.getElementById('streamBub'); if (b) { b.textContent = t; b.classList.remove('thinking'); }
+      const l = document.getElementById('streamLatest'); if (l) { l.textContent = t; l.classList.remove('thinking'); }
+      const th = $('thread'); th.scrollTop = th.scrollHeight;
+    },
+    stop() { if (this.inFlight) { this.userStopped = true; this.inFlight.abort(); } },
+    async undo(mi, si) { const s = this.messages[mi] && this.messages[mi].saved && this.messages[mi].saved[si]; if (!s || !s.undo || !db) return; try { await applyUndo(s.undo); s.undone = true; this.render(); this.persist(); Brief.schedule('undo'); } catch (e) { this.status('Undo failed.'); } },
+  };
+  function autoGrow() { const i = $('chatInput'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 140) + 'px'; }
+  $('chatInput').value = lsGet('bridge.draft', '') || ''; autoGrow();
+  $('chatInput').addEventListener('input', () => { autoGrow(); lsSet('bridge.draft', $('chatInput').value); });
+  $('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!Chat.inFlight) Chat.send(); } });
+  $('sendBtn').addEventListener('click', () => { if (Chat.inFlight) Chat.stop(); else Chat.send(); });
+  $('histBtn').addEventListener('click', () => { Chat.open = !Chat.open; $('dock').classList.toggle('open', Chat.open); Chat.render(); });
+  $('minBtn').addEventListener('click', () => Chat.setView('min'));
+  $('buildMap').addEventListener('click', () => Readout.generate());
+  $('dockPill').addEventListener('click', () => { Chat.setView('bar'); $('chatInput').focus(); });
+  $('dock').classList.toggle('min', Chat.view === 'min');
+  // Coming back to the tab: only a call stuck for 5+ minutes is treated as dead (the platform ends long calls itself).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    if (Chat.inFlight && Date.now() - Chat.startedAt > 300000) { Chat.inFlight.abort(); }
+    renderAgenda(); renderBearing(); Brief.maybeAuto(); Chat.setDot();
+  });
+
+  /* ================= actions (what the chat can save) ================= */
+  function findBy(list, id, name) {
+    if (id) { const x = list.find(i => i.id === id); if (x) return x; }
+    const n = norm(name || id); if (!n) return null;
+    return list.find(i => norm(i.name || i.contactName || i.title || i.org || i.text) === n) || list.find(i => { const v = norm(i.name || i.contactName || i.org || ''); return v && (v.includes(n) || n.includes(v)); });
+  }
+  function snapshot(item) { const d = Object.assign({}, item); delete d.id; return d; }
+  async function runAction(a) {
+    const label = trunc(String((a && a.label) || (a && a.type) || 'update'), 90);
+    if (!db) return { ok: false, label: label + ' (dashboard not connected)' };
+    try {
+      const t = a.type;
+      const now = new Date().toISOString();
+      if (t === 'update_contact') {
+        const c = findBy(S.network, a.id, a.name); if (!c) throw new Error('no contact');
+        const patch = {}; if (a.notesAppend) patch.notes = (c.notes ? c.notes + '\n' : '') + '[' + todayISO() + '] ' + a.notesAppend;
+        ['status', 'nextFollowUp', 'lastContact', 'bucket'].forEach(k => { if (a[k]) patch[k] = a[k]; });
+        if (!patch.lastContact && a.notesAppend) patch.lastContact = todayISO();
+        await db.collection('network').doc(c.id).update(patch);
+        logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'network', id: c.id, data: snapshot(c) } };
+      }
+      if (t === 'add_contact') {
+        if (!a.name) throw new Error('no name'); const id = slug(a.name);
+        await db.collection('network').doc(id).set({ name: a.name, company: a.company || '', role: a.role || '', bucket: a.bucket || 'cold', goal: a.goal || 'learn', bridgePath: a.bridgePath || '', notes: a.notes || '', status: 'sourced', lastContact: null, nextFollowUp: null });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'network', id } };
+      }
+      if (t === 'add_task') {
+        if (!a.text) throw new Error('no text'); const id = slug(a.text);
+        const proj = a.linkedProjectId && S.projects.find(p => p.id === a.linkedProjectId);
+        await db.collection('tasks').doc(id).set({ text: a.text, dueDate: a.dueDate || null, priority: a.priority || 'med', done: false, waitingOn: !!a.waitingOn, waitingOnWho: a.waitingOnWho || a.linkedContactName || null, contextType: proj ? 'project' : 'career', linkedContactName: a.linkedContactName || null, linkedProjectId: proj ? proj.id : null, linkedProjectName: proj ? proj.name : null, createdAt: now });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'tasks', id } };
+      }
+      if (t === 'complete_task') {
+        const tk = findBy(S.tasks.filter(x => !x.done), a.id, a.text); if (!tk) throw new Error('no task');
+        await db.collection('tasks').doc(tk.id).update({ done: true, completedAt: now });
+        logActivity('Done: ' + tk.text); return { ok: true, label, undo: { op: 'set', col: 'tasks', id: tk.id, data: snapshot(tk) } };
+      }
+      if (t === 'update_opportunity') {
+        const o = findBy(S.opportunities, a.id, a.org || a.title); if (!o) throw new Error('no opp');
+        const patch = {}; if (a.status) patch.status = a.status; if (a.notesAppend) patch.notes = (o.notes ? o.notes + ' ' : '') + '[' + todayISO() + '] ' + a.notesAppend;
+        await db.collection('opportunities').doc(o.id).update(patch);
+        logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'opportunities', id: o.id, data: snapshot(o) } };
+      }
+      if (t === 'add_opportunity') {
+        if (!a.org && !a.title) throw new Error('empty'); const id = slug(a.org || a.title);
+        await db.collection('opportunities').doc(id).set({ title: a.title || '', org: a.org || '', type: a.kind || 'role', status: a.status || 'exploring', sourceBridge: a.sourceBridge || '', notes: a.notes || '' });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'opportunities', id } };
+      }
+      if (t === 'schedule_call') {
+        // Same person, still upcoming or unscheduled → update that prep instead of making a second one.
+        let existing = a.prepId ? S.prep.find(p => p.id === a.prepId) : null;
+        if (!existing && a.contactName) existing = S.prep.find(p => norm(p.contactName) === norm(a.contactName) && (!p.meetingDate || (parseWhen(p.meetingDate) || { date: new Date(0) }).date >= new Date(Date.now() - 86400000)));
+        if (existing) {
+          const patch = { meetingDate: a.meetingDate || existing.meetingDate, purpose: a.purpose || existing.purpose || '' };
+          await db.collection('prep').doc(existing.id).update(patch);
+          Cal.sync(Object.assign({}, existing, patch));
+          logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'prep', id: existing.id, data: snapshot(existing) } };
+        }
+        const id = slug((a.contactName || 'call') + '-prep');
+        const doc = { contactName: a.contactName || 'Call', company: a.company || '', meetingDate: a.meetingDate || null, purpose: a.purpose || '', talkingPoints: [], questions: [], background: '' };
+        await db.collection('prep').doc(id).set(doc);
+        Cal.sync(Object.assign({ id }, doc));
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'prep', id } };
+      }
+      if (t === 'navigate') {
+        const page = String(a.page || ''); if (!$('page-' + page)) throw new Error('no page');
+        let target = String(a.target || ''), tab = String(a.tab || '');
+        if (page === 'people' && tab === 'prep' && target) { const x = findBy(S.prep, target, target); target = x ? x.id : ''; }
+        else if (page === 'people' && target) { const x = findBy(S.network, target, target); target = x ? x.id : ''; tab = tab || 'contacts'; }
+        else if (page === 'pipeline' && target) { const x = findBy(S.opportunities, target, target); target = x ? x.id : ''; }
+        else if (page === 'projects' && target) { const x = findBy(S.projects, target, target); target = x ? x.id : ''; }
+        pendingNav = { page, tab, target };
+        return { ok: true, nav: true, label: label || 'Opened it for you' };
+      }
+      if (t === 'add_talking_point') {
+        const p = findBy(S.prep, a.prepId, a.contactName); if (!p || !a.point) throw new Error('no prep');
+        await db.collection('prep').doc(p.id).update({ talkingPoints: (p.talkingPoints || []).concat([a.point]) });
+        return { ok: true, label, undo: { op: 'set', col: 'prep', id: p.id, data: snapshot(p) } };
+      }
+      if (t === 'log_interaction') {
+        const id = slug((a.contactName || 'conversation'));
+        await db.collection('interactions').doc(id).set({ contactName: a.contactName || '', company: a.company || '', type: a.kind || 'call', date: a.date || todayISO(), summary: a.summary || '', wentWell: a.wentWell || '', improveNextTime: a.improveNextTime || '', prepForNext: a.prepForNext || '', source: 'chat' });
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'interactions', id } };
+      }
+      if (t === 'add_project_note') {
+        const p = findBy(S.projects, a.projectId, a.project); if (!p || !a.text) throw new Error('no project');
+        const n = { text: a.text, date: now, kind: a.kind || '' }; n.kind = noteKind(n);
+        await db.collection('projects').doc(p.id).update({ notes: (p.notes || []).concat([n]) });
+        logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'projects', id: p.id, data: snapshot(p) } };
+      }
+      if (t === 'journal') {
+        if (!a.text) throw new Error('empty'); const id = slug('journal');
+        await db.collection('reflections').doc(id).set({ type: 'journal', journalText: a.text, date: todayISO() });
+        return { ok: true, label, undo: { op: 'delete', col: 'reflections', id } };
+      }
+      if (t === 'profile') {
+        const f = a.fields || {}; const clean = {}; Object.keys(f).forEach(k => { if (f[k]) clean[k] = String(f[k]); }); if (!Object.keys(clean).length) throw new Error('empty');
+        const prev = S.profile ? Object.assign({}, S.profile) : null;
+        await saveProfile(Object.assign({}, clean, { updatedAt: todayISO() }));
+        return { ok: true, label, undo: prev ? { op: 'set', col: 'profile', id: 'main', data: prev } : { op: 'delete', col: 'profile', id: 'main' } };
+      }
+      if (t === 'add_experience') {
+        if (!a.title) throw new Error('no title'); const id = slug(a.org || a.title);
+        await db.collection('experience').doc(id).set({ title: a.title, org: a.org || '', dates: a.dates || '', highlights: a.highlights || '', skills: a.skills || '', type: a.type || '', order: S.experience.length + 1 });
+        return { ok: true, label, undo: { op: 'delete', col: 'experience', id } };
+      }
+      if (t === 'add_project') {
+        if (!a.name) throw new Error('no name'); const id = slug(a.name);
+        await db.collection('projects').doc(id).set({ name: a.name, type: 'other', status: a.status === 'idea' ? 'idea' : 'open', purpose: a.purpose || '', currentStatus: a.currentStatus || '', connection: '', tags: [], notes: [] });
+        return { ok: true, label, undo: { op: 'delete', col: 'projects', id } };
+      }
+      throw new Error('unknown action');
+    } catch (e) { return { ok: false, label: label + ': couldn\'t match it. Say which one and I\'ll retry.' }; }
+  }
+  async function applyUndo(u) { const ref = u.col === 'profile' ? db.doc('profile/main') : db.collection(u.col).doc(u.id); if (u.op === 'delete') await ref.delete(); else await ref.set(u.data); }
+
+  /* ================= boot ================= */
+  renderAll(); Chat.render();
+  (async function boot() {
+    try { sample = await claude.use('sample'); } catch (e) { sample = null; }
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (db) {
+      const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['coach', 'coach/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
+      const apply = (key, kind, s) => { if (kind === 'doc') S[key] = s.exists ? clone(s.data()) : null; else S[key] = s.docs.map(d => Object.assign(clone(d.data()), { id: d.id })); };
+      await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); } catch (e) { } }));
+      try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; } } catch (e) { }
+      Chat.ready = true; loaded = true;
+      try { db.doc('chat/main').onSnapshot(s => { if (s.exists) Chat.onRemote(s.data()); }); } catch (e) { }
+      const ap = S.profile && S.profile.appearance; if (ap) Look.apply(ap.palette, ap.mode, false); else Look.apply('sky', 'system', false);
+      const seen = new Set();
+      specs.forEach(([key, path, kind]) => {
+        const ref = kind === 'doc' ? db.doc(path) : db.collection(path);
+        ref.onSnapshot(s => {
+          apply(key, kind, s);
+          if (seen.has(key) && !['brief', 'activity', 'coach'].includes(key)) lastDataChange = Date.now();
+          seen.add(key);
+          if (key === 'profile' && S.profile && S.profile.appearance) Look.apply(S.profile.appearance.palette, S.profile.appearance.mode, false);
+          renderAll(); if (key === 'profile' || key === 'mindmap') maybeWelcome();
+        });
+      });
+      const pf = S.profile;
+      applyStage(); maybeWelcome();
+    }
+    bootDone = true; renderAll(); Chat.render(); Chat.maybeResume();
+    if (!sample) Chat.status('Chat and the bearing need this page opened in Claude.');
+    Brief.maybeAuto();
+    try {
+      const mcp = await claude.use('mcp');
+      if (!mcp) { S.calStatus = 'off'; renderAgenda(); return; }
+      Cal.mcp = mcp;
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const end = new Date(start.getTime() + 8 * 86400000);
+      mcp.watchTool('Google Calendar', 'list_events', { startTime: start.toISOString(), endTime: end.toISOString(), orderBy: 'startTime', pageSize: 50 }, (ev) => {
+        if (ev.type === 'data') { const p = ev.result && ev.result.payload; S.calendar = (p && typeof p === 'object') ? p : null; S.calStatus = S.calendar ? 'live' : 'error'; renderAgenda(); renderBearing(); return; }
+        const code = ev.error && ev.error.code;
+        S.calStatus = (code === 'server_not_connected' || code === 'not_granted' || code === 'capability_disabled' || code === 'not_in_manifest' || code === 'blocked_by_policy') ? 'off' : 'error';
+        if (code === 'not_granted' || code === 'server_not_connected') S.calendar = null;
+        renderAgenda();
+      }, { refetchInterval: 300000 });
+    } catch (e) { S.calStatus = 'off'; renderAgenda(); }
+  })();
+})();
+</script>
