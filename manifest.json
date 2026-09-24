@@ -1,8 +1,8 @@
 {
-  "latest_version": "5.2.0",
+  "latest_version": "6.0.0",
   "schema_version": 2,
   "min_supported_version": "5.0.0",
-  "released": "2026-09-22",
+  "released": "2026-09-23",
   "active_cohorts": ["PILOT-01"],
   "kernel": "current.md",
   "modules": {
@@ -10,6 +10,10 @@
     "2-mindmap": "modules/2-mindmap.md",
     "3-networking": "modules/3-networking.md",
     "4-dashboard": "modules/4-dashboard.md"
+  },
+  "dashboard": {
+    "version": "equinox-6",
+    "path": "dashboard/equinox-6.html"
   },
   "templates": {
     "_META": "templates/_META.md",
@@ -19,12 +23,13 @@
     "archive_month": "templates/archive_month.md"
   },
   "migrations": {
-    "1-to-2": "migrations/1-to-2.md"
+    "1-to-2": "migrations/1-to-2.md",
+    "equinox-6-migration": "modules/equinox-6-migration.md"
   },
   "whats_new": [
-    "Bridge now asks before it changes your saved files, like tidying last month or bringing over old notes.",
-    "Each update is locked to a fixed version you approved, so nothing changes unless you say yes.",
-    "Google Drive stays optional. Bridge only sets up a folder after you choose to connect it."
+    "Equinox 6: one new Bridge dashboard for everyone, with a new look. Everything you've built is kept.",
+    "Pick a palette (Sky or Sand) and light, dark or match your device from the gear icon.",
+    "One chat message now updates your people, tasks, pipeline and prep together."
   ],
   "message_id": "2026-09-21-a",
   "message": ""
