@@ -15,6 +15,20 @@ Release rules:
 
 ---
 
+## 6.1.0 — 2026-09-23 (schema 2)
+
+Dashboard only, no change to the shape of student data. Dashboard version `equinox-6.1`.
+
+- "Connect your apps" sheet:
+  - New users see it while their career map builds.
+  - Existing users see it once, the next time they open their dashboard.
+  - Apps the dashboard uses (Google Calendar) are allowed in one Claude permission prompt.
+  - Apps used in Bridge chats (Drive, Granola, Gmail, Notion, Linear) get an "Add in Claude" button.
+- Settings lists every app with On / Allow / Add in Claude.
+- Usage limits: messages save and queue instead of failing, then get answered when Claude is back. The career map builds on the next visit if the limit hit mid-build.
+- Direction timeline line ends at the last dot.
+- Kernel: whenever the approved version's manifest `dashboard.version` differs from the student's `dashboardVersion`, Claude republishes `dashboard/equinox-6.html` from that version's tag to their existing dashboard URL and records the new version. This is how existing dashboards pick up template changes. The Equinox 6 migration now triggers only for students whose `dashboardVersion` isn't an Equinox 6 version yet.
+
 ## 6.0.0 — 2026-09-23 (schema 2)
 
 ### Equinox 6

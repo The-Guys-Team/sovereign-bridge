@@ -386,6 +386,17 @@
   .conn b { font-size: 0.84rem; }
   .conn small { display: block; font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.4; }
   .sheet-foot { display: flex; justify-content: flex-end; gap: 0.5rem; }
+  .apps-list { display: flex; flex-direction: column; gap: 0.45rem; }
+  .apps-list a.btn { text-decoration: none; white-space: nowrap; flex: none; }
+  .app-row { cursor: pointer; }
+  .app-row.is-on { border-color: var(--route); }
+  .app-row input { width: 18px; height: 18px; accent-color: var(--brass); flex: none; }
+  .app-ic { width: 34px; height: 34px; border-radius: 9px; flex: none; object-fit: contain; }
+  .app-ic.mono { display: grid; place-items: center; background: var(--paper-sunk); border: 1px solid var(--border); font-family: var(--mono); font-size: 0.72rem; font-weight: 500; color: var(--text-muted); }
+  .apps-build { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.8rem; border-radius: 9px; background: var(--paper-sunk); }
+  .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--brass); animation: spin 0.9s linear infinite; flex: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
   .sheet-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin: 0; }
 
   /* ---------- first run: landing ---------- */
@@ -477,6 +488,7 @@
   .saved-line { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
   .undo { background: none; border: none; color: var(--text-faint); font-family: var(--mono); font-size: 0.62rem; cursor: pointer; text-decoration: underline; padding: 0; }
   .fail-note { font-size: 0.74rem; color: var(--rust); display: flex; gap: 0.5rem; align-items: center; }
+  .fail-note.queued { color: var(--text-muted); flex-wrap: wrap; }
   .dock-input { display: flex; gap: 0.5rem; padding: 0.6rem 0.8rem 0.7rem; align-items: flex-end; }
   .dock-input textarea { flex: 1; min-width: 0; resize: none; font: inherit; font-size: 0.88rem; line-height: 1.4; border: 1px solid var(--border-strong); border-radius: 9px; padding: 0.55rem 0.7rem; background: var(--paper); color: var(--text); max-height: 140px; }
   .send { background: var(--brass); color: var(--on-brass); border: none; border-radius: 9px; padding: 0.55rem 1rem; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
@@ -656,8 +668,19 @@
       { id: 'sky', name: 'Sky', note: 'Dusty blue on Cream, Coral accent. Calm.', sw: ['#9DB5BB', '#E47E7A', '#F6F1E7'] },
       { id: 'sand', name: 'Sand', note: 'Sand with Espresso and Mustard. Warm.', sw: ['#D8CCB6', '#E7B94E', '#4A2C1D'] },
     ],
+    // Apps Bridge can use. `server` is the claude.ai connector name; it must also be declared in the page's mcp manifest.
+    // `icon`: optional official logo as an <img> src (data: URI). Without one, a lettered tile is shown.
+    apps: [
+      { server: 'Google Calendar', mono: 'Ca', core: true, does: 'Your calls show up in Up next with a countdown, and calls you book with Bridge land on your calendar.' },
+      { server: 'Google Drive', mono: 'Dr', core: true, does: 'Bridge saves its notes on you automatically and can read your resume.' },
+      { server: 'Granola', mono: 'Gr', does: 'After a call, your notes become a debrief and next steps.' },
+      { server: 'Gmail', mono: 'Gm', does: 'Bridge drafts outreach and follow-ups in your drafts. It never sends anything.' },
+      { server: 'Notion', mono: 'No', does: 'Your own to-do list shows up next to Bridge\'s.' },
+      { server: 'Linear', mono: 'Li', does: 'Project tasks you track in Linear show up in your Work Queue.' },
+    ],
   };
   document.querySelectorAll('[data-logo]').forEach(s => { s.innerHTML = BRAND.logo; });
+  const CL = () => window.__BRIDGE_DEMO_CLAUDE || window.claude;
   const logoSvg = (cls) => `<svg viewBox="${BRAND.logoViewBox}" aria-hidden="true"${cls ? ` class="${cls}"` : ''}>${BRAND.logo}</svg>`;
 
   /* ================= helpers ================= */
@@ -752,6 +775,8 @@
     if (a) { e.stopPropagation(); Chat.prefill(a.dataset.ask, a.dataset.send === '1', a.dataset.hint || ''); return; }
     const r = e.target.closest('[data-retry]');
     if (r) { e.stopPropagation(); Chat.send(Number(r.dataset.retry)); return; }
+    const tn = e.target.closest('[data-trynow]');
+    if (tn) { e.stopPropagation(); if (!Chat.flush(true) && Chat.readoutWanted) Readout.generate(); return; }
     const u = e.target.closest('[data-undo]');
     if (u) { e.stopPropagation(); const [mi, si] = u.dataset.undo.split(':').map(Number); Chat.undo(mi, si); }
   });
@@ -1260,27 +1285,77 @@
     $('resumeBody').innerHTML = S.experience.length ? `<div class="exp-grid">${S.experience.slice().sort((a, b) => (b.order || 0) - (a.order || 0)).map(x => `<div class="exp"><div class="exp-top"><b>${esc(x.title)}</b>${x.type ? `<span class="chip">${esc(x.type)}</span>` : ''}</div><div class="muted" style="font-size:.78rem">${esc(x.org || '')}${x.dates ? ' · ' + esc(x.dates) : ''}</div><p>${esc(x.highlights || '')}</p>${x.skills ? `<div class="tags">${String(x.skills).split(',').map(s => s.trim()).filter(Boolean).map(s => `<span class="tag">${esc(s)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>` : '<div class="empty">Built from your first conversation with Bridge.</div>';
   }
 
+  /* ================= apps: one permission prompt for every connector ================= */
+  const Apps = {
+    perms: null, states: {}, pick: null, asking: false,
+    async load() {
+      try { this.perms = await CL().use('permissions'); } catch (e) { this.perms = null; }
+      if (!this.perms) return;
+      for (const a of BRAND.apps) { try { this.states[a.server] = await this.perms.state('mcp:' + a.server); } catch (e) { this.states[a.server] = 'unavailable'; } }
+    },
+    available() { return BRAND.apps.filter(a => this.states[a.server] && this.states[a.server] !== 'unavailable'); },
+    others() { return BRAND.apps.filter(a => !this.states[a.server] || this.states[a.server] === 'unavailable'); },
+    addLink(a) { return `<a class="btn" href="https://claude.ai/settings/connectors" target="_blank" rel="noopener" aria-label="Add ${esc(a.server)} in Claude settings">Add in Claude</a>`; },
+    tile(a) { return a.icon ? `<img class="app-ic" src="${esc(a.icon)}" alt="">` : `<span class="app-ic mono" aria-hidden="true">${esc(a.mono)}</span>`; },
+    label(st) { return st === 'granted' ? 'On' : st === 'denied' ? 'Not allowed' : 'Off'; },
+    async allow(servers) {
+      if (!this.perms || !servers.length || this.asking) return;
+      this.asking = true;
+      try { const r = await this.perms.request(servers.map(s => 'mcp:' + s)); servers.forEach(s => { if (r && r['mcp:' + s]) this.states[s] = r['mcp:' + s]; }); } catch (e) { }
+      this.asking = false;
+    },
+    // New users see this while their career map builds.
+    async maybeShow() {
+      const pf = S.profile || {};
+      if (pf.appsSeenAt || $('scrim')) return;
+      await this.load();
+      if (!this.perms) return;
+      sheet('apps');
+    },
+  };
+
   /* ================= sheets: settings + Equinox 6 welcome ================= */
   function sheet(kind) {
+    if (kind === 'apps') return appsSheet();
     const isWelcome = kind === 'welcome';
     const cal = S.calStatus === 'live';
     const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Equinox 6' : 'Settings'}">
-      <div class="sheet-head">${logoSvg()}<div><h3>${isWelcome ? 'Welcome to Equinox 6' : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div></div>
+      <div class="sheet-head">${logoSvg()}<div><h3>${isWelcome ? (S.profile && S.profile.e6NewUser ? 'Make it yours' : 'Welcome to Equinox 6') : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div></div>
       <div class="sheet-body">
         <div><div class="opt-h">Palette</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
         <div><div class="opt-h">Mode</div><div class="mode-opts">${[['system', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
-        <div><div class="opt-h">Connections</div><div class="conn"><div><b>Google Calendar</b><small>${cal ? 'Connected. Calls on your calendar show up in Up next with a countdown.' : 'Not connected. When this page asks to use Google Calendar, allow it, and Up next fills in on its own.'}</small></div><span class="chip ${cal ? 'route' : ''}">${cal ? 'on' : 'off'}</span></div></div>
+        ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : `<button class="btn" data-allow="${esc(a.server)}">Allow</button>`}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
         ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
         <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetDone">Done</button>'}</div>
       </div></div></div>`;
     $('sheetHost').innerHTML = html;
-    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } } };
+    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } };
     $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
     $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
     $('sheetDone').addEventListener('click', close);
     $('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim' && !isWelcome) close(); });
+    $('sheetHost').querySelectorAll('[data-allow]').forEach(b => b.addEventListener('click', async () => { await Apps.allow([b.dataset.allow]); sheet(kind); }));
   }
-  $('gearBtn').addEventListener('click', () => sheet('settings'));
+  function appsSheet() {
+    const apps = Apps.available();
+    if (!Apps.pick) Apps.pick = new Set(apps.filter(a => a.core || Apps.states[a.server] === 'granted').map(a => a.server));
+    const building = Readout.busy, ready = !!S.mindmap;
+    const allowed = apps.filter(a => Apps.states[a.server] === 'granted').length;
+    $('sheetHost').innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="Connect your apps">
+      <div class="sheet-head">${logoSvg()}<div><h3>Connect your apps</h3><p>Optional, and each one saves you typing. Pick the ones you use and allow them in one step. You can change this any time in Settings.</p></div></div>
+      <div class="sheet-body">
+        ${apps.length ? `<div><div class="opt-h">For your dashboard</div>` : ''}<div class="apps-list">${apps.map(a => { const st = Apps.states[a.server]; const on = st === 'granted'; return `<label class="conn app-row${on ? ' is-on' : ''}">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${on ? '<span class="chip route">On</span>' : `<input type="checkbox" data-pick="${esc(a.server)}"${Apps.pick.has(a.server) ? ' checked' : ''} aria-label="Connect ${esc(a.server)}">`}</label>`; }).join('')}</div>${apps.length ? '</div>' : ''}
+        ${Apps.others().length ? `<div><div class="opt-h">For your Bridge chats</div><div class="apps-list">${Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${Apps.addLink(a)}</div>`).join('')}</div></div>` : ''}
+        <p class="sheet-note">Claude asks once for everything you tick. Apps under "For your Bridge chats" are added to your Claude account once, then Bridge uses them whenever you chat.</p>
+        ${(S.profile || {}).readoutSeenAt ? '' : `<div class="apps-build">${ready ? '✓ Your career map is ready.' : building ? '<span class="spin"></span> Building your career map… about a minute.' : 'Your career map will build when Claude is back. Your answers are saved.'}</div>`}
+        <div class="sheet-foot"><button class="btn" id="appsSkip">${allowed ? 'Done' : 'Skip for now'}</button>${apps.length ? '' : '<!--'}<button class="btn primary" id="appsAllow"${Apps.asking || !apps.some(a => Apps.pick.has(a.server) && Apps.states[a.server] !== 'granted') ? ' disabled' : ''}>${Apps.asking ? 'Waiting for Claude…' : 'Allow selected'}</button>${apps.length ? '' : '-->'}</div>
+      </div></div></div>`;
+    $('sheetHost').querySelectorAll('[data-pick]').forEach(c => c.addEventListener('change', () => { if (c.checked) Apps.pick.add(c.dataset.pick); else Apps.pick.delete(c.dataset.pick); appsSheet(); }));
+    const done = async () => { $('sheetHost').innerHTML = ''; try { await saveProfile({ appsSeenAt: new Date().toISOString(), apps: apps.filter(a => Apps.states[a.server] === 'granted').map(a => a.server) }); } catch (e) { } maybeWelcome(); };
+    $('appsSkip').addEventListener('click', done);
+    if ($('appsAllow')) $('appsAllow').addEventListener('click', async () => { const want = apps.filter(a => Apps.pick.has(a.server) && Apps.states[a.server] !== 'granted').map(a => a.server); const p = Apps.allow(want); appsSheet(); await p; appsSheet(); });
+  }
+  $('gearBtn').addEventListener('click', async () => { await Apps.load(); sheet('settings'); });
   const capAdd = () => { const v = $('captureInput').value.trim(); if (!v || Projects.capturing) return; $('captureInput').value = ''; Projects.capture(v); };
   $('captureBtn').addEventListener('click', capAdd);
   $('captureInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); capAdd(); } });
@@ -1290,6 +1365,12 @@
     if (!pf || !pf.name || pf.e6SeenAt || $('scrim')) return;
     if (!S.mindmap || !pf.readoutSeenAt) return; // new users finish the survey and see their map first
     sheet('welcome');
+  }
+  // Everyone already set up sees "Connect your apps" once.
+  function maybeApps() {
+    const pf = S.profile;
+    if (!pf || !pf.name || !pf.e6SeenAt || pf.appsSeenAt || !S.mindmap || $('scrim')) return;
+    Apps.maybeShow();
   }
 
   /* ================= header + render all ================= */
@@ -1456,7 +1537,7 @@
     async generate() {
       if (!db || this.busy) return;
       if (!(await Chat.ensureSample())) { Chat.status('Chat needs this page open in Claude to build your map.'); return; }
-      this.busy = true; Chat.status('Building your career map… this takes about a minute.'); Chat.render();
+      this.busy = true; Chat.status('Building your career map… this takes about a minute.'); Chat.render(); Apps.maybeShow();
       const prompt = 'You are Bridge, a career platform. Below is a get-to-know-you conversation with a student or recent grad. Build their profile and career map from it. Be specific to them; no generic advice; never invent facts they did not say.\n'
         + 'Reply ONLY with JSON:\n{"profile":{"name","school","classYear","major","location","opportunityType","targetStart","currentChapter"},'
         + '"experience":[{"title","org","dates","highlights","skills":"comma list","type":"job|leadership|research|project|volunteer"}],'
@@ -1479,9 +1560,12 @@
         const mm = { rightNow: r.rightNow || '', targetNextStep: r.targetNextStep || null, nextStage: r.nextStage || null, forks: r.forks || [], whatsFixed: r.whatsFixed || '', bridgeSkills: r.bridgeSkills || [], elevatorPitch: r.elevatorPitch || '', stories: r.stories || [], revisedAt: now };
         await db.doc('mindmap/main').set(mm);
         S.mindmap = mm;
+        if (Chat.readoutWanted || Chat.waitingSince) { Chat.readoutWanted = false; Chat.waitingSince = 0; Chat.persist(); }
         Chat.status(''); applyStage();
-      } catch (e) { diag('readout', e, e && e.text); if (isCapErr(e)) sample = null; Chat.status(e && e.code === 'rate_limited' ? 'Claude is busy right now. Wait a minute, then tap "Build my career map" again.' : 'Your career map didn\'t finish. Tap "Build my career map" to try again.'); }
-      finally { this.busy = false; Chat.render(); renderDirection(); }
+      } catch (e) { diag('readout', e, e && e.text); if (isCapErr(e)) sample = null;
+        if (e && e.code === 'rate_limited') { Chat.readoutWanted = true; Chat.waitingSince = Chat.waitingSince || Date.now(); Chat.persist(); Chat.status('Everything you told Bridge is saved. Your career map builds as soon as your Claude usage limit resets: just reopen this page then (or tap "Build my career map").'); }
+        else Chat.status('Your career map didn\'t finish. Tap "Build my career map" to try again.'); }
+      finally { this.busy = false; Chat.render(); renderDirection(); if ($('appsSkip')) appsSheet(); }
     },
   };
 
@@ -1596,7 +1680,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
     try { await db.doc('diag/chat').set({ at: new Date().toISOString(), where, code: (e && e.code) || String(e && e.message || e || ''), message: String((e && e.message) || '').slice(0, 300), raw: String(text || '').slice(0, 1500), tab: TAB, ua: navigator.userAgent.slice(0, 120) }); } catch (x) { }
   }
   const Chat = {
-    messages: [], inFlight: null, startedAt: 0, ready: false, open: false, hideLatest: false, streamText: '', userStopped: false,
+    messages: [], inFlight: null, startedAt: 0, ready: false, waitingSince: 0, lastTryAt: 0, readoutWanted: false, open: false, hideLatest: false, streamText: '', userStopped: false,
     view: lsGet('bridge.dock', 'bar'),
     status(t) { $('dockStatus').textContent = t || ''; },
     setView(v) { this.view = v; lsSet('bridge.dock', v); $('dock').classList.toggle('min', v === 'min'); if (v === 'min') { this.open = false; $('dock').classList.remove('open'); } this.render(); },
@@ -1615,13 +1699,13 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       if (!db || !this.ready) return;
       const inflight = this.inFlight ? { tab: TAB, at: Date.now() } : null;
       const updatedAt = new Date().toISOString(); this.lastRemoteAt = updatedAt;
-      try { await db.doc('chat/main').set({ messages: this.messages.slice(-80), updatedAt, writer: TAB, inflight }); } catch (e) { diag('persist', e); }
+      try { await db.doc('chat/main').set({ messages: this.messages.slice(-80), updatedAt, writer: TAB, inflight, waitingSince: this.waitingSince || 0, readoutWanted: !!this.readoutWanted }); } catch (e) { diag('persist', e); }
     },
     onRemote(d) {
       if (!d || d.writer === TAB) return;
       this.remoteInflight = d.inflight && d.inflight.tab !== TAB ? d.inflight : null;
       // Never swap the conversation out from under a message that is being sent from this tab.
-      if (!this.sending && !this.inFlight && d.updatedAt && d.updatedAt !== this.lastRemoteAt) { this.messages = clone(d.messages || []); this.lastRemoteAt = d.updatedAt; }
+      if (!this.sending && !this.inFlight && d.updatedAt && d.updatedAt !== this.lastRemoteAt) { this.messages = clone(d.messages || []); this.lastRemoteAt = d.updatedAt; this.waitingSince = d.waitingSince || 0; this.readoutWanted = !!d.readoutWanted; }
       this.render(); this.maybeResume();
     },
     maybeResume() {
@@ -1638,7 +1722,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       this.send(lastUser);
     },
     msgHtml(m, idx) {
-      if (m.role === 'user') return `<div class="msg user${m.failed ? ' failed' : ''}"><div class="bub">${esc(m.content)}</div>${m.failed ? `<div class="fail-note">Didn't go through. <button class="linkish" data-retry="${idx}">Retry</button></div>` : ''}</div>`;
+      if (m.role === 'user') return `<div class="msg user${m.failed ? ' failed' : ''}"><div class="bub">${esc(m.content)}</div>${m.failed ? `<div class="fail-note">Didn't go through. <button class="linkish" data-retry="${idx}">Retry</button></div>` : ''}${m.queued && !m.failed && !((this.messages[idx + 1] || {}).queued) ? `<div class="fail-note queued">Saved. Bridge answers when Claude is back. <button class="linkish" data-trynow>Try now</button></div>` : ''}</div>`;
       const saved = (m.saved || []);
       const savedHtml = saved.length ? `<div class="saved">${saved.map((s, si) => `<div class="saved-line ${s.ok ? '' : 'miss'}">${s.ok ? '✓ Saved:' : '✗ Not saved:'} ${esc(s.label)}${s.ok && s.undo && !s.undone ? ` <button class="undo" data-undo="${idx}:${si}">undo</button>` : ''}${s.undone ? ' <span class="muted">(undone)</span>' : ''}</div>`).join('')}${saved.some(s => s.ok) ? '<div class="muted" style="font-size:.68rem;font-family:var(--mono)">dashboard + bearing updating</div>' : ''}</div>` : '';
       return `<div class="msg bot"><div class="bub">${esc(m.content)}</div>${savedHtml}</div>`;
@@ -1651,7 +1735,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       const lastUserIdx = this.messages.map(m => m.role).lastIndexOf('user');
       let latest = '';
       if (this.inFlight) latest = `<div class="msg bot"><div class="bub${this.streamText ? '' : ' thinking'}" id="streamLatest">${this.streamText ? esc(this.streamText) : 'Thinking…'}</div></div>`;
-      else if (lastUserIdx > lastBotIdx && this.messages[lastUserIdx].failed) latest = this.msgHtml(this.messages[lastUserIdx], lastUserIdx);
+      else if (lastUserIdx > lastBotIdx && (this.messages[lastUserIdx].failed || this.messages[lastUserIdx].queued)) latest = this.msgHtml(this.messages[lastUserIdx], lastUserIdx);
       else if (lastBotIdx >= 0 && !this.hideLatest && (Date.now() - (this.messages[lastBotIdx].ts || 0)) < 6 * 3600000) latest = this.msgHtml(this.messages[lastBotIdx], lastBotIdx) + '<button class="linkish" data-dismiss style="align-self:flex-start">dismiss</button>';
       $('latest').innerHTML = latest ? `<div style="display:flex;flex-direction:column;gap:.5rem;max-height:30vh;overflow-y:auto">${latest}</div>` : '';
       $('latest').hidden = !latest;
@@ -1667,7 +1751,16 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       const sb = $('sendBtn'); sb.textContent = this.inFlight ? 'Stop' : 'Send'; sb.classList.toggle('stop', !!this.inFlight); sb.disabled = false;
       this.setDot();
     },
-    async ensureSample() { if (sample) return sample; try { sample = await claude.use('sample'); } catch (e) { sample = null; } return sample; },
+    waitText() { return 'You\'ve reached your Claude usage limit for now. Keep going: everything you type is saved, and Bridge answers all of it once your limit resets. Your dashboard still works in the meantime.'; },
+    queuedIdx() { return this.messages.map((m, i) => (m.role === 'user' && m.queued && !m.failed) ? i : -1).filter(i => i >= 0); },
+    // Queued messages are answered together in one reply. Called on load, when the tab comes back after a while, or from "Try now".
+    flush(force) {
+      if (this.sending || this.inFlight || !this.ready) return false;
+      const q = this.queuedIdx(); if (!q.length) return false;
+      if (!force && Date.now() - this.lastTryAt < 10 * 60000) return false;
+      this.send(q[q.length - 1]); return true;
+    },
+    async ensureSample() { if (sample) return sample; try { sample = await CL().use('sample'); } catch (e) { sample = null; } return sample; },
     async send(retryIdx) {
       if (this.sending || this.inFlight) return;
       this.sending = true;                                   // set before any await: no double sends, no remote swaps
@@ -1679,10 +1772,13 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
           $('chatInput').value = ''; autoGrow(); lsSet('bridge.draft', '');
           msg = { role: 'user', content: text, ts: Date.now() }; if (this.pendingHint) { msg.hint = this.pendingHint; this.pendingHint = ''; }
           this.messages.push(msg);
+          // While Claude's usage limit is in effect, save the message instead of spending a call on it.
+          if (this.waitingSince && Date.now() - this.lastTryAt < 10 * 60000) { msg.queued = true; this.status(this.waitText()); return; }
+          if (this.queuedIdx().length) msg.queued = true;       // send it along with the earlier saved ones
         }
         if (!(await this.ensureSample())) { msg.failed = true; this.status('Chat needs this page open in Claude with chat allowed. Reload, allow it when asked, then Retry.'); return; }
         this.hideLatest = false; this.streamText = ''; this.remoteInflight = null;
-        ctl = new AbortController(); this.inFlight = ctl; this.startedAt = Date.now();
+        ctl = new AbortController(); this.inFlight = ctl; this.startedAt = Date.now(); this.lastTryAt = Date.now();
         msg.pending = true;
         beat = setInterval(() => { if (this.inFlight === ctl) { this.persist(); if (!this.streamText && Date.now() - this.startedAt > 60000) this.status('Still waiting on Claude… you can tap Stop and Retry.'); } }, 20000);
         if (!/Picking up/.test($('dockStatus').textContent)) this.status('');
@@ -1692,6 +1788,8 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         const history = this.messages.slice(0, idx + 1).filter(m => !m.failed || m === msg).slice(-14).map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.role === 'assistant' && m.saved && m.saved.length ? m.content + '\n[saved: ' + m.saved.filter(s => s.ok).map(s => s.label).join('; ') + ']' : m.content + (m.hint ? '\n\n[How to help: ' + m.hint + ']' : '') }));
         const turns = [{ role: 'user', content: onboarding ? onboardingRules() : chatRules() }].concat(history);
         while (turns.length > 1 && turns[1].role === 'assistant') turns.splice(1, 1);
+        for (let i = turns.length - 1; i > 1; i--) if (turns[i].role === 'user' && turns[i - 1].role === 'user') { turns[i - 1] = { role: 'user', content: turns[i - 1].content + '\n\n' + turns[i].content }; turns.splice(i, 1); }
+        if (this.queuedIdx().length > 1) turns[turns.length - 1].content += '\n\n[These messages were saved while Claude was unavailable. Answer them together, briefly, and save every fact in them.]';
         let total = turns.reduce((n, t) => n + t.content.length, 0);
         while (total > 56000 && turns.length > 2) { total -= turns[1].content.length; turns.splice(1, 1); }
         // Plain text + a delimited actions block: the reply always shows, even if the actions part is malformed.
@@ -1701,14 +1799,17 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         for (const a of actions.slice(0, 14)) { if (a && a.type === 'intake_done') { intakeDone = true; continue; } saved.push(await runAction(a)); }
         if (actionsBroken) { diag('actions_parse', { code: 'actions_parse' }, res && res.text); if (!onboarding) saved.push({ ok: false, label: 'Some updates didn\'t come through. Say "save that" to try again.' }); }
         savedAny = saved.some(s => s.ok && !s.nav);
+        this.messages.forEach(m => { if (m.queued) delete m.queued; });
+        if (this.waitingSince) { this.waitingSince = 0; this.status(''); }
         this.messages.push({ role: 'assistant', content: reply || 'Got it.', saved, ts: Date.now() });
       } catch (e) {
         const code = (e && e.code) || 'upstream_error';
         diag('send', e, e && e.text);
-        if (msg) msg.failed = true;
-        if (isCapErr(e)) { sample = null; this.status('Chat lost its connection to Claude. Reload the page, allow it when asked, then Retry.'); }
+        if (msg && code === 'rate_limited') { msg.queued = true; this.waitingSince = this.waitingSince || Date.now(); this.status(this.waitText()); }
+        else if (msg) msg.failed = true;
+        if (code === 'rate_limited') { }
+        else if (isCapErr(e)) { sample = null; this.status('Chat lost its connection to Claude. Reload the page, allow it when asked, then Retry.'); }
         else if (code === 'cancelled') this.status(this.userStopped ? 'Stopped. Tap Retry to ask again.' : 'The connection dropped. Tap Retry.');
-        else if (code === 'rate_limited') this.status('Usage limit or too many requests. Give it a minute, then Retry.');
         else if (code === 'session_expired') this.status('Your Claude session expired. Reload the page and sign in, then Retry.');
         else if (code === 'prompt_too_large') this.status('That was too long. Try a shorter message.');
         else if (code === 'refused') this.status('Claude couldn\'t answer that one. Try rewording it.');
@@ -1869,15 +1970,33 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
   async function applyUndo(u) { const ref = u.col === 'profile' ? db.doc('profile/main') : db.collection(u.col).doc(u.id); if (u.op === 'delete') await ref.delete(); else await ref.set(u.data); }
 
   /* ================= boot ================= */
+  function gate(title, body) {
+    const g = document.createElement('div');
+    g.setAttribute('role', 'alert');
+    g.style.cssText = 'position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--paper)';
+    g.innerHTML = '<div style="max-width:28rem;text-align:center;display:flex;flex-direction:column;gap:.8rem;align-items:center"><div style="width:56px;height:56px">' + logoSvg('') + '</div><h2 style="font-family:var(--serif);margin:0">' + esc(title) + '</h2><p style="margin:0;color:var(--text-muted);line-height:1.5">' + esc(body) + '</p></div>';
+    document.body.appendChild(g);
+  }
   renderAll(); Chat.render();
   (async function boot() {
-    try { sample = await claude.use('sample'); } catch (e) { sample = null; }
-    try { db = await claude.use('db'); } catch (e) { db = null; }
+    try { sample = await CL().use('sample'); } catch (e) { sample = null; }
+    try { db = await CL().use('db'); } catch (e) { db = null; }
+    // Shared Bridge link: one page for everyone, each person's data in their own private folder.
+    if (db && window.__BRIDGE_SHARED) {
+      let uid = null; try { const u = await CL().use('user'); uid = u ? await u.id() : null; } catch (e) { uid = null; }
+      if (!uid) { db = null; gate('Sign in to Claude to use Bridge', 'Bridge saves your answers to your own Claude account. Open this link while signed in to claude.ai.'); }
+      else {
+        const raw = db, base = 'data/users/' + uid + '/b/';
+        db = { doc: (p) => raw.doc(base + p), collection: (c) => raw.collection(base + c) };
+        try { await db.doc('meta/access').set({ at: new Date().toISOString() }); }
+        catch (e) { db = null; gate('Almost there', 'This Bridge link can\'t save your answers yet. Ask the person who sent it to share it with you using "Can edit", then reopen the link.'); }
+      }
+    }
     if (db) {
       const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['coach', 'coach/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
       const apply = (key, kind, s) => { if (kind === 'doc') S[key] = s.exists ? clone(s.data()) : null; else S[key] = s.docs.map(d => Object.assign(clone(d.data()), { id: d.id })); };
       await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); } catch (e) { } }));
-      try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; } } catch (e) { }
+      try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; Chat.waitingSince = d.waitingSince || 0; Chat.readoutWanted = !!d.readoutWanted; } } catch (e) { }
       Chat.ready = true; loaded = true;
       try { db.doc('chat/main').onSnapshot(s => { if (s.exists) Chat.onRemote(s.data()); }); } catch (e) { }
       const ap = S.profile && S.profile.appearance; if (ap) Look.apply(ap.palette, ap.mode, false); else Look.apply('sky', 'system', false);
@@ -1893,13 +2012,16 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         });
       });
       const pf = S.profile;
-      applyStage(); maybeWelcome();
+      applyStage(); maybeWelcome(); setTimeout(maybeApps, 1500);
     }
     bootDone = true; renderAll(); Chat.render(); Chat.maybeResume();
+    // Anything saved while Claude's usage limit was in effect gets answered now (one try per visit, then on return after 10+ minutes).
+    setTimeout(() => { if (!Chat.flush(true) && Chat.readoutWanted && lastStage === 'intake' && sample) Readout.generate(); }, 2500);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !Chat.flush(false) && Chat.readoutWanted && Date.now() - Chat.lastTryAt > 10 * 60000 && !Readout.busy) { Chat.lastTryAt = Date.now(); Readout.generate(); } });
     if (!sample) Chat.status('Chat and the bearing need this page opened in Claude.');
     Brief.maybeAuto();
     try {
-      const mcp = await claude.use('mcp');
+      const mcp = await CL().use('mcp');
       if (!mcp) { S.calStatus = 'off'; renderAgenda(); return; }
       Cal.mcp = mcp;
       const start = new Date(); start.setHours(0, 0, 0, 0);
