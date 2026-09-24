@@ -15,6 +15,34 @@ Release rules:
 
 ---
 
+## 6.0.0 — 2026-09-23 (schema 2)
+
+### Equinox 6
+- One locked dashboard for everyone (`dashboard/equinox-6.html`). Claude publishes it and never redesigns it.
+- Shared Bridge branding: cable-stayed bridge logo on a rounded tile, two palettes (Sky, the default, and Sand), each light and dark or matching the device. Chosen in Settings.
+- Chat: survives tab switches (auto-abort and one quiet retry), always dismissible to an "Ask Bridge" pill, saves drafts.
+- One chat message now updates contacts, tasks, pipeline and prep together, then refreshes the bearing automatically.
+- People as compact rows. Chips centered.
+- Pipeline tailored to stage: students see Internships, Research and Classes; grads see Roles, Programs and Warm paths.
+- Coaching: "Stories to tell" replaces the resume dump. Conversation intel is short takeaways.
+- Projects: notes grouped into decisions, progress, open questions and ideas, with a "tidy with Bridge" button.
+- Records: resume first. Conversations, sessions and reflections are merged into one searchable timeline. Stats and Journal tabs removed.
+- Direction: survey/readout step bar removed. First-time users get a real readout (mind map, stories, first moves) built from the intake.
+- Migration: existing data is kept; the dashboard is republished to the same URL. Rollback file included.
+- First run: welcome page → Get started → full-screen intake chat → career map → dashboard + palette pick.
+- Chat reliability: removed the page-side 90s timeout (it was killing slow but healthy replies), streams replies as they're written, uses the quick model for chat, and never runs background jobs while a chat reply is in flight.
+- Bearing: short, directional headline (max 12 words), verb-first moves.
+- To-dos finished today stay on the list, crossed out, until tomorrow.
+- Coaching buttons send straight to the chat and open the conversation. Stories can be matched to upcoming calls.
+- Direction: career-map diagram at the top; rail dots centered.
+- Projects: "toss in an idea" box; each note gets sorted, tightened, turned into a task when it implies one, and updates "Where it stands".
+- Google Calendar two-way: calls booked in chat become calendar events (list_events, create_event, update_event); prep cards have "Add to Google Calendar".
+- Direction: map runs left to right; tapping a stop jumps to its details below and fills its dot.
+- First run: the career map is built from the whole intake conversation in one step, so a broken save block mid-chat can't stall it. A "Build my career map" button appears after 5 replies as a manual fallback.
+- Direction: the timeline line now ends exactly at the last stop's dot.
+
+**Runtime files.** New: `dashboard/equinox-6.html`, `dashboard/v6-rollback.html`, `dashboard/README.md`, `modules/equinox-6-migration.md`. `current.md` now has a "Publish, don't design" dashboard rule (§4.1) and points to `dashboard/README.md` instead of `modules/4-dashboard.md`. The first chat after the update runs the one-time Equinox 6 migration (§1.3, §7). `manifest.json` gets a `dashboard` entry (`equinox-6`) and lists `equinox-6-migration` under `migrations`. No schema change.
+
 ## 5.2.0 — 2026-09-22 (schema 2)
 
 **MINOR: consent-based update flow, pinned tags.** Students' Projects now carry a fixed bootstrap that reads `manifest.json` from `main`, asks the student to approve any new version, and then fetches the files pinned at tag `v<version>`.
