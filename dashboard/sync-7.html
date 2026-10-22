@@ -1366,6 +1366,16 @@
   .linkish, .pill, .jb, .undo, .how, .hrow button, .bearing-refresh, .tbtn, .mv-btn, .gear, .dk-send, .tabs button, .nav button, .seg button, .chip[role="button"], button.chip { min-height: 40px; min-width: 40px; }
   .gear { width: 40px; height: 40px; }
   .linkish, .jb, .undo, .how, .hrow button { display: inline-flex; align-items: center; padding-inline: 0.4rem; }
+
+  /* Today + Settings additions (Wave 2) */
+  .mv.nobox { grid-template-columns: 1fr; }
+  .since-line b { font-weight: 500; }
+  .sheet-head { position: sticky; top: 0; z-index: 2; }
+  .sheet-x { flex: none; align-self: flex-start; width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.22); background: none; color: var(--chrome-text); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+  .sheet-x:hover { border-color: var(--chrome-accent); }
+  .sheet { max-height: calc(100dvh - 32px); }
+  .dk-chips button, .dock .dk-chips button { min-height: 40px; }
+  .col > :empty, #connectWrap:empty, #startPanel:empty { display: none; }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1448,21 +1458,34 @@
   <section class="page" id="page-today">
     <div class="wrap">
       <div id="startPanel"></div>
-      <div class="bearing" id="bearing"></div>
-      <div id="agendaWrap">
-        <div class="sec-head"><h3>Up next</h3><span class="sec-note" id="agendaNote"></span></div>
-        <div id="agendaBody"></div>
-      </div>
-      <div id="todoWrap">
-        <div class="sec-head"><h3>To-do</h3>
-          <div class="pills" id="todoFilters">
-            <button class="pill active" data-f="today">Today</button>
-            <button class="pill" data-f="week">This week</button>
-            <button class="pill" data-f="waiting">Waiting</button>
-            <button class="pill" data-f="all">All open</button>
+      <div class="dash-date" id="dashDate"></div>
+      <div class="stage-card" id="bearing"></div>
+      <div id="connectWrap"></div>
+      <div class="grid2">
+        <div class="col">
+          <div id="wrapWrap"></div>
+          <div id="moreWrap"></div>
+          <div id="todoWrap">
+            <div class="sec-head"><h3>To-do</h3>
+              <div class="pills" id="todoFilters">
+                <button class="pill active" data-f="today">Today</button>
+                <button class="pill" data-f="week">This week</button>
+                <button class="pill" data-f="waiting">Waiting</button>
+                <button class="pill" data-f="all">All open</button>
+              </div>
+            </div>
+            <div id="todoBody"></div>
           </div>
         </div>
-        <div id="todoBody"></div>
+        <div class="col">
+          <div class="card" id="agendaWrap">
+            <div class="sec-head"><h3>Coming up</h3><span class="sec-note" id="agendaNote"></span></div>
+            <div id="headsUp"></div>
+            <div id="agendaBody"></div>
+            <div id="radarWrap"></div>
+            <div id="waitWrap"></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -1555,6 +1578,7 @@
     </div>
     <div class="thread" id="thread"><div class="thread-inner" id="threadInner"></div></div>
     <div class="latest" id="latest"></div>
+    <div class="dk-chips" id="dockChips"></div>
     <div class="intake-cta" id="intakeCta" hidden><span>Told Bridge enough? Your map takes about a minute.</span><button class="btn primary" id="buildMap">Build my career map →</button></div>
     <div class="dock-input">
       <textarea id="chatInput" rows="1" placeholder="Tell Bridge anything: a reply, a reschedule, a question…"></textarea>
@@ -1582,11 +1606,6 @@
     // `icon`: optional official logo as an <img> src (data: URI). Without one, a lettered tile is shown.
     apps: [
       { server: 'Google Calendar', mono: 'Ca', core: true, does: 'Your calls show up in Up next with a countdown, and calls you book with Bridge land on your calendar.' },
-      { server: 'Google Drive', mono: 'Dr', core: true, does: 'Bridge saves its notes on you automatically and can read your resume.' },
-      { server: 'Granola', mono: 'Gr', does: 'After a call, your notes become a debrief and next steps.' },
-      { server: 'Gmail', mono: 'Gm', does: 'Bridge drafts outreach and follow-ups in your drafts. It never sends anything.' },
-      { server: 'Notion', mono: 'No', does: 'Your own to-do list shows up next to Bridge\'s.' },
-      { server: 'Linear', mono: 'Li', does: 'Project tasks you track in Linear show up in your Work Queue.' },
     ],
   };
   document.querySelectorAll('[data-logo]').forEach(s => { s.innerHTML = BRAND.logo; });
@@ -1850,6 +1869,17 @@
     if (!Chat.messages.length) { $('chatInput').value = "Hi! I'm ready to get started. Where I am right now: " + whereLabel + '. What I want Bridge to help with: ' + QS_WANT[qs.want][0] + '.'; Chat.send(); }
   });
 
+  /* ---- chat dock: suggestion chips (real prompts built from the student's own data) ---- */
+  function renderChips() {
+    const el = $('dockChips'); if (!el) return;
+    if (lastStage !== 'dash' || Chat.inFlight) { el.innerHTML = ''; return; }
+    const chips = [];
+    const next = agendaItems().find(i => i.prep);
+    if (next) chips.push(['Help me prep for ' + String(next.prep.contactName || '').split(/\s+/)[0], true]);
+    chips.push(['I got a reply from ', false], ['A call got moved: ', false], ['I just had a call: ', false]);
+    el.innerHTML = '<span>Try</span>' + chips.map((c, i) => `<button type="button" data-chip="${i}">${esc(c[0].trim().replace(/:$/, '…'))}</button>`).join('');
+    el.querySelectorAll('[data-chip]').forEach(b => b.addEventListener('click', () => { const c = chips[+b.dataset.chip]; Chat.prefill(c[0], c[1], ''); }));
+  }
   /* ---- intake: what Bridge has learned so far ---- */
   function renderLearn() {
     const el = $('learn'); if (!el) return;
@@ -1861,7 +1891,7 @@
   /* ---- what I see ---- */
   function seenRows() {
     const pf = S.profile || {}, sn = pf.s7Seen || {};
-    return [['Where you are', pf.s7Where || (pf.classYear ? 'Class of ' + pf.classYear : ''), 'where'], ['What you want', pf.s7Want || pf.opportunityType || '', 'want'], ['Gives you energy', sn.energizes || '', 'energizes'], ['Drains you', sn.drains || '', 'drains']].filter(r => r[1]);
+    return [['Where you are', pf.s7Where || '', 'where'], ['Class year', pf.classYear ? 'Class of ' + String(pf.classYear).replace(/[^0-9]/g, '') : '', 'classYear'], ['What you want', pf.s7Want || pf.opportunityType || '', 'want'], ['Gives you energy', sn.energizes || '', 'energizes'], ['Drains you', sn.drains || '', 'drains']].filter(r => r[1]);
   }
   function renderSeen() {
     const pf = S.profile || {}, sn = pf.s7Seen || {};
@@ -1880,7 +1910,7 @@
     if (b.dataset.editing) {
       const v = row.querySelector('input').value.trim();
       const pf = S.profile || {}, patch = {};
-      if (key === 'where') patch.s7Where = v; else if (key === 'want') patch.s7Want = v; else patch.s7Seen = Object.assign({}, pf.s7Seen || {}, { [key]: v });
+      if (key === 'classYear') { const yr = (v.match(/(20\d\d)/) || [])[1]; if (!yr) { renderSeen(); return; } patch.classYear = yr; } else if (key === 'where') patch.s7Where = v; else if (key === 'want') patch.s7Want = v; else patch.s7Seen = Object.assign({}, pf.s7Seen || {}, { [key]: v });
       try { await S7.saveProfile(patch); } catch (err) { diag('seen-edit', err); }
       renderSeen(); return;
     }
@@ -1925,7 +1955,7 @@
     const pf = S.profile || {};
     const isNew = !pf.name;
     $('startPanel').innerHTML = isNew ? `<div class="start">${logoSvg()}<div><div class="eyebrow" style="color:var(--chrome-accent)">Welcome to Bridge</div><h2 style="margin-top:.35rem">Let's find the people between you and what's next.</h2><p>Bridge works out what you already know how to do, what it points to, and who can get you there. It starts with a conversation, not a form. Say hi in the chat below. Oversharing is welcome, and "not sure yet" is a complete answer.</p></div></div>` : '';
-    $('bearing').hidden = isNew; $('agendaWrap').hidden = isNew; $('todoWrap').hidden = isNew;
+    $('bearing').hidden = isNew; $('agendaWrap').hidden = isNew; $('todoWrap').hidden = isNew; $('dashDate').hidden = isNew;
   }
 
   /* ================= bearing (the compass) ================= */
@@ -1946,38 +1976,75 @@
     S.tasks.filter(t => !t.done && t.priority === 'high').slice(0, 2).forEach(t => moves.push({ text: t.text, why: t.dueDate ? 'due ' + fmtDate(t.dueDate) : '', kind: 'do' }));
     return moves.slice(0, 3);
   }
+  // "New since": the window starts at the visit before this one (see touchVisit); items are what Bridge logged in between.
+  let sinceAt = 0;
+  function touchVisit() {
+    const pf = S.profile || {};
+    if (!pf.name || !pf.readoutSeenAt) return;
+    const last = Date.parse(pf.s7LastVisitAt || '') || 0, now = Date.now();
+    let from = Date.parse(pf.s7SinceAt || '') || 0;
+    if (last && now - last > 4 * 3600000) from = last;
+    sinceAt = from;
+    S7.saveProfile({ s7LastVisitAt: new Date(now).toISOString(), s7SinceAt: from ? new Date(from).toISOString() : '' }).catch(e => diag('visit', e));
+  }
+  function sinceItems() {
+    if (!sinceAt) return [];
+    return S.activity.filter(a => Date.parse(a.at || '') > sinceAt && a.label).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 3).map(a => trunc(a.label, 60));
+  }
+  const MV_KIND = { start: 'Start here', todo: 'To do', worth: 'Worth it', decide: 'Decide' };
+  const goBtn = (cls, label, m) => (m.page && $('page-' + m.page)) ? `<button class="${cls}" data-go="${esc(m.page)}" data-tab="${esc(m.tab || '')}" data-target="${esc(m.target || '')}">${esc(label)}</button>` : '';
+  function renderDashDate() { $('dashDate').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); }
   function renderBearing() {
     const el = $('bearing');
-    const b = S.brief;
-    const per = period();
-    const isEvening = per.endsWith('evening');
-    const fresh = b && b.period === per;
+    const b = S.brief, pf = S.profile || {}, sn = pf.s7Seen || {};
+    const per = period(), isEvening = per.endsWith('evening');
     const stale = briefStale();
     const moves = (b && Array.isArray(b.moves) && b.moves.length) ? b.moves : fallbackMoves();
-    const headline = (b && b.headline) || (S.profile && S.profile.currentChapter) || 'Bridge is getting its bearings.';
-    const label = (isEvening ? 'Evening wrap' : 'Bearing') + ' · ' + new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-    const needle = '<svg class="needle" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1"/><path d="M7 2 L9 7 L7 12 L5 7 Z" fill="currentColor" opacity=".9"/></svg>';
-    const movesHtml = moves.map((m, i) => {
-      const link = m.page && $('page-' + m.page) ? jump(i === 0 ? 'Go' : 'Open', m.page, m.tab, m.target) : '';
-      return `<div class="move${i === 0 ? ' first' : ''}"><div class="move-n">${i + 1}</div><div><div class="move-text">${esc(m.text)}</div>${m.why ? `<div class="move-why"><span class="move-kind">${m.kind === 'coach' ? 'coaching' : 'to do'}</span>${esc(m.why)}</div>` : ''}</div>${link}</div>`;
-    }).join('') || '<div class="move-why">No open moves right now.</div>';
-    let extra = '';
-    if (isEvening && fresh && b.wrap && b.wrap.length) extra += `<div class="wrapup"><div class="bearing-label">What moved today</div><ul>${b.wrap.map(w => `<li>${esc(w)}</li>`).join('')}</ul></div>`;
-    if (isEvening && fresh && b.reflect && !b.reflectAnswered) extra += `<div class="reflect"><div class="reflect-q">${esc(b.reflect)}</div><div class="reflect-row"><input id="reflectInput" placeholder="One line is plenty. It goes to your records." /><button id="reflectSave">Save</button></div></div>`;
-    const openG = S.guidance.filter(g => !g.done);
-    if (openG.length) extra += `<details class="radar"><summary>Also on Bridge's radar (${openG.length})</summary><ul>${openG.map(g => `<li>${esc(g.text)}</li>`).join('')}</ul></details>`;
+    const headline = (b && b.headline) || pf.currentChapter || 'Bridge is getting its bearings.';
     const refreshLabel = !sample ? '' : Brief.busy ? 'updating…' : stale ? 'new info · update' : 'refresh';
-    const since = b && b.generatedAt ? `<div class="since">Updated ${esc(fmtTime(new Date(b.generatedAt)))}${b.trigger ? ` · after <b>${esc(trunc(b.trigger, 70))}</b>` : ''}</div>` : '';
-    el.innerHTML = `<div class="bearing-top"><div class="bearing-label">${needle}${esc(label)}</div>${refreshLabel ? `<button class="bearing-refresh${stale ? ' stale' : ''}" id="briefRefresh"${Brief.busy ? ' disabled' : ''}>${refreshLabel}</button>` : ''}</div>
-      <div class="bearing-headline">${esc(headline)}</div>
-      <div class="bearing-label" style="margin-bottom:.5rem">${isEvening ? "Tomorrow's first moves" : 'Next moves'}</div>
-      <div class="moves">${movesHtml}</div>${extra}${since}`;
+    const refresh = refreshLabel ? `<button class="bearing-refresh${stale ? ' stale' : ''}" id="briefRefresh"${Brief.busy ? ' disabled' : ''}>${refreshLabel}</button>` : '';
+    const ev = (sn.evidence || []).filter(Boolean);
+    const seen = sn.line
+      ? `<div class="sc-top"><span class="bear-l">What I see</span>${refresh}</div><p class="thread-line">${esc(sn.line)}</p>${ev.length ? `<button class="how" data-how aria-expanded="false">How I know →</button><div class="ev" hidden>${ev.map(e => '<p>' + esc(e) + '</p>').join('')}</div>` : ''}`
+      : `<div class="sc-top"><span class="bear-l">Today</span>${refresh}</div>`;
+    const mvHtml = moves.map((m, i) => {
+      const k = MV_KIND[m.s7Kind] ? m.s7Kind : (m.kind === 'coach' ? 'worth' : 'todo');
+      const btn = goBtn('mv-btn', m.btn || (i === 0 ? 'Go' : 'Open'), m);
+      return `<div class="mv nobox${i === 0 ? ' first' : ''}"><div><div class="mv-top"><span class="kind ${k}">${MV_KIND[k]}</span>${m.est ? `<span class="mv-when">${esc(m.est)}</span>` : ''}</div><div class="mv-t">${esc(m.text)}</div>${m.why ? `<div class="mv-why">${esc(m.why)}</div>` : ''}${btn ? `<div class="mv-acts">${btn}</div>` : ''}</div></div>`;
+    }).join('') || '<div class="mv-why">No open moves right now.</div>';
+    const si = sinceItems();
+    const sinceWhen = sinceAt ? new Date(sinceAt).toLocaleDateString(undefined, { weekday: 'long' }) : '';
+    const since = si.length ? `<div class="since-line"><span>New since ${esc(sinceWhen)}:</span>${si.map(x => `<b>${esc(x)}</b>`).join('<span>·</span>')}</div>` : '';
+    el.innerHTML = `${seen}<div class="bear"><span class="bear-l">${isEvening ? "Tomorrow's first moves" : "Today's bearing"}</span><p class="bear-h">${esc(headline)}</p><div class="mvs">${mvHtml}</div>${since}</div>`;
     const rb = $('briefRefresh'); if (rb) rb.addEventListener('click', () => Brief.generate('manual refresh'));
+    const hw = el.querySelector('[data-how]'); if (hw) hw.addEventListener('click', () => { const e2 = el.querySelector('.ev'); e2.hidden = !e2.hidden; hw.setAttribute('aria-expanded', String(!e2.hidden)); hw.textContent = e2.hidden ? 'How I know →' : 'Hide'; });
+    renderToday();
+  }
+  // The rest of the Today page: calendar card, wrap-up, "Got more time?", heads-up, radar, waiting.
+  function renderToday() {
+    renderDashDate();
+    const b = S.brief, pf = S.profile || {};
+    const per = period(), isEvening = per.endsWith('evening'), fresh = b && b.period === per;
+    $('connectWrap').innerHTML = (S.calStatus === 'off' && !pf.s7ConnectDismissed)
+      ? '<div class="connect" id="connectCard"><div><b>See your calls coming</b><p>Connect your calendar and Bridge will spot upcoming calls and have your prep ready.</p></div><div class="connect-acts"><button class="jb" id="connectOpen">Connect</button><button class="tbtn ghost" id="connectNo">Not now</button></div></div>' : '';
+    const co = $('connectOpen'); if (co) co.addEventListener('click', () => $('gearBtn').click());
+    const cn = $('connectNo'); if (cn) cn.addEventListener('click', () => { S7.saveProfile({ s7ConnectDismissed: true }).catch(e => diag('connect', e)); $('connectWrap').innerHTML = ''; });
+    let wrap = '';
+    if (isEvening && fresh && b.wrap && b.wrap.length) wrap += `<div class="wrapup" id="tWrap"><span class="bear-l">What moved today</span><ul>${b.wrap.map(w => `<li>${esc(w)}</li>`).join('')}</ul>`;
+    if (isEvening && fresh && b.reflect && !b.reflectAnswered) wrap += `${wrap ? '' : '<div class="wrapup" id="tWrap">'}<div class="reflect"><div class="reflect-q">${esc(b.reflect)}</div><div class="reflect-row"><input id="reflectInput" placeholder="One line is plenty. It goes to your records." aria-label="${esc(b.reflect)}" /><button id="reflectSave">Save</button></div></div>`;
+    $('wrapWrap').innerHTML = wrap ? wrap + '</div>' : '';
     const rs = $('reflectSave');
     if (rs) rs.addEventListener('click', async () => {
       const v = $('reflectInput').value.trim(); if (!v || !db) return;
       try { await db.collection('reflections').doc(slug('journal')).set({ type: 'journal', journalText: v, prompt: b.reflect, date: todayISO() }); await db.doc('brief/main').update({ reflectAnswered: true }); } catch (e) { }
     });
+    const more = (b && Array.isArray(b.more) ? b.more : []).filter(m => m && m.b);
+    $('moreWrap').innerHTML = more.length ? `<div><div class="sec-head"><h3>Got more time?</h3><span class="sec-note">optional · pick any</span></div><div class="more">${more.map(m => `<div class="more-row"><span class="t">${esc(m.t || '')}</span><div><b>${esc(m.b)}</b>${m.s ? `<small>${esc(m.s)}</small>` : ''}</div>${goBtn('jb', m.btn || 'Open', m)}</div>`).join('')}</div></div>` : '';
+    $('headsUp').innerHTML = (b && b.headsUp) ? `<div class="headsup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>${esc(b.headsUp)}</span></div>` : '';
+    const openG = S.guidance.filter(g => !g.done);
+    $('radarWrap').innerHTML = openG.length ? `<details class="fold"><summary>On my radar (${openG.length})</summary><ul>${openG.map(g => `<li>${esc(g.text)}</li>`).join('')}</ul></details>` : '';
+    const wait = S.tasks.filter(t => !t.done && t.waitingOn);
+    $('waitWrap').innerHTML = wait.length ? `<details class="fold"><summary>Waiting on others (${wait.length})</summary><div class="side-list">${wait.map(t => `<div class="side-row"><span class="side-when" style="color:var(--text-faint)">Waiting</span><div>${esc(t.text)}${t.waitingOnWho ? `<small>${esc(t.waitingOnWho)}</small>` : ''}</div></div>`).join('')}</div></details>` : '';
   }
 
   /* ================= to-do ================= */
@@ -2335,17 +2402,17 @@
     },
   };
 
-  /* ================= sheets: settings + Equinox 6 welcome ================= */
+  /* ================= sheets: settings + welcome ================= */
   function sheet(kind) {
     if (kind === 'apps') return appsSheet();
     const isWelcome = kind === 'welcome';
     const cal = S.calStatus === 'live';
-    const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Equinox 6' : 'Settings'}">
-      <div class="sheet-head">${logoSvg()}<div><h3>${isWelcome ? (S.profile && S.profile.e6NewUser ? 'Make it yours' : 'Welcome to Equinox 6') : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div></div>
+    const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Sync 7' : 'Settings'}">
+      <div class="sheet-head">${logoSvg()}<div style="flex:1;min-width:0"><h3>${isWelcome ? (S.profile && S.profile.e6NewUser ? 'Make it yours' : 'Welcome to Sync 7') : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div><button type="button" class="sheet-x" id="sheetX" aria-label="Close">×</button></div>
       <div class="sheet-body">
         <div><div class="opt-h">Palette</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
         <div><div class="opt-h">Mode</div><div class="mode-opts">${[['system', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
-        ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : `<button class="btn" data-allow="${esc(a.server)}">Allow</button>`}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
+        ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : (Apps.perms ? `<button class="btn" data-allow="${esc(a.server)}">Allow</button>` : Apps.addLink(a))}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
         ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
         <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetDone">Done</button>'}</div>
       </div></div></div>`;
@@ -2353,7 +2420,7 @@
     const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } };
     $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
     $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
-    $('sheetDone').addEventListener('click', close);
+    $('sheetDone').addEventListener('click', close); $('sheetX').addEventListener('click', close);
     $('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim' && !isWelcome) close(); });
     $('sheetHost').querySelectorAll('[data-allow]').forEach(b => b.addEventListener('click', async () => { await Apps.allow([b.dataset.allow]); sheet(kind); }));
   }
@@ -2447,18 +2514,21 @@
       const evening = period().endsWith('evening');
       const prompt = 'Task: read this early-career person\'s live dashboard data and decide what they should do next. Tone: direct and warm, like a career coach.\n\n'
         + 'MODE: ' + (evening ? 'EVENING: wrap up today, then set up tomorrow.' : 'DAY: point them at what matters now.') + '\n\n'
-        + 'Reply with ONLY JSON: {"headline": string, "moves": [{"text": string, "why": string, "kind": "do"|"coach", "page": string, "tab": string, "target": string}]'
+        + 'Reply with ONLY JSON: {"headline": string, "moves": [{"text": string, "why": string, "kind": "do"|"coach", "s7Kind": "start"|"todo"|"worth"|"decide", "est": string, "btn": string, "page": string, "tab": string, "target": string}], "more": [{"t": string, "b": string, "s": string, "btn": string, "page": string, "tab": string, "target": string}], "headsUp": string'
         + (evening ? ', "wrap": [string], "reflect": string' : '') + '}\n'
         + '- headline: a direction, not a story. Max 12 words, imperative, no narration or "you bought time" framing. Good: "Push Palantir forward; hold ACE until Nov 1." / "Book two alumni calls this week." Bad: anything describing what already happened.\n'
         + '- moves: exactly 3, most leveraged first. text = a concrete action starting with a verb (max 10 words). why = max 12 words, the reason only. Mix doing with coaching. Prefer time-sensitive items from UP NEXT, NEEDS DEBRIEF, and follow-up dates.\n'
+        + '- s7Kind: start = the one best first move; todo = a plain task; worth = optional but valuable; decide = a choice they need to make. est = a time estimate like "15 min" or "before Thursday · 15 min". btn = a 2-5 word button label saying what opens ("Open your prep").\n'
+        + '- more: up to 3 optional things for when they have extra time, each backed by something in the data (t = time like "20 min", b = title, s = one short line, btn = label, page/tab/target as for moves). [] if nothing real. headsUp: one line (max 20 words) about the nearest thing that needs attention, "" if none.\n'
         + '- NEVER suggest something already done: check TASKS DONE TODAY, SAVED FROM CHAT and RECENT CONVERSATIONS. If they are waiting on someone, the move is the follow-up on its date, not the original ask.\n'
         + '- page/tab/target link each move to where the detail lives: page "pipeline" (target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "".\n'
         + (evening ? '- wrap: up to 3 short past-tense lines of what actually moved today. Empty array if nothing moved; never invent.\n- reflect: one specific, gentle question about today (max 18 words).\n' : '')
         + 'Use only facts in the data. Never invent people, dates, or outcomes.\n\nDATA:\n' + contextBlock(40000);
       try {
         const r = await sample.json(prompt, { modelTier: 'default', cache: false });
-        const moves = (r && Array.isArray(r.moves) ? r.moves : []).slice(0, 3).map(m => ({ text: String(m.text || ''), why: String(m.why || ''), kind: m.kind === 'coach' ? 'coach' : 'do', page: String(m.page || ''), tab: String(m.tab || ''), target: String(m.target || '') })).filter(m => m.text);
-        await db.doc('brief/main').set({ headline: String((r && r.headline) || ''), moves, wrap: evening && Array.isArray(r.wrap) ? r.wrap.map(String).slice(0, 3) : [], reflect: evening ? String(r.reflect || '') : '', reflectAnswered: false, period: period(), generatedAt: new Date().toISOString(), generatedAtMs: Date.now(), trigger: trigger && trigger !== 'manual refresh' && trigger !== 'auto' ? String(trigger) : '' });
+        const moves = (r && Array.isArray(r.moves) ? r.moves : []).slice(0, 3).map(m => ({ text: String(m.text || ''), why: String(m.why || ''), kind: m.kind === 'coach' ? 'coach' : 'do', s7Kind: MV_KIND[m.s7Kind] ? m.s7Kind : '', est: String(m.est || ''), btn: String(m.btn || ''), page: String(m.page || ''), tab: String(m.tab || ''), target: String(m.target || '') })).filter(m => m.text);
+        const more = (r && Array.isArray(r.more) ? r.more : []).slice(0, 3).map(m => ({ t: String((m && m.t) || ''), b: String((m && m.b) || ''), s: String((m && m.s) || ''), btn: String((m && m.btn) || ''), page: String((m && m.page) || ''), tab: String((m && m.tab) || ''), target: String((m && m.target) || '') })).filter(m => m.b);
+        await db.doc('brief/main').set({ headline: String((r && r.headline) || ''), moves, more, headsUp: String((r && r.headsUp) || ''), wrap: evening && Array.isArray(r.wrap) ? r.wrap.map(String).slice(0, 3) : [], reflect: evening ? String(r.reflect || '') : '', reflectAnswered: false, period: period(), generatedAt: new Date().toISOString(), generatedAtMs: Date.now(), trigger: trigger && trigger !== 'manual refresh' && trigger !== 'auto' ? String(trigger) : '' });
       } catch (e) {
         if (isCapErr(e)) sample = null;
         Chat.status(e && e.code === 'rate_limited' ? 'Bearing update hit a rate limit. Try again in a bit.' : '');
@@ -2653,14 +2723,14 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + REPLY_FORMAT
       + '- reply: 1-4 sentences usually; longer only for drafts, prep, or mock interviews. Name the strategic implication when useful and end with ONE concrete question. Do NOT restate what you saved; the page shows that.\n'
       + '- actions: every fact from their LATEST message worth keeping. Prefer updating existing records over duplicates. Never invent facts.\n'
-      + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for the three palettes and light/dark.\n\n'
+      + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for the two palettes (Sky and Sand) and light/dark.\n\n'
       + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
   }
   function onboardingRules() {
     return 'Task: run the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Style: warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first. The two opening questions (where they are now, and what kind of opportunity they want) are answered before the chat starts: if s7Where and s7Want appear under "Already on file", do not ask them again, and confirm them only if the student seems to contradict them. If they are missing, ask where they are now (year / time since graduating, status) and what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure, which is a complete answer). Then the open-ended "tell me anything else about yourself" (the most important question; if thin, follow up gently, one prompt at a time); their experiences (jobs, teams, clubs, research, projects: for each, what they did and what they\'re proud of); schools and communities; location and constraints; what they are building or part of right now.\n'
       + 'Save facts AS YOU GO: every turn that reveals their name, school, year, goals or an experience gets its action in that same turn. Each action is one complete JSON object with a "label" key.\n'
       + 'When you have their name, stage, what they want, and at least two experiences, ask if they\'re ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. Keep the whole intake to about 8-10 questions.\n'
-      + 'Style requests: Bridge looks the same for everyone; there are three palettes and light/dark under the gear icon.\n\n'
+      + 'Style requests: Bridge looks the same for everyone; there are two palettes (Sky and Sand) and light/dark under the gear icon.\n\n'
       + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","type"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"intake_done","label"}]\n'
       + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nExperience so far: ' + S.experience.map(x => x.title + ' @ ' + x.org).join('; ') + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
   }
@@ -2771,7 +2841,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         const bm = $('buildMap'); bm.disabled = Readout.busy || !!this.inFlight; bm.textContent = Readout.busy ? 'Building your career map…' : 'Build my career map →';
       }
       const sb = $('sendBtn'); sb.textContent = this.inFlight ? 'Stop' : 'Send'; sb.classList.toggle('stop', !!this.inFlight); sb.disabled = false;
-      renderLearn();
+      renderLearn(); renderChips();
       this.setDot();
     },
     waitText() { return 'You\'ve reached your Claude usage limit for now. Keep going: everything you type is saved, and Bridge answers all of it once your limit resets. Your dashboard still works in the meantime.'; },
@@ -3035,7 +3105,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         });
       });
       const pf = S.profile;
-      applyStage(); maybeWelcome(); setTimeout(maybeApps, 1500);
+      touchVisit(); applyStage(); maybeWelcome(); setTimeout(maybeApps, 1500);
     }
     bootDone = true; renderAll(); Chat.render(); Chat.maybeResume();
     // Anything saved while Claude's usage limit was in effect gets answered now (one try per visit, then on return after 10+ minutes).
