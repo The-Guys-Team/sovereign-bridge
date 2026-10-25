@@ -1050,7 +1050,7 @@
     .dk-bar .eyebrow span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
   [hidden] { display: none !important; }
-  /* weekly wrap-up: its own dark card on Today */
+  /* daily wrap-up: its own dark card on Today */
   .wrapup#tWrap { background: var(--stage); color: var(--stage-text); border-radius: 14px; padding: 1.2rem 1.3rem; margin: 0; border: none; display: flex; flex-direction: column; gap: 0.6rem; }
   #tWrap .bear-l { color: var(--stage-accent); }
   #tWrap ul { margin: 0; padding-left: 1.1rem; font-size: 0.86rem; line-height: 1.55; color: var(--stage-dim); }
@@ -1448,7 +1448,7 @@
   </div>
   <nav class="nav" id="nav" aria-label="Areas">
     <button data-page="today" class="active">Today</button>
-    <button data-page="pipeline" data-group="pipeline people">Moves</button>
+    <button data-page="people" data-group="people person pipeline">Moves</button>
     <button data-page="direction">Path</button>
     <button data-page="coaching">Coaching</button>
     <button data-page="projects" data-group="projects records">More</button>
@@ -1492,7 +1492,7 @@
 
   <section class="page" id="page-pipeline" hidden>
     <div class="wrap">
-      <div class="seg" role="tablist" aria-label="Moves"><button data-go="pipeline" data-seg="pipeline">Pipeline</button><button data-go="people" data-seg="people">People</button></div>
+      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Pipeline</button></div>
       <div class="page-head"><div class="eyebrow">What you're pursuing</div><h2>Pipeline</h2><p id="pipeDesc"></p></div>
       <div class="pills" id="oppFilters"></div>
       <div class="board" id="board"></div>
@@ -1501,21 +1501,23 @@
 
   <section class="page" id="page-people" hidden>
     <div class="wrap">
-      <div class="seg" role="tablist" aria-label="Moves"><button data-go="pipeline" data-seg="pipeline">Pipeline</button><button data-go="people" data-seg="people">People</button></div>
-      <div class="page-head"><div class="eyebrow">Who can bridge you there</div><h2>People</h2><p>Your contacts, new people to approve, outreach in flight, and prep for the next conversation.</p></div>
+      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Pipeline</button></div>
+      <div class="page-head"><div class="eyebrow">Who can bridge you there</div><h2>People</h2><p>The people who can get you where you're going, new people to approve, outreach in flight, and prep for the next conversation.</p></div>
       <div>
         <div class="tabs" id="peopleTabs">
-          <button data-tab="contacts">Contacts<span class="n" id="nContacts"></span></button>
-          <button data-tab="candidates">Candidates<span class="n" id="nCandidates"></span></button>
+          <button data-tab="contacts">People<span class="n" id="nContacts"></span></button>
           <button data-tab="outreach">Outreach<span class="n" id="nOutreach"></span></button>
           <button data-tab="prep">Call prep<span class="n" id="nPrep"></span></button>
         </div>
-        <div data-panel="contacts" id="contactsBody"></div>
-        <div data-panel="candidates" id="candidatesBody" hidden></div>
+        <div data-panel="contacts"><div id="candidatesBody"></div><div id="contactsBody"></div></div>
         <div data-panel="outreach" id="outreachBody" hidden></div>
         <div data-panel="prep" id="prepBody" hidden></div>
       </div>
     </div>
+  </section>
+
+  <section class="page" id="page-person" hidden>
+    <div class="wrap" id="personBody"></div>
   </section>
 
   <section class="page" id="page-coaching" hidden>
@@ -1682,6 +1684,8 @@
   /* ================= navigation ================= */
   let currentPage = 'today';
   function go(page, tab, target) {
+    if (page === 'people' && target && S.network.some(c => c.id === target) && tab !== 'prep' && tab !== 'outreach') { curPerson = target; renderPerson(); page = 'person'; tab = ''; target = ''; }
+    if (page === 'people' && tab === 'candidates') tab = 'contacts';
     if (!page || !$('page-' + page)) page = 'today';
     currentPage = page;
     document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', (b.dataset.group ? b.dataset.group.split(' ') : [b.dataset.page]).includes(page)));
@@ -1809,6 +1813,10 @@
      New code reaches the page runtime (database, model, calendar) only through these, so the runtime can be swapped later. */
   const S7 = {
     saveProfile(patch) { return saveProfile(patch); },
+    col: {
+      set(coll, id, data) { return db.collection(coll).doc(id).set(data); },
+      update(coll, id, patch) { return db.collection(coll).doc(id).update(patch); },
+    },
     async modelJSON(prompt, tier) {
       if (!(await Chat.ensureSample())) { const e = new Error('model_unavailable'); e.code = 'model_unavailable'; throw e; }
       return sample.json(prompt, { modelTier: tier || 'default', cache: false });
@@ -2134,41 +2142,165 @@
   /* ================= people ================= */
   const BUCKETS = [['past-job', 'Past job / activity'], ['personal', 'Personal / family'], ['college', 'College'], ['high-school', 'High school'], ['cold', 'Cold']];
   const C_ST = { active: 'route', contacted: 'amber', sourced: 'violet', stalled: 'rust' };
+  const WARM = { personal: 0, 'past-job': 1, college: 2, 'high-school': 3, cold: 4 };
+  const first = (n) => String(n || '').trim().split(/\s+/)[0];
+  function srcLabel(b) { const pf = S.profile || {}; return ({ college: pf.school ? pf.school + ' alum' : 'College', 'past-job': 'Past job', personal: 'Friends & family', 'high-school': 'High school' })[b] || 'New connection'; }
   function interactionsFor(c) {
-    const first = norm(c.name).split(' ')[0]; const ct = tokens(c.company);
-    return S.interactions.filter(i => { const n = norm(i.contactName); return (first.length > 2 && n.includes(first)) || (ct.length && tokens(i.company).some(t => ct.includes(t))); }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const f = norm(c.name).split(' ')[0]; const ct = tokens(c.company);
+    return S.interactions.filter(i => { const n = norm(i.contactName); return (f.length > 2 && n.includes(f)) || (ct.length && tokens(i.company).some(t => ct.includes(t))); }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
+  function purposeOf(c) { return c.purpose || (c.goal === 'learn' ? 'perspective' : c.goal ? 'opening' : ''); }
+  function stLabel(c) {
+    if (c.sentAt && c.status !== 'active') return 'Waiting on a reply';
+    if (c.draft && c.draft.body && c.status === 'sourced') return 'Draft ready';
+    return ({ sourced: 'Not contacted yet', contacted: 'Contacted', active: 'In conversation', stalled: 'Gone quiet' })[c.status] || 'Not contacted yet';
+  }
+  function followDue(c) { const w = parseWhen(c.nextFollowUp); return !!(w && w.date <= new Date()); }
+  function oppOf(c) { return c.opportunityId ? S.opportunities.find(o => o.id === c.opportunityId) : null; }
+  // Dated notes live in the existing notes text as "[YYYY-MM-DD] note" lines (what chat writes), so chat and the page share one record.
+  function parseNotes(c) {
+    const dated = [], plain = [];
+    String(c.notes || '').split('\n').forEach(l => { const m = l.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/); if (m) dated.push({ d: m[1], t: m[2] }); else if (l.trim()) plain.push(l.trim()); });
+    return { dated: dated.sort((a, b) => b.d.localeCompare(a.d)), plain };
   }
   function renderPeople() {
     $('nContacts').textContent = S.network.length || '';
+    renderCandidates();
     const el = $('contactsBody');
-    if (!S.network.length) el.innerHTML = '<div class="empty">No contacts yet. Mention someone in the chat and Bridge adds them.</div>';
-    else el.innerHTML = `<div class="buckets">${BUCKETS.map(([b, label]) => { const cs = S.network.filter(c => (c.bucket || 'cold') === b); if (!cs.length) return ''; cs.sort((x, y) => String(x.nextFollowUp || '9').localeCompare(String(y.nextFollowUp || '9'))); return `<div><div class="bucket-h"><span>${label}</span><span>${cs.length}</span></div><div class="plist">${cs.map(contactRow).join('')}</div></div>`; }).join('')}</div>`;
-    el.querySelectorAll('.prow').forEach(n => n.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask], a')) return; toggleKey(n.dataset.key); }));
-    renderCandidates(); renderOutreach(); renderPrep();
+    const sorted = S.network.slice().sort((a, b) => (followDue(b) - followDue(a)) || ((WARM[a.bucket] ?? 4) - (WARM[b.bucket] ?? 4)) || String(a.name).localeCompare(String(b.name)));
+    const row = (c) => {
+      const o = oppOf(c), p = purposeOf(c);
+      const purpose = o ? `<span class="chip violet">Opening</span><span class="pc-t">${esc(o.org || o.title)}</span>` : p ? `<span class="chip">${p === 'opening' ? 'Opening' : 'Perspective'}</span>${c.whyTalk ? `<span class="pc-t">${esc(trunc(c.whyTalk, 90))}</span>` : ''}` : '';
+      const fu = c.nextFollowUp ? `follow up ${fmtDate(c.nextFollowUp)}` : c.lastContact ? `last ${fmtDate(c.lastContact)}` : srcLabel(c.bucket);
+      return `<button type="button" class="pr" data-person="${esc(c.id)}"><span class="ini">${esc(initials(c.name))}</span><span class="pr-who"><span class="pr-n">${esc(c.name)}</span><span class="pr-how">${esc([c.role, c.company].filter(Boolean).join(' · ') || srcLabel(c.bucket))}</span></span><span class="pr-can">${purpose}</span><span class="pr-side"><span class="chip ${followDue(c) ? 'rust' : (C_ST[c.status] || '')}">${esc(followDue(c) ? 'Follow up now' : stLabel(c))}</span><span class="pr-src">${esc(fu)}</span></span><span class="pr-go" aria-hidden="true">›</span></button>`;
+    };
+    el.innerHTML = `<div class="sec-head"><h3>People</h3><span class="sec-note">follow-ups due first, then your warmest connections · tap anyone to open their page</span></div>`
+      + (sorted.length ? `<div class="ppl">${sorted.map(row).join('')}</div>` : '<div class="soon">No one on your list yet. Add someone you know below, or mention them in the chat and Bridge adds them.</div>')
+      + addFormHtml();
+    el.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
+    wireAdd();
+    renderPerson();
+    renderOutreach(); renderPrep();
   }
-  function contactRow(c) {
-    const open = openKeys.has(c.id);
-    const ints = open ? interactionsFor(c) : [];
-    const fuW = parseWhen(c.nextFollowUp); const fuDue = fuW && fuW.date <= new Date();
-    const side = c.nextFollowUp ? `<span class="fu${fuDue ? ' due' : ''}">follow up ${esc(fmtDate(c.nextFollowUp))}</span>` : c.lastContact ? `<span class="fu">last ${esc(fmtDate(c.lastContact))}</span>` : '';
-    return `<div class="prow" data-key="${esc(c.id)}" data-expandable="1">
-      <div class="prow-main"><span class="ini">${esc(initials(c.name))}</span><div style="min-width:0"><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc([c.role, c.company].filter(Boolean).join(' · ') || '—')}</div></div><div class="prow-side"><span class="chip ${C_ST[c.status] || ''}">${esc(c.status || 'sourced')}</span>${side}</div></div>
-      ${open ? `<div class="c-detail">${c.bridgePath ? `<div><b style="color:var(--text)">The bridge:</b> ${esc(c.bridgePath)}</div>` : ''}${c.notes ? `<div>${esc(trunc(c.notes, 600))}</div>` : ''}${ints.length ? `<div class="timeline">${ints.map(i => `<div class="tl-item"><div class="tl-date">${esc(fmtDate(i.date))} · ${esc(i.type || '')}</div>${esc(trunc(i.summary || i.materials || '', 220))}</div>`).join('')}</div>` : ''}<div style="display:flex;gap:.4rem;flex-wrap:wrap"><button class="jump" data-ask="Update on ${esc(c.name)}: ">Log an update</button>${c.linkedin ? `<a class="jump" href="${esc(c.linkedin)}" target="_blank" rel="noopener">Profile ↗</a>` : ''}</div></div>` : ''}
-    </div>`;
+  /* ---- add someone you met (direct page write) ---- */
+  let adding = false;
+  function addFormHtml() {
+    if (!adding) return '<button type="button" class="btn add-btn" id="addpOpen">+ Add someone you met</button>';
+    return `<form class="addp" id="addp"><div class="addp-h">Add someone you met</div><div class="addp-grid">
+      <label>Name<input id="apName" required placeholder="First and last name"></label>
+      <label>How you know them<select id="apSrc"><option value="college">${esc(srcLabel('college'))}</option><option value="high-school">High school</option><option value="past-job">Past job or internship</option><option value="personal">Friends &amp; family</option><option value="cold" selected>Met on my own</option></select></label>
+      <label class="wide">What they do<input id="apRole" placeholder="Role and company, if you know it"></label>
+      <label class="wide">Anything worth remembering<input id="apNote" placeholder="Where you met, what you talked about"></label></div>
+      <div class="addp-acts"><button class="btn primary" type="submit">Add to Bridge</button><button class="btn" type="button" id="addpCancel">Cancel</button></div></form>`;
   }
+  function wireAdd() {
+    const o = $('addpOpen'); if (o) o.addEventListener('click', () => { adding = true; renderPeople(); const n = $('apName'); if (n) n.focus(); });
+    const c = $('addpCancel'); if (c) c.addEventListener('click', () => { adding = false; renderPeople(); });
+    const f = $('addp'); if (f) f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = $('apName').value.trim(); if (!name || !db) return;
+      const dup = S.network.find(x => norm(x.name) === norm(name));
+      if (dup) { adding = false; openPerson(dup.id, true); return; }
+      const bucket = $('apSrc').value, role = $('apRole').value.trim(), note = $('apNote').value.trim().replace(/\n+/g, ' ');
+      const id = slug(name);
+      try {
+        await S7.col.set('network', id, { name, company: '', role, bucket, goal: 'learn', bridgePath: bucket === 'cold' ? 'Met on my own' : srcLabel(bucket), notes: note ? '[' + todayISO() + '] ' + note : '', status: 'sourced', lastContact: null, nextFollowUp: null, addedBy: 'you' });
+        logActivity('Added contact: ' + name);
+        adding = false; openPerson(id, true);
+      } catch (err) { diag('add-person', err); Chat.status('Couldn\'t save that person. Try again.'); }
+    });
+  }
+  /* ---- new people Bridge found: approve makes a contact and drafts a first message ---- */
+  const drafting = new Set();
   function renderCandidates() {
     const el = $('candidatesBody');
     const pend = S.candidates.filter(c => !c.status || c.status === 'pending');
-    const appr = S.candidates.filter(c => c.status === 'approved');
     const den = S.candidates.filter(c => c.status === 'denied');
-    $('nCandidates').textContent = pend.length || '';
     const today = todayISO();
-    const card = (c) => `<div class="cand${c.batchDate === today ? ' fresh' : ''}"><div class="cand-body"><div class="c-name">${esc(c.name)} ${c.batchDate === today ? '<span class="chip brass">new today</span>' : ''}</div><div class="c-role" style="white-space:normal">${esc([c.title, c.company].filter(Boolean).join(' · '))}</div>${c.why ? `<div class="cand-why">${esc(c.why)}</div>` : ''}<div class="cand-meta">${(c.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}${c.source ? `<a href="${esc(c.source)}" target="_blank" rel="noopener">source ↗</a>` : ''}</div></div><div class="cand-acts"><button class="btn-ok" data-cand="${esc(c.id)}" data-st="approved">Approve</button><button class="btn-no" data-cand="${esc(c.id)}" data-st="denied">Pass</button></div></div>`;
-    el.innerHTML = `<p class="muted" style="margin:0 0 1rem;font-size:.84rem;max-width:62ch">New people land here from public sources (team pages, alumni pages, news). Nothing is ever sent: approving moves them to your list for you to reach out yourself.</p>`
-      + (pend.length ? `<div class="stack">${pend.sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || ''))).map(card).join('')}</div>` : '<div class="empty">No one waiting for review.</div>')
-      + (appr.length ? `<details class="fold" open style="margin-top:1rem"><summary>Approved, ready for you to reach out (${appr.length})</summary><div class="stack">${appr.map(c => `<div class="row-card row-line"><span><b>${esc(c.name)}</b> <span class="muted">${esc([c.title, c.company].filter(Boolean).join(' · '))}</span></span><span style="display:flex;gap:.5rem;align-items:center"><button class="jump" data-ask="Draft a LinkedIn note to ${esc(c.name)}." data-hint="${esc(c.name)} is ${esc(c.title || '')} at ${esc(c.company || '')}. Why them: ${esc(c.why || '')} Keep it under 300 characters, in my voice, with one specific ask." data-send="1">Draft note</button><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">undo</button></span></div>`).join('')}</div></details>` : '')
-      + (den.length ? `<details class="fold" style="margin-top:.4rem"><summary>Passed (${den.length})</summary><div class="stack">${den.map(c => `<div class="row-card row-line"><span>${esc(c.name)}</span><button class="linkish" data-cand="${esc(c.id)}" data-st="pending">restore</button></div>`).join('')}</div></details>` : '');
-    el.querySelectorAll('[data-cand]').forEach(b => b.addEventListener('click', async () => { if (!db) return; try { await db.collection('candidates').doc(b.dataset.cand).update({ status: b.dataset.st, decidedAt: new Date().toISOString() }); } catch (e) { } }));
+    const card = (c) => `<div class="cand${c.batchDate === today ? ' fresh' : ''}"><span class="ini">${esc(initials(c.name))}</span><div class="cand-body"><div class="pr-n">${esc(c.name)}${c.batchDate === today ? ' <span class="chip brass">New</span>' : ''}</div><div class="pr-how">${esc([c.title, c.company].filter(Boolean).join(' · '))}</div>${c.why ? `<div class="cand-why">${esc(c.why)}</div>` : ''}<div class="cand-meta">${(c.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}${c.source ? `<a href="${esc(c.source)}" target="_blank" rel="noopener">source ↗</a>` : ''}</div></div><div class="cand-acts"><button class="btn-ok" data-approve="${esc(c.id)}">Approve</button><button class="btn-no" data-skip="${esc(c.id)}">Skip</button></div></div>`;
+    el.innerHTML = (pend.length ? `<div class="sec-head"><h3>New people Bridge found</h3><span class="sec-note">approve and Bridge drafts a first message · nothing is ever sent for you</span></div><div class="cands">${pend.sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || ''))).map(card).join('')}</div>` : '')
+      + (den.length ? `<details class="fold"><summary>Skipped (${den.length})</summary><div class="stack">${den.map(c => `<div class="row-card row-line"><span>${esc(c.name)}</span><button class="linkish" data-restore="${esc(c.id)}">restore</button></div>`).join('')}</div></details>` : '');
+    el.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => approveCandidate(b.dataset.approve)));
+    el.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.skip, { status: 'denied', decidedAt: new Date().toISOString() }); } catch (e) { diag('skip', e); } }));
+    el.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.restore, { status: 'pending', decidedAt: new Date().toISOString() }); } catch (e) { diag('restore', e); } }));
+  }
+  async function approveCandidate(id) {
+    const cand = S.candidates.find(c => c.id === id); if (!cand || !db) return;
+    let contact = S.network.find(x => norm(x.name) === norm(cand.name));
+    try {
+      await S7.col.update('candidates', id, { status: 'approved', decidedAt: new Date().toISOString() });
+      if (!contact) {
+        const cid = slug(cand.name);
+        const bucket = cand.bucket || ((cand.tags || []).some(t => /alum/i.test(t)) ? 'college' : 'cold');
+        await S7.col.set('network', cid, { name: cand.name, company: cand.company || '', role: cand.title || '', bucket, goal: 'learn', bridgePath: cand.why ? 'Found by Bridge: ' + cand.why : 'Found by Bridge', notes: '', status: 'sourced', lastContact: null, nextFollowUp: null, fromCandidate: id, whyTalk: cand.why || '' });
+        logActivity('Approved: ' + cand.name);
+        contact = { id: cid, name: cand.name, company: cand.company || '', role: cand.title || '', bucket, whyTalk: cand.why || '', bridgePath: cand.why || '' };
+      }
+    } catch (e) { diag('approve', e); Chat.status('Couldn\'t approve that one. Try again.'); return; }
+    openPerson(contact.id, true);
+    if (!contact.draft) draftMessage(contact.id, contact);
+  }
+  /* ---- message drafts and "I sent it" ---- */
+  async function draftMessage(id, seed) {
+    const c = S.network.find(x => x.id === id) || seed || null; if (!c || drafting.has(id)) return;
+    drafting.add(id); renderPerson();
+    const pf = S.profile || {}, mm = S.mindmap || {};
+    const prompt = 'Task: write a short first message from this student to a person they would like to talk to. Plain text, 70-110 words, warm and specific, in the student\'s voice. Open with the real connection if one is listed, say briefly who the student is, and end with a low-pressure ask for 15-20 minutes of advice (not a job ask unless the purpose says opening). Use only facts below; never invent shared experiences, and leave out anything not known instead of using placeholders.\n'
+      + 'Reply ONLY with JSON: {"body": string}\n\nSTUDENT: ' + JSON.stringify({ name: pf.name, school: pf.school, classYear: pf.classYear, major: pf.major, pitch: mm.elevatorPitch || '', wants: pf.s7Want || pf.opportunityType || '' })
+      + '\nPERSON: ' + JSON.stringify({ name: c.name, role: c.role, company: c.company, howTheyKnowEachOther: c.bridgePath || '', whyTalkToThem: c.whyTalk || '', theAsk: c.theAsk || '', purpose: purposeOf(c) || '' });
+    try {
+      const r = await S7.modelJSON(prompt, 'default');
+      if (r && r.body) await S7.col.update('network', id, { draft: { body: String(r.body), createdAt: new Date().toISOString() } });
+      else Chat.status('Couldn\'t draft that message. Try again.');
+    } catch (e) { diag('draft', e, e && e.text); Chat.status(isCapErr(e) || (e && e.code === 'model_unavailable') ? 'Drafting needs this page open in Claude with chat allowed.' : 'Couldn\'t draft that message just now. Try again in a bit.'); }
+    drafting.delete(id); renderPerson();
+  }
+  async function markSent(id) {
+    const c = S.network.find(x => x.id === id); if (!c || !db) return;
+    const today = todayISO(), next = addDaysISO(5);
+    try {
+      await S7.col.update('network', id, { sentAt: new Date().toISOString(), status: c.status === 'active' ? 'active' : 'contacted', lastContact: today, nextFollowUp: next });
+      await S7.col.set('outreach', slug('outreach-' + c.name), { contactName: c.name, company: c.company || '', channel: 'message', status: 'sent', sentDate: today, nextFollowUpDate: next, note: 'First message sent (from the draft on their page).' });
+      await S7.col.set('interactions', slug('msg-' + c.name), { contactName: c.name, company: c.company || '', type: 'message', date: today, summary: 'Sent a first message.', source: 'page' });
+      logActivity('Sent a message to ' + c.name);
+    } catch (e) { diag('sent', e); Chat.status('Couldn\'t log that. Try again.'); }
+  }
+  async function addNote(id, text) {
+    const c = S.network.find(x => x.id === id); const t = String(text || '').trim().replace(/\n+/g, ' '); if (!c || !t || !db) return;
+    try { await S7.col.update('network', id, { notes: (c.notes ? c.notes + '\n' : '') + '[' + todayISO() + '] ' + t, lastContact: c.lastContact || null }); } catch (e) { diag('note', e); Chat.status('Couldn\'t save that note. Try again.'); }
+  }
+  /* ---- person page ---- */
+  let curPerson = null;
+  let personOpenedAt = 0;
+  // force: the contact was just written and may not have come back from the database yet.
+  function openPerson(id, force) { if (!force && !S.network.some(c => c.id === id)) return; curPerson = id; personOpenedAt = Date.now(); go('person'); renderPerson(); if (force) setTimeout(renderPerson, 5200); }
+  function renderPerson() {
+    const el = $('personBody'); if (!el) return;
+    const c = S.network.find(x => x.id === curPerson);
+    if (!c) { el.innerHTML = '<button class="back" data-go="people">‹ Back to People</button><div class="soon">' + (Date.now() - personOpenedAt < 5000 ? 'Opening…' : 'That person isn\'t on your list any more.') + '</div>'; return; }
+    const o = oppOf(c), p = purposeOf(c), ints = interactionsFor(c), notes = parseNotes(c);
+    const busy = drafting.has(c.id);
+    const draft = c.draft && c.draft.body
+      ? `<div class="draft" id="pDraft"><span class="draft-to">To ${esc(c.name)}</span><div class="draft-body">${esc(c.draft.body)}</div><div class="draft-foot"><button class="btn" id="dCopy">Copy</button>${c.sentAt ? `<span>Sent ${esc(fmtDate(c.sentAt.slice(0, 10)))}. Bridge keeps the follow-up date.</span>` : `<button class="btn primary" id="dSent">I sent it</button><button class="btn" id="dRedo"${busy ? ' disabled' : ''}>Draft another</button><span>Nothing sends without you. Tap "I sent it" once it's out, and Bridge logs it.</span>`}</div></div>`
+      : (c.sentAt ? '' : `<div class="draft"><span class="draft-to">First message</span><div class="draft-foot"><button class="btn primary" id="dMake"${busy ? ' disabled' : ''}>${busy ? 'Drafting…' : 'Draft a first message'}</button><span>Bridge writes it from what you know about them. You send it yourself.</span></div></div>`);
+    const purpose = (c.whyTalk || c.theAsk || o)
+      ? `<div class="purpose${p === 'opening' || o ? '' : ' learn'}">${c.whyTalk ? `<div><h4>Why talk to them</h4><p>${esc(c.whyTalk)}</p></div>` : ''}${o ? `<div><h4>The opening</h4><p><b>${esc(o.org || '')}</b><br>${esc(o.title || '')}</p><button type="button" class="way" data-go="pipeline" data-target="${esc(o.id)}">See it in your pipeline ›</button></div>` : ''}${c.theAsk ? `<div><h4>The ask</h4><p>${esc(c.theAsk)}</p></div>` : ''}</div>`
+      : `<div><button class="jb" data-ask="${esc('What do I want to learn from ' + first(c.name) + '? Help me write down why I want to talk to them and what I will ask.')}" data-send="1">Work out what to ask ${esc(first(c.name))}</button></div>`;
+    const where = ints[0] ? (ints[0].summary || ints[0].materials || 'Talked ' + fmtDate(ints[0].date)) : (c.lastContact ? 'Last contact ' + fmtDate(c.lastContact) : 'You haven\'t reached out yet.');
+    const next = c.nextFollowUp ? 'Follow up ' + fmtDate(c.nextFollowUp) : c.draft && !c.sentAt ? 'Send the draft below.' : c.status === 'sourced' && !c.sentAt ? 'Draft a first message.' : 'Nothing scheduled.';
+    el.innerHTML = `<button class="back" data-go="people">‹ Back to People</button>
+      <div class="ph"><span class="ini ini-lg">${esc(initials(c.name))}</span><div class="ph-main"><h2>${esc(c.name)}</h2><p>${esc([c.role, c.company].filter(Boolean).join(' · ') || '')}</p><div class="ph-chips"><span class="chip ${C_ST[c.status] || ''}">${esc(stLabel(c))}</span><span class="chip">${esc(srcLabel(c.bucket))}</span>${p ? `<span class="chip${p === 'opening' ? ' violet' : ''}">${p === 'opening' ? 'Opening' : 'Perspective'}</span>` : ''}</div></div></div>
+      ${purpose}
+      <div class="pgrid three"><div class="pcard"><h4>How you know them</h4><p>${esc(c.bridgePath || 'Not filled in yet.')}</p></div><div class="pcard"><h4>Where things stand</h4><p>${esc(trunc(where, 220))}</p></div><div class="pcard next"><h4>Next step</h4><p>${esc(next)}</p></div></div>
+      ${draft}
+      ${c.sentAt ? `<div class="reply-row"><span>Heard back?</span><button class="jb" data-ask="${esc(first(c.name) + ' replied: ')}" data-send="0">Tell Bridge what they said</button></div>` : ''}
+      <div class="grid2 even"><div class="card"><h3>History</h3><div class="timeline">${ints.length ? ints.map(i => `<div class="tl-item"><span class="tl-date">${esc(fmtDate(i.date))}</span> ${esc(trunc(i.summary || i.materials || i.type || '', 220))}</div>`).join('') : '<div class="tl-item">Nothing yet. This fills in as you reach out and talk.</div>'}</div></div>
+      <div class="card"><h3>Your notes</h3>${(notes.dated.length || notes.plain.length) ? `<ul class="pnotes">${notes.dated.map(n => `<li><span class="tl-date">${esc(fmtDate(n.d))}</span> ${esc(n.t)}</li>`).join('')}${notes.plain.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="muted" style="margin:0;font-size:.84rem">Anything worth remembering for next time.</p>'}<div class="note-row"><input id="pNote" placeholder="Add a note" aria-label="Add a note about ${esc(c.name)}"><button class="btn" id="pNoteSave">Save</button></div></div></div>`;
+    const bind = (id, fn) => { const b = $(id); if (b) b.addEventListener('click', fn); };
+    bind('dMake', () => draftMessage(c.id)); bind('dRedo', () => draftMessage(c.id)); bind('dSent', () => markSent(c.id));
+    bind('dCopy', async () => { try { await navigator.clipboard.writeText(c.draft.body); $('dCopy').textContent = 'Copied'; } catch (e) { const r = document.createRange(); r.selectNodeContents(el.querySelector('.draft-body')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('dCopy').textContent = 'Selected: press copy'; } });
+    const save = async () => { const v = $('pNote').value; if (v.trim()) { $('pNote').value = ''; await addNote(c.id, v); } };
+    bind('pNoteSave', save); $('pNote').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); save(); } });
   }
   function renderOutreach() {
     $('nOutreach').textContent = S.outreach.length || '';
@@ -2697,7 +2829,7 @@
 
   /* ================= chat engine ================= */
   const ACTIONS_DOC = `Available actions (use exact ids from DATA when updating; "label" = a 3-8 word summary shown to the user):
-- {"type":"update_contact","id":contactId,"notesAppend"?,"status"?:"active|contacted|sourced|stalled","nextFollowUp"?:"YYYY-MM-DD","lastContact"?:"YYYY-MM-DD","bucket"?,"label"}
+- {"type":"update_contact","id":contactId,"notesAppend"?,"status"?:"active|contacted|sourced|stalled","nextFollowUp"?:"YYYY-MM-DD","lastContact"?:"YYYY-MM-DD","bucket"?,"purpose"?:"opening|perspective","whyTalk"?: why the student wants to talk to them,"theAsk"?: the one thing they will ask,"opportunityId"?: id from OPPORTUNITIES,"label"}
 - {"type":"add_contact","name","company"?,"role"?,"bucket":"past-job|personal|college|high-school|cold","goal":"learn|position|both","bridgePath"?,"notes"?,"label"}
 - {"type":"add_task","text","dueDate"?:"YYYY-MM-DD","priority":"high|med|low","linkedContactName"?,"linkedProjectId"?,"waitingOn"?:boolean,"waitingOnWho"?,"label"}
 - {"type":"complete_task","id":taskId,"label"}
@@ -2962,7 +3094,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       if (t === 'update_contact') {
         const c = findBy(S.network, a.id, a.name); if (!c) throw new Error('no contact');
         const patch = {}; if (a.notesAppend) patch.notes = (c.notes ? c.notes + '\n' : '') + '[' + todayISO() + '] ' + a.notesAppend;
-        ['status', 'nextFollowUp', 'lastContact', 'bucket'].forEach(k => { if (a[k]) patch[k] = a[k]; });
+        ['status', 'nextFollowUp', 'lastContact', 'bucket', 'purpose', 'whyTalk', 'theAsk', 'opportunityId'].forEach(k => { if (a[k]) patch[k] = a[k]; });
         if (!patch.lastContact && a.notesAppend) patch.lastContact = todayISO();
         await db.collection('network').doc(c.id).update(patch);
         logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'network', id: c.id, data: snapshot(c) } };
