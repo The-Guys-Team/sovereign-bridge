@@ -1448,7 +1448,7 @@
   </div>
   <nav class="nav" id="nav" aria-label="Areas">
     <button data-page="today" class="active">Today</button>
-    <button data-page="people" data-group="people person pipeline">Moves</button>
+    <button data-page="people" data-group="people person pipeline posting">Moves</button>
     <button data-page="direction">Path</button>
     <button data-page="coaching">Coaching</button>
     <button data-page="projects" data-group="projects records">More</button>
@@ -1492,8 +1492,8 @@
 
   <section class="page" id="page-pipeline" hidden>
     <div class="wrap">
-      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Pipeline</button></div>
-      <div class="page-head"><div class="eyebrow">What you're pursuing</div><h2>Pipeline</h2><p id="pipeDesc"></p></div>
+      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Openings</button></div>
+      <div class="page-head"><div class="eyebrow">What you're pursuing</div><h2>Openings</h2><p id="pipeDesc"></p></div>
       <div class="pills" id="oppFilters"></div>
       <div class="board" id="board"></div>
     </div>
@@ -1501,7 +1501,7 @@
 
   <section class="page" id="page-people" hidden>
     <div class="wrap">
-      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Pipeline</button></div>
+      <div class="seg" role="tablist" aria-label="Moves"><button data-go="people" data-seg="people">People</button><button data-go="pipeline" data-seg="pipeline">Openings</button></div>
       <div class="page-head"><div class="eyebrow">Who can bridge you there</div><h2>People</h2><p>The people who can get you where you're going, new people to approve, outreach in flight, and prep for the next conversation.</p></div>
       <div>
         <div class="tabs" id="peopleTabs">
@@ -1514,6 +1514,10 @@
         <div data-panel="prep" id="prepBody" hidden></div>
       </div>
     </div>
+  </section>
+
+  <section class="page" id="page-posting" hidden>
+    <div class="wrap" id="postingBody"></div>
   </section>
 
   <section class="page" id="page-person" hidden>
@@ -1685,11 +1689,12 @@
   let currentPage = 'today';
   function go(page, tab, target) {
     if (page === 'people' && target && S.network.some(c => c.id === target) && tab !== 'prep' && tab !== 'outreach') { curPerson = target; renderPerson(); page = 'person'; tab = ''; target = ''; }
+    if (page === 'pipeline' && target && S.opportunities.some(o => o.id === target)) { curPosting = target; renderPosting(); page = 'posting'; tab = ''; target = ''; }
     if (page === 'people' && tab === 'candidates') tab = 'contacts';
     if (!page || !$('page-' + page)) page = 'today';
     currentPage = page;
     document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', (b.dataset.group ? b.dataset.group.split(' ') : [b.dataset.page]).includes(page)));
-    document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('active', b.dataset.seg === page));
+    document.querySelectorAll('.seg button[data-seg]').forEach(b => b.classList.toggle('active', b.dataset.seg === page));
     document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== 'page-' + page; });
     if (tab) { const tb = document.querySelector('#page-' + page + ' .tabs button[data-tab="' + tab + '"]'); if (tb) tb.click(); }
     window.scrollTo(0, 0);
@@ -2096,10 +2101,6 @@
   /* ================= pipeline ================= */
   const OPEN_ST = ['active', 'offer', 'interviewing', 'applied', 'in-progress', 'final-round'];
   const CLOSED_ST = ['closed', 'passed', 'rejected', 'declined', 'accepted', 'withdrawn', 'lost'];
-  const OPP_TYPES = { role: 'Roles', internship: 'Internships', program: 'Programs', research: 'Research', class: 'Classes', collaboration: 'Collaborations', 'warm-path': 'Warm paths' };
-  const OPP_ONE = { role: 'Role', internship: 'Internship', program: 'Program', research: 'Research', class: 'Class', collaboration: 'Collaboration', 'warm-path': 'Warm path' };
-  const ST_CHIP = { offer: 'violet', active: 'route', interviewing: 'route', applied: 'amber', exploring: 'amber', closed: '', rejected: 'rust', passed: 'rust', declined: '' };
-  let oppFilter = 'all';
   function lane(o) { const s = (o.status || '').toLowerCase(); if (OPEN_ST.includes(s)) return 'open'; if (CLOSED_ST.includes(s)) return 'closed'; return 'potential'; }
   function peopleFor(o) {
     const ot = tokens(o.org);
@@ -2112,31 +2113,93 @@
     const task = S.tasks.find(t => !t.done && tokens(t.text).some(x => ot.includes(x)));
     return task ? 'Next: ' + task.text : '';
   }
-  function renderPipeline() {
-    const st = stage();
-    $('pipeDesc').textContent = st.desc;
-    const present = Object.keys(OPP_TYPES).filter(k => S.opportunities.some(o => o.type === k));
-    const types = ['all'].concat(st.primary, present.filter(k => !st.primary.includes(k)));
-    $('oppFilters').innerHTML = types.map(t => `<button class="pill${t === oppFilter ? ' active' : ''}" data-of="${t}">${t === 'all' ? 'All' : OPP_TYPES[t]}</button>`).join('');
-    $('oppFilters').querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => { oppFilter = b.dataset.of; renderPipeline(); }));
-    const opps = S.opportunities.filter(o => oppFilter === 'all' || o.type === oppFilter);
-    const lanes = { open: [], potential: [], closed: [] };
-    opps.forEach(o => lanes[lane(o)].push(o));
-    const L = [['open', 'Open', st.kind === 'student' ? 'Applied, interviewing, accepted into' : 'Applied, interviewing, offers'], ['potential', 'Potential', 'Warm paths and things worth pursuing'], ['closed', 'Closed', 'Decided either way, kept as evidence']];
-    const emptyMsg = oppFilter === 'all' ? 'None' : 'No ' + (OPP_TYPES[oppFilter] || '').toLowerCase() + ' yet';
-    $('board').innerHTML = L.map(([k, name, desc]) => `<div class="lane"><div class="lane-head"><b>${name}</b><span>${lanes[k].length}</span></div><div class="lane-desc">${desc}</div>${lanes[k].map(o => oppCard(o, k)).join('') || `<div class="empty" style="padding:.9rem">${esc(emptyMsg)}</div>`}</div>`).join('');
-    $('board').querySelectorAll('.opp').forEach(c => c.addEventListener('click', (e) => { if (e.target.closest('.jump, [data-ask]')) return; toggleKey(c.dataset.key); }));
+  /* ================= openings (replaces the pipeline lanes) =================
+     Every opening carries an application status (saved | applied | interviewing | closed), so tracking survives the lanes.
+     A "posting" is an opening with a real https link, a source and a checked-on date: only those are shown as postings.
+     Everything else is shown as something the student is tracking, with no claim that a posting exists. */
+  const APP_ST = [['saved', 'Saved'], ['applied', 'Applied'], ['interviewing', 'Interviewing'], ['closed', 'Closed']];
+  const APP_CHIP = { saved: '', applied: 'amber', interviewing: 'route', closed: 'rust' };
+  const APP_TO_STATUS = { saved: 'exploring', applied: 'applied', interviewing: 'interviewing', closed: 'closed' };
+  const OPP_TYPES = { role: 'Roles', internship: 'Internships', program: 'Programs', research: 'Research', class: 'Classes', collaboration: 'Collaborations', 'warm-path': 'Warm paths' };
+  const OPP_ONE = { role: 'Role', internship: 'Internship', program: 'Program', research: 'Research', class: 'Class', collaboration: 'Collaboration', 'warm-path': 'Warm path' };
+  function appStatusOf(st) { const s = String(st || '').toLowerCase(); if (CLOSED_ST.includes(s)) return 'closed'; if (['interviewing', 'offer', 'final-round', 'in-progress'].includes(s)) return 'interviewing'; if (s === 'applied') return 'applied'; return 'saved'; }
+  function appStatus(o) { return APP_ST.some(s => s[0] === o.appStatus) ? o.appStatus : appStatusOf(o.status); }
+  function isPosting(o) { return /^https:\/\/[^\s]+$/i.test(o.url || '') && !!o.sourceName && /^\d{4}-\d{2}-\d{2}$/.test(o.checkedOn || ''); }
+  function daysSince(iso) { const t = Date.parse(iso + 'T12:00:00'); return isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t) / 86400000)); }
+  function checkedText(o) { const n = daysSince(o.checkedOn); return n === null ? '' : n === 0 ? 'Checked today' : n === 1 ? 'Checked 1 day ago' : 'Checked ' + n + ' days ago'; }
+  function sameOrg(a, b) { const x = norm(a), y = norm(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); }
+  // People already in the student's data who work at this employer. Nothing here is generated: it only filters what is saved.
+  function waysIn(o) {
+    const dismissed = new Set(o.dismissedPeople || []);
+    const linked = S.network.filter(c => c.opportunityId === o.id);
+    const people = S.network.filter(c => !c.opportunityId && !dismissed.has(c.id) && sameOrg(c.company, o.org));
+    const known = new Set(S.network.map(c => norm(c.name)));
+    const cands = S.candidates.filter(c => c.status !== 'denied' && !dismissed.has(c.id) && !known.has(norm(c.name)) && sameOrg(c.company, o.org));
+    return { linked, people, cands };
   }
-  function oppCard(o, k) {
-    const open = openKeys.has(o.id);
-    const ppl = peopleFor(o);
-    const nxt = k === 'closed' ? '' : nextFor(o);
-    return `<div class="opp${k === 'closed' ? ' closed' : ''}" data-key="${esc(o.id)}" data-expandable="1">
-      <div class="opp-top"><div><div class="opp-org">${esc(o.org || o.title)}</div><div class="opp-title">${esc(o.title || '')}</div></div><span class="chip ${ST_CHIP[(o.status || '').toLowerCase()] || ''}">${esc(o.status || 'potential')}</span></div>
-      ${nxt ? `<div class="opp-next">${esc(nxt)}</div>` : ''}
-      <div class="opp-foot"><span class="chip">${esc(OPP_ONE[o.type] || o.type || 'Other')}</span>${ppl.slice(0, 3).map(c => `<span class="chip brass">${esc(c.name.split(' ')[0])}</span>`).join('')}</div>
-      ${open ? `<div class="opp-detail">${o.notes ? `<div>${esc(o.notes)}</div>` : ''}${o.sourceBridge ? `<div><b>Way in:</b> ${esc(o.sourceBridge)}</div>` : ''}${ppl.length ? `<div><b>People:</b> ${ppl.map(c => esc(c.name)).join(', ')}</div>` : ''}<div style="display:flex;gap:.4rem;flex-wrap:wrap">${ppl[0] ? jump('Contacts', 'people', 'contacts', ppl[0].id) : ''}<button class="jump" data-ask="Help me think through ${esc(o.org)} (${esc(o.title)}): ">Think it through with Bridge</button></div></div>` : ''}
-    </div>`;
+  let oppFilter = 'all', curPosting = null, postingsInReply = 0;
+  function openPosting(id) { if (!S.opportunities.some(o => o.id === id)) return; curPosting = id; go('posting'); renderPosting(); }
+  function oppCard(o) {
+    const st = appStatus(o), w = waysIn(o), post = isPosting(o);
+    const n = w.people.length + w.cands.length;
+    const when = o.deadline ? 'Deadline ' + fmtDate(o.deadline) : o.postedDate ? 'Posted ' + fmtDate(o.postedDate) : '';
+    return `<div class="opp2${st === 'closed' ? ' closed' : ''}"><div class="path-top"><span class="opp2-org">${esc(o.org || o.title)}</span><span class="chip ${APP_CHIP[st]}">${esc(APP_ST.find(s => s[0] === st)[1])}</span></div>
+      <div class="opp2-co">${esc([o.title, o.location].filter(Boolean).join(' · '))}</div>
+      <div class="opp2-role">${esc([OPP_ONE[o.type] || '', when].filter(Boolean).join(' · '))}</div>
+      ${post ? `<div class="opp2-role"><b>${esc(checkedText(o))}</b> · verify before you apply</div>` : '<div class="opp2-role">Tracked by you. No posting link saved.</div>'}
+      ${o.fit ? `<div class="opp2-fit"><b>Why it fits</b>${esc(trunc(o.fit, 200))}</div>` : ''}
+      <div class="opp2-acts"><button type="button" class="jb" data-posting="${esc(o.id)}">${post ? 'Read the posting' : 'Open'}</button>${w.linked[0] ? `<button type="button" class="way" data-person="${esc(w.linked[0].id)}">Your way in: ${esc(w.linked[0].name)} ›</button>` : n ? `<span class="chip violet">${n} possible way${n === 1 ? '' : 's'} in</span>` : ''}</div></div>`;
+  }
+  function renderOpenings() {
+    renderPosting();
+    $('pipeDesc').textContent = 'Real postings Bridge found, and anything else you are tracking. Every posting shows when it was last checked. Check it again before you apply.';
+    const opps = S.opportunities.slice();
+    const counts = { all: opps.length }; APP_ST.forEach(s => { counts[s[0]] = opps.filter(o => appStatus(o) === s[0]).length; });
+    if (oppFilter !== 'all' && !counts[oppFilter]) oppFilter = 'all';
+    $('oppFilters').innerHTML = [['all', 'All']].concat(APP_ST).map(([k, l]) => `<button class="pill${k === oppFilter ? ' active' : ''}" data-of="${k}">${l}${counts[k] ? ' ' + counts[k] : ''}</button>`).join('');
+    $('oppFilters').querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => { oppFilter = b.dataset.of; renderOpenings(); }));
+    const list = opps.filter(o => oppFilter === 'all' || appStatus(o) === oppFilter).sort((a, b) => APP_ST.findIndex(s => s[0] === appStatus(a)) - APP_ST.findIndex(s => s[0] === appStatus(b)) || String(b.checkedOn || '').localeCompare(String(a.checkedOn || '')));
+    if (!opps.length) {
+      $('board').className = '';
+      $('board').innerHTML = `<div class="soon"><p style="margin:0 0 .6rem">No openings yet. Bridge finds real postings in your Bridge project chat in Claude, where Claude can search the web and open each page before saving it. Ask it:</p><p style="margin:0 0 .8rem"><b>"Find openings that fit me."</b></p><button type="button" class="btn" id="copyFind">Copy that request</button><p class="muted" style="margin:.8rem 0 0;font-size:.82rem">Saved postings show up here with the link, the source and the date they were checked. Bridge never saves one it could not open.</p></div>`;
+      $('copyFind').addEventListener('click', async () => { try { await navigator.clipboard.writeText('Find openings that fit me.'); $('copyFind').textContent = 'Copied'; } catch (e) { $('copyFind').textContent = 'Select and copy: Find openings that fit me.'; } });
+      return;
+    }
+    $('board').className = 'opps';
+    $('board').innerHTML = list.map(oppCard).join('') || '<div class="soon">Nothing here.</div>';
+    $('board').querySelectorAll('[data-posting]').forEach(b => b.addEventListener('click', () => openPosting(b.dataset.posting)));
+    $('board').querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
+  }
+  function renderPosting() {
+    const el = $('postingBody'); if (!el) return;
+    const o = S.opportunities.find(x => x.id === curPosting);
+    if (!o) { el.innerHTML = '<button class="back" data-go="pipeline">‹ Back to Openings</button><div class="soon">That opening isn\'t on your list any more.</div>'; return; }
+    const st = appStatus(o), post = isPosting(o), w = waysIn(o);
+    const days = daysSince(o.checkedOn);
+    const when = [o.postedDate ? 'Posted ' + fmtDate(o.postedDate) : '', o.deadline ? 'Deadline ' + fmtDate(o.deadline) : ''].filter(Boolean).join(' · ');
+    const personRow = (c, extra) => `<div class="in-row"><button type="button" class="in-open" data-person="${esc(c.id)}" style="all:unset;display:contents;cursor:pointer"><span class="ini">${esc(initials(c.name))}</span><span class="in-t"><b>${esc(c.name)}</b><small>${esc([c.role, c.company].filter(Boolean).join(' · '))}</small>${c.theAsk ? `<small><b>The ask:</b> ${esc(c.theAsk)}</small>` : ''}</span></button>${extra || ''}</div>`;
+    const linked = w.linked.map(c => personRow(c, `<button type="button" class="linkish" data-unlink="${esc(c.id)}">unlink</button>`)).join('');
+    const sugg = w.people.map(c => personRow(c, `<span class="in-acts"><button type="button" class="btn" data-link="${esc(c.id)}">Link</button><button type="button" class="linkish" data-notthem="${esc(c.id)}">Not them</button></span>`)).join('')
+      + w.cands.map(c => `<div class="in-row"><span class="ini">${esc(initials(c.name))}</span><span class="in-t"><b>${esc(c.name)}</b><small>${esc([c.title, c.company].filter(Boolean).join(' · '))} · found by Bridge, not approved yet</small></span><span class="in-acts"><button type="button" class="btn" data-approvelink="${esc(c.id)}">Approve and link</button><button type="button" class="linkish" data-notthem="${esc(c.id)}">Not them</button></span></div>`).join('');
+    const duties = (o.duties || []).filter(Boolean), reqs = (o.requirements || []).filter(r => r && r.need);
+    el.innerHTML = `<button class="back" data-go="pipeline">‹ Back to Openings</button>
+      <div class="ph"><div class="ph-main"><span class="eyebrow">${esc(OPP_ONE[o.type] || 'Opening')}</span><h2>${esc(o.org || o.title)}</h2><p>${esc([o.title, o.location].filter(Boolean).join(' · '))}</p>${when ? `<p>${esc(when)}</p>` : ''}<div class="ph-chips"><span class="chip ${APP_CHIP[st]}">${esc(APP_ST.find(s => s[0] === st)[1])}</span>${days !== null && days >= 7 ? '<span class="chip amber">Check it again</span>' : ''}</div></div></div>
+      ${post ? `<div class="headsup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><span><b>${esc(checkedText(o))}</b> at ${esc(o.sourceName)}. Verify before you apply: postings close and change.</span></div>` : '<div class="headsup"><span>You are tracking this one yourself. There is no posting link saved, so Bridge can\'t say whether it is still open.</span></div>'}
+      <div class="card"><h3>Where you stand</h3><div class="seg" role="group" aria-label="Application status">${APP_ST.map(([k, l]) => `<button type="button" data-appst="${k}"${k === st ? ' class="active"' : ''}>${l}</button>`).join('')}</div></div>
+      <div class="card"><h3>Who can get you in</h3>${linked || sugg ? (linked ? linked : '') + (sugg ? `<p class="muted" style="margin:.6rem 0 .4rem;font-size:.82rem">${linked ? 'Others in your data at ' : 'People in your data at '}${esc(o.org)}. Confirm anyone who is a real way in.</p>${sugg}` : '') : `<p class="muted" style="margin:0">No one in your data works at ${esc(o.org || 'this employer')} yet. Bridge never makes up a person.</p>`}</div>
+      ${(duties.length || o.fit) ? `<div class="pgrid two">${duties.length ? `<div class="pcard"><h4>What the job is</h4><ul class="plist2">${duties.map(d => `<li>${esc(d)}</li>`).join('')}</ul></div>` : ''}${o.fit ? `<div class="pcard"><h4>Why it fits you</h4><p>${esc(o.fit)}</p></div>` : ''}</div>` : ''}
+      ${reqs.length ? `<div class="card"><h3>What they look for, and your proof</h3><div class="match">${reqs.map(r => `<div class="m-row"><b>${esc(r.need)}</b><span>${esc(r.proof || 'No proof saved yet.')}</span></div>`).join('')}</div></div>` : ''}
+      ${o.nextStep ? `<div class="pcard next"><h4>Next step</h4><p>${esc(o.nextStep)}</p></div>` : ''}
+      ${o.notes ? `<div class="card"><h3>Notes</h3><p style="margin:0;white-space:pre-wrap">${esc(o.notes)}</p></div>` : ''}
+      ${o.sourceBridge ? `<div class="pcard"><h4>Way in</h4><p>${esc(o.sourceBridge)}</p></div>` : ''}
+      ${post ? `<div class="apply"><a class="btn primary" href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">Open the posting at ${esc(o.sourceName)} ↗</a><span>Opens the real page in a new tab. Check that it is still open before you apply.</span></div>` : ''}`;
+    const upd = (coll, id, patch) => S7.col.update(coll, id, patch).catch(e => { diag('openings', e); Chat.status('Couldn\'t save that. Try again.'); });
+    el.querySelectorAll('[data-appst]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.appst; if (k === st) return; const patch = { appStatus: k }; if (appStatusOf(o.status) !== k) patch.status = APP_TO_STATUS[k]; upd('opportunities', o.id, patch); logActivity((o.org || o.title) + ': ' + k); }));
+    el.querySelectorAll('[data-link]').forEach(b => b.addEventListener('click', () => { const c = S.network.find(x => x.id === b.dataset.link); upd('network', b.dataset.link, { opportunityId: o.id, purpose: (c && c.purpose) || 'opening' }); }));
+    el.querySelectorAll('[data-unlink]').forEach(b => b.addEventListener('click', () => upd('network', b.dataset.unlink, { opportunityId: null })));
+    el.querySelectorAll('[data-notthem]').forEach(b => b.addEventListener('click', () => upd('opportunities', o.id, { dismissedPeople: (o.dismissedPeople || []).concat([b.dataset.notthem]) })));
+    el.querySelectorAll('[data-approvelink]').forEach(b => b.addEventListener('click', () => approveCandidate(b.dataset.approvelink, o.id)));
+    el.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
   }
 
   /* ================= people ================= */
@@ -2224,7 +2287,7 @@
     el.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.skip, { status: 'denied', decidedAt: new Date().toISOString() }); } catch (e) { diag('skip', e); } }));
     el.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.restore, { status: 'pending', decidedAt: new Date().toISOString() }); } catch (e) { diag('restore', e); } }));
   }
-  async function approveCandidate(id) {
+  async function approveCandidate(id, oppId) {
     const cand = S.candidates.find(c => c.id === id); if (!cand || !db) return;
     let contact = S.network.find(x => norm(x.name) === norm(cand.name));
     try {
@@ -2232,11 +2295,12 @@
       if (!contact) {
         const cid = slug(cand.name);
         const bucket = cand.bucket || ((cand.tags || []).some(t => /alum/i.test(t)) ? 'college' : 'cold');
-        await S7.col.set('network', cid, { name: cand.name, company: cand.company || '', role: cand.title || '', bucket, goal: 'learn', bridgePath: cand.why ? 'Found by Bridge: ' + cand.why : 'Found by Bridge', notes: '', status: 'sourced', lastContact: null, nextFollowUp: null, fromCandidate: id, whyTalk: cand.why || '' });
+        await S7.col.set('network', cid, { name: cand.name, company: cand.company || '', role: cand.title || '', bucket, goal: 'learn', bridgePath: cand.why ? 'Found by Bridge: ' + cand.why : 'Found by Bridge', notes: '', status: 'sourced', lastContact: null, nextFollowUp: null, fromCandidate: id, whyTalk: cand.why || '', ...(oppId ? { opportunityId: oppId, purpose: 'opening' } : {}) });
         logActivity('Approved: ' + cand.name);
         contact = { id: cid, name: cand.name, company: cand.company || '', role: cand.title || '', bucket, whyTalk: cand.why || '', bridgePath: cand.why || '' };
       }
     } catch (e) { diag('approve', e); Chat.status('Couldn\'t approve that one. Try again.'); return; }
+    if (oppId && S.network.some(x => x.id === contact.id)) { try { await S7.col.update('network', contact.id, { opportunityId: oppId, purpose: (contact.purpose || 'opening') }); } catch (e) { diag('link', e); } }
     openPerson(contact.id, true);
     if (!contact.draft) draftMessage(contact.id, contact);
   }
@@ -2599,7 +2663,7 @@
     const bits = p ? [p.name, p.school, p.major ? p.major.split('(')[0].trim() + (p.classYear ? " '" + String(p.classYear).slice(-2) : '') : ''].filter(Boolean) : [];
     const stg = flowStage();
     $('whoLine').textContent = stg === 'intake' ? 'Getting to know you · a few questions at a time' : stg === 'readout' ? 'Your career map' : (p && p.name ? bits.join(' · ') : '');
-    applyStage(); renderStart(); renderBearing(); renderAgenda(); renderTodo(); renderPipeline(); renderPeople(); renderCoaching(); renderDirection(); renderProjects(); renderRecords();
+    applyStage(); renderStart(); renderBearing(); renderAgenda(); renderTodo(); renderOpenings(); renderPeople(); renderCoaching(); renderDirection(); renderProjects(); renderRecords();
   }
   setInterval(() => { if (!document.hidden) { renderAgenda(); if (currentPage === 'people') renderPrep(); } }, 30000);
 
@@ -2834,6 +2898,7 @@
 - {"type":"add_task","text","dueDate"?:"YYYY-MM-DD","priority":"high|med|low","linkedContactName"?,"linkedProjectId"?,"waitingOn"?:boolean,"waitingOnWho"?,"label"}
 - {"type":"complete_task","id":taskId,"label"}
 - {"type":"update_opportunity","id":oppId,"status"?:"exploring|applied|interviewing|offer|active|closed|rejected|declined|accepted","notesAppend"?,"label"}
+- {"type":"add_posting","title","org","url": the https page you opened,"sourceName": where it was posted,"loaded":true ONLY if you opened that URL this turn and the posting was on the page,"location"?,"postedDate"?,"deadline"?,"fit"?: why it fits this student, from their data,"duties"?:[string],"requirements"?:[{"need","proof": from the student's own experience}],"nextStep"?,"label"}  (max 8 per search; never save a posting you could not open; never invent one)
 - {"type":"add_opportunity","title","org","kind":"role|internship|program|research|class|collaboration|warm-path","status","sourceBridge"?,"notes"?,"label"}
 - {"type":"schedule_call","prepId"?:existing prep id,"contactName","company"?,"meetingDate":"YYYY-MM-DDTHH:MM" local time,"purpose"?,"label"}
 - {"type":"add_talking_point","prepId","point","label"}
@@ -2855,6 +2920,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + REPLY_FORMAT
       + '- reply: 1-4 sentences usually; longer only for drafts, prep, or mock interviews. Name the strategic implication when useful and end with ONE concrete question. Do NOT restate what you saved; the page shows that.\n'
       + '- actions: every fact from their LATEST message worth keeping. Prefer updating existing records over duplicates. Never invent facts.\n'
+      + '- You cannot browse or open links from this chat. If asked to find job postings, say so plainly, point them to their Bridge project chat in Claude (where Claude can search the web), and never make up a posting, company or person. add_posting is only for a chat that really opened the page.\n'
       + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for the two palettes (Sky and Sand) and light/dark.\n\n'
       + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
   }
@@ -3021,6 +3087,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         const res = await sample(turns, { modelTier: 'quick', cache: false, signal: ctl.signal, onText: ({ text }) => this.onStream(text) });
         const { reply, actions, actionsBroken } = parseReply(res && res.text);
         const saved = [];
+        postingsInReply = 0;
         for (const a of actions.slice(0, 14)) { if (a && a.type === 'intake_done') { intakeDone = true; continue; } saved.push(await runAction(a)); }
         if (actionsBroken) { diag('actions_parse', { code: 'actions_parse' }, res && res.text); if (!onboarding) saved.push({ ok: false, label: 'Some updates didn\'t come through. Say "save that" to try again.' }); }
         savedAny = saved.some(s => s.ok && !s.nav);
@@ -3117,9 +3184,24 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       }
       if (t === 'update_opportunity') {
         const o = findBy(S.opportunities, a.id, a.org || a.title); if (!o) throw new Error('no opp');
-        const patch = {}; if (a.status) patch.status = a.status; if (a.notesAppend) patch.notes = (o.notes ? o.notes + ' ' : '') + '[' + todayISO() + '] ' + a.notesAppend;
+        const patch = {}; if (a.status) { patch.status = a.status; patch.appStatus = appStatusOf(a.status); } if (a.notesAppend) patch.notes = (o.notes ? o.notes + ' ' : '') + '[' + todayISO() + '] ' + a.notesAppend;
         await db.collection('opportunities').doc(o.id).update(patch);
         logActivity(label); return { ok: true, label, undo: { op: 'set', col: 'opportunities', id: o.id, data: snapshot(o) } };
+      }
+      if (t === 'add_posting') {
+        // Only for a chat that can open web pages. The page cannot check a link itself, so it refuses anything not marked as opened and loaded.
+        if (a.loaded !== true) throw new Error('not verified');
+        if (!/^https:\/\/[^\s]+$/i.test(a.url || '') || !a.sourceName || !a.title || !a.org) throw new Error('incomplete');
+        if (postingsInReply >= 8) throw new Error('limit of 8 per search');
+        const dupe = S.opportunities.find(x => x.url === a.url);
+        if (dupe) { await db.collection('opportunities').doc(dupe.id).update({ checkedOn: todayISO() }); postingsInReply++; logActivity(label); return { ok: true, label: label + ' (already saved, re-checked)', undo: { op: 'set', col: 'opportunities', id: dupe.id, data: snapshot(dupe) } }; }
+        const id = slug(a.org + ' ' + a.title);
+        const doc = { title: String(a.title), org: String(a.org), type: a.kind || 'role', status: 'exploring', appStatus: 'saved', url: String(a.url), sourceName: String(a.sourceName), checkedOn: todayISO(), sourceBridge: '', notes: '', addedBy: 'chat' };
+        ['location', 'postedDate', 'deadline', 'fit', 'nextStep'].forEach(k => { if (a[k]) doc[k] = String(a[k]); });
+        if (Array.isArray(a.duties)) doc.duties = a.duties.map(String).slice(0, 8);
+        if (Array.isArray(a.requirements)) doc.requirements = a.requirements.filter(r => r && r.need).map(r => ({ need: String(r.need), proof: String(r.proof || '') })).slice(0, 8);
+        await db.collection('opportunities').doc(id).set(doc); postingsInReply++;
+        logActivity(label); return { ok: true, label, undo: { op: 'delete', col: 'opportunities', id } };
       }
       if (t === 'add_opportunity') {
         if (!a.org && !a.title) throw new Error('empty'); const id = slug(a.org || a.title);
