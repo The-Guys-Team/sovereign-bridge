@@ -1378,6 +1378,9 @@
   .col > :empty, #connectWrap:empty, #startPanel:empty { display: none; }
   .mv-box { position: relative; cursor: pointer; }
   .mv-box::after { content: ""; position: absolute; inset: -11px; }
+  .debrief { display: flex; flex-direction: column; gap: 0.5rem; }
+  .debrief label { display: flex; flex-direction: column; gap: 0.3rem; }
+  .debrief input { width: 100%; font: inherit; font-size: 0.88rem; border: 1px solid var(--border-strong); border-radius: 9px; padding: 0.55rem 0.7rem; background: var(--paper); color: var(--text); }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1529,20 +1532,17 @@
   <section class="page" id="page-coaching" hidden>
     <div class="wrap">
       <div class="page-head"><div class="eyebrow">How you tell it</div><h2>Coaching</h2><p>Your pitch, the stories that prove it, and what real conversations are teaching you.</p></div>
+      <div id="coachPrep"></div>
       <div id="coachPitch"></div>
       <div><div class="sec-head"><h3>Practice</h3><span class="sec-note">runs in the chat below</span></div><div class="drills" id="drills"></div></div>
       <div><div class="sec-head"><h3>Stories to tell</h3><button class="linkish" id="storyMatch">match to my next calls</button></div><div class="stories" id="stories"></div></div>
       <div><div class="sec-head"><h3>What conversations are telling you</h3><button class="linkish" id="intelRefresh">re-read my conversations</button></div><div class="intel" id="intel"></div></div>
+      <div id="coachResume"></div>
     </div>
   </section>
 
   <section class="page" id="page-direction" hidden>
-    <div class="wrap">
-      <div id="readoutBanner"></div>
-      <div class="page-head"><div class="eyebrow">Long-term direction</div><h2>Where this is heading</h2><p>A working map, not a commitment. Each stop gets revised as real conversations bring evidence in.</p><div class="revised" id="revisedNote" style="margin-top:.5rem"></div></div>
-      <div id="cmapBody"></div>
-      <div><div class="sec-head"><h3>The detail behind each stop</h3></div><div id="routeBody"></div></div>
-    </div>
+    <div class="wrap" id="pathBody"></div>
   </section>
 
   <section class="page" id="page-projects" hidden>
@@ -1654,7 +1654,7 @@
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 
   /* ================= state ================= */
-  const S = { profile: null, mindmap: null, brief: null, coach: null, experience: [], network: [], interactions: [], sessions: [], prep: [], candidates: [], projects: [], opportunities: [], outreach: [], tasks: [], reflections: [], guidance: [], activity: [], calendar: null, calStatus: 'loading' };
+  const S = { profile: null, mindmap: null, brief: null, coach: null, resume: null, experience: [], network: [], interactions: [], sessions: [], prep: [], candidates: [], projects: [], opportunities: [], outreach: [], tasks: [], reflections: [], guidance: [], activity: [], calendar: null, calStatus: 'loading' };
   let db = null, sample = null, loaded = false, bootDone = false;
   const TAB = Math.random().toString(36).slice(2, 10);
   let pendingNav = null;
@@ -1701,7 +1701,6 @@
     document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== 'page-' + page; });
     if (tab) { const tb = document.querySelector('#page-' + page + ' .tabs button[data-tab="' + tab + '"]'); if (tb) tb.click(); }
     window.scrollTo(0, 0);
-    if (page === 'direction') requestAnimationFrame(() => typeof drawCmap === 'function' && drawCmap());
     if (target) setTimeout(() => {
       let el = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]');
       if (!el) return;
@@ -2412,6 +2411,107 @@
     el.querySelectorAll('[data-calsync]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); b.disabled = true; b.textContent = 'Adding…'; Cal.sync(S.prep.find(x => x.id === b.dataset.calsync)); }));
   }
 
+  /* ---- coaching: next-call prep as questions and answers, debrief, resume ---- */
+  const Prep = {
+    busy: new Set(),
+    next() { const it = agendaItems().find(i => i.prep); return it ? { p: it.prep, w: whenLabel(it.start, it.allDay, it.end).text } : null; },
+    async draftAnswers(p) {
+      if (this.busy.has(p.id) || !db) return; this.busy.add(p.id); renderCoachPrep();
+      const mm = S.mindmap || {}, pf = S.profile || {};
+      const qs = (p.questions && p.questions.length ? p.questions : []).slice(0, 6);
+      const prompt = 'Task: prepare this student for a conversation. Write the questions they are most likely to be asked (or should ask) and a short draft answer for each, in their voice, built ONLY from their own experience and stories below. Where their record does not support an answer, say what they would need to add instead of inventing it.\n'
+        + 'Reply ONLY with JSON: {"items":[{"q":string,"a":string}]}. 4-5 items; q max 14 words; a max 40 words.\n\n'
+        + 'CALL: ' + JSON.stringify({ with: p.contactName, company: p.company, purpose: p.purpose || '', ask: p.ask || '', questionsAlreadyPlanned: qs, talkingPoints: p.talkingPoints || [] })
+        + '\nSTUDENT: ' + JSON.stringify({ name: pf.name, school: pf.school, major: pf.major, pitch: mm.elevatorPitch || '', stories: mm.stories || [], experience: S.experience.map(x => ({ title: x.title, org: x.org, highlights: x.highlights })) });
+      try {
+        const r = await S7.modelJSON(prompt, 'default');
+        const items = ((r && r.items) || []).filter(x => x && x.q).slice(0, 6).map(x => ({ q: String(x.q), a: String(x.a || '') }));
+        if (items.length) await S7.col.update('prep', p.id, { qa: items });
+        else Chat.status('Couldn\'t draft answers just now. Try again.');
+      } catch (e) { diag('prep-qa', e, e && e.text); Chat.status(isCapErr(e) || (e && e.code === 'model_unavailable') ? 'Drafting answers needs this page open in Claude with chat allowed.' : 'Couldn\'t draft answers just now. Try again in a bit.'); }
+      this.busy.delete(p.id); renderCoachPrep();
+    },
+    async debrief(p, v) {
+      const today = todayISO();
+      try {
+        await S7.col.set('interactions', slug('call-' + p.contactName), { contactName: p.contactName || '', company: p.company || '', type: 'call', date: today, summary: v.learned, wentWell: v.well, improveNextTime: v.change, prepForNext: v.next, source: 'page' });
+        await S7.col.update('prep', p.id, { debriefedAt: new Date().toISOString() });
+        logActivity('Debrief: ' + (p.contactName || 'call'));
+      } catch (e) { diag('debrief', e); Chat.status('Couldn\'t save that debrief. Try again.'); }
+    },
+  };
+  function renderCoachPrep() {
+    const el = $('coachPrep'); if (!el) return;
+    const nx = Prep.next();
+    if (!nx) { el.innerHTML = '<div class="prep2"><span class="prep2-when">Next conversation</span><h3>Nothing scheduled</h3><p class="muted" style="margin:0;font-size:.86rem">When a call gets booked, tell Bridge in the chat and your prep shows up here.</p></div>'; return; }
+    const p = nx.p, qa = Array.isArray(p.qa) ? p.qa : [], busy = Prep.busy.has(p.id);
+    const planned = (p.questions || []).slice(0, 6);
+    const body = qa.length ? `<div class="qa">${qa.map(x => `<div><b>${esc(x.q)}</b><span>${esc(x.a)}</span></div>`).join('')}</div>`
+      : planned.length ? `<div class="qa">${planned.map(q => `<div><b>${esc(q)}</b><span class="muted">No answer drafted yet.</span></div>`).join('')}</div>` : '<p class="muted" style="margin:0;font-size:.86rem">No questions saved for this call yet.</p>';
+    el.innerHTML = `<div class="prep2" id="prep"><span class="prep2-when">Next conversation · ${esc(nx.w)}</span><h3>Call with ${esc(p.contactName)}${p.company ? ', ' + esc(p.company) : ''}</h3>${p.purpose ? `<p style="margin:0;font-size:.86rem">${esc(trunc(p.purpose, 200))}</p>` : ''}${body}
+      ${sample ? `<div><button type="button" class="btn" id="qaDraft"${busy ? ' disabled' : ''}>${busy ? 'Drafting…' : (qa.length ? 'Redo my answers' : 'Draft my answers')}</button></div>` : ''}
+      <div class="kn" style="border-top:1px dotted var(--border-strong);padding-top:.7rem"><span class="kn-h open">After the call · three quick questions</span>
+        <div class="debrief" id="debrief">
+          <label class="kn-i o">What went well?<input id="dbWell" aria-label="What went well"></label>
+          <label class="kn-i o">What would you change next time?<input id="dbChange" aria-label="What would you change"></label>
+          <label class="kn-i o">What did you learn, and what is the next step?<input id="dbNext" aria-label="What you learned and the next step"></label>
+          <div><button type="button" class="btn primary" id="dbSave">Save my debrief</button></div></div></div></div>`;
+    const dq = $('qaDraft'); if (dq) dq.addEventListener('click', () => Prep.draftAnswers(p));
+    $('dbSave').addEventListener('click', async () => {
+      const v = { well: $('dbWell').value.trim(), change: $('dbChange').value.trim(), next: $('dbNext').value.trim() };
+      if (!v.well && !v.change && !v.next) return;
+      $('dbSave').disabled = true; v.learned = v.next;
+      await Prep.debrief(p, v); $('dbSave').textContent = 'Saved'; ['dbWell', 'dbChange', 'dbNext'].forEach(i => { $(i).value = ''; });
+    });
+  }
+  /* ---- resume: built only from the student's own record; green = new or rewritten, amber = Bridge needs the student to fill it in ---- */
+  const Resume = {
+    busy: false,
+    async build() {
+      if (this.busy || !db) return; this.busy = true; renderResume();
+      const pf = S.profile || {}, mm = S.mindmap || {};
+      const prompt = 'Task: write a one-page resume for this student, built ONLY from the facts below. Rewrite experience into concise, specific bullets in their voice (strong verbs, no fluff). Never invent an employer, date, number, title or outcome. Where a bullet needs a fact that is not in the data (how many people, a date, a result), write it as [fill in: what is needed] inside the bullet. Mark a bullet "isNew": true when you wrote or reworded it from their conversation rather than copying existing text.\n'
+        + 'Reply ONLY with JSON: {"summary":string,"experience":[{"title":string,"org":string,"dates":string,"bullets":[{"t":string,"isNew":boolean}]}],"skills":[string],"education":[{"school":string,"detail":string}]}\n'
+        + '- summary max 35 words, from their pitch and impressions. experience newest first; org or dates may be "" if unknown; put [fill in: ...] in dates if needed. education: from school, major and class year only.\n\n'
+        + 'STUDENT: ' + JSON.stringify({ name: pf.name, school: pf.school, major: pf.major, classYear: pf.classYear, location: pf.location, pitch: mm.elevatorPitch || '', impressions: (pf.s7Picture || []).slice(-10).map(x => x.t), wordVomit: pf.wordVomit || '' })
+        + '\nEXPERIENCE: ' + JSON.stringify(S.experience.map(x => ({ title: x.title, org: x.org, dates: x.dates, type: x.type, highlights: x.highlights, skills: x.skills }))) + '\nPROJECTS: ' + JSON.stringify(S.projects.map(x => ({ name: x.name, purpose: x.purpose })));
+      try {
+        const r = await S7.modelJSON(prompt, 'default');
+        if (!r || !Array.isArray(r.experience)) throw new Error('empty');
+        const prev = S.resume || {};
+        const doc = { draftNo: (prev.draftNo || 0) + 1, builtAt: new Date().toISOString(), summary: String(r.summary || ''), skills: (r.skills || []).map(String).slice(0, 12),
+          experience: r.experience.slice(0, 10).map(x => ({ title: String(x.title || ''), org: String(x.org || ''), dates: String(x.dates || ''), bullets: (x.bullets || []).slice(0, 5).map(b => ({ t: String(b.t || ''), isNew: !!b.isNew })).filter(b => b.t) })),
+          education: (r.education || []).slice(0, 3).map(e => ({ school: String(e.school || ''), detail: String(e.detail || '') })) };
+        await S7.col.set('resume', 'main', doc);
+      } catch (e) { diag('resume', e, e && e.text); Chat.status(isCapErr(e) || (e && e.code === 'model_unavailable') ? 'Building your resume needs this page open in Claude with chat allowed.' : 'Couldn\'t build your resume just now. Try again in a bit.'); }
+      this.busy = false; renderResume();
+    },
+  };
+  const rsFill = (s) => esc(s).replace(/\[fill in:\s*([^\]]*)\]/gi, (_, w) => `<span class="blank">${w}</span>`);
+  function resumeText(r) {
+    const pf = S.profile || {}, out = [pf.name || '', r.summary || ''];
+    r.experience.forEach(x => { out.push('', [x.title, x.org, x.dates].filter(Boolean).join(' · ')); x.bullets.forEach(b => out.push('- ' + b.t)); });
+    if (r.skills.length) out.push('', 'Skills: ' + r.skills.join(', '));
+    r.education.forEach(e => out.push('', [e.school, e.detail].filter(Boolean).join(' · ')));
+    return out.join('\n');
+  }
+  function renderResume() {
+    const el = $('coachResume'); if (!el) return;
+    const r = S.resume, pf = S.profile || {};
+    if (!r || !Array.isArray(r.experience)) {
+      el.innerHTML = `<div class="sec-head"><h3>Your resume</h3></div><div class="soon"><p style="margin:0 0 .6rem">${S.experience.length ? 'Bridge can build a resume from what you told it. It never makes up an employer, date or number: anything it doesn\'t know shows up as a blank for you to fill in.' : 'Tell Bridge about your experience first, and it can build a resume from it.'}</p>${S.experience.length && sample ? `<button type="button" class="btn primary" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Building…' : 'Build my resume'}</button>` : ''}</div>`;
+    } else {
+      const head = `<div class="rs-name">${esc(pf.name || '')}</div>${r.summary ? `<div>${rsFill(r.summary)}</div>` : ''}`;
+      const exp = r.experience.map(x => `<b>${rsFill([x.title, x.org].filter(Boolean).join(', '))}</b>${x.dates ? ' · ' + rsFill(x.dates) : ''}<ul>${x.bullets.map(b => `<li${b.isNew ? ' class="new"' : ''}>${rsFill(b.t)}</li>`).join('')}</ul>`).join('');
+      const edu = r.education.map(e => `<div>${rsFill([e.school, e.detail].filter(Boolean).join(' · '))}</div>`).join('');
+      el.innerHTML = `<div class="sec-head"><h3>Your resume</h3><span class="sec-note">draft ${r.draftNo || 1} · built ${esc(fmtDate(String(r.builtAt).slice(0, 10)))} from your conversations</span></div>
+        <div class="resume">${head}<div class="rs-sec">Experience</div>${exp}${r.skills.length ? `<div class="rs-sec">Skills</div><div>${esc(r.skills.join(', '))}</div>` : ''}${edu ? `<div class="rs-sec">Education</div>${edu}` : ''}<div class="rs-legend"><span><span class="new">Green</span> = new or rewritten from our conversation</span><span><span class="blank">Amber</span> = I need you to fill it in</span></div></div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem"><button type="button" class="btn" id="rsCopy">Copy as text</button><button type="button" class="btn" data-ask="Change my resume: " data-send="0">Change it in chat</button>${sample ? `<button type="button" class="btn" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Rebuilding…' : 'Rebuild from my record'}</button>` : ''}</div>`;
+      const cp = $('rsCopy'); if (cp) cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(resumeText(r)); cp.textContent = 'Copied'; } catch (e) { cp.textContent = 'Copy failed'; } });
+    }
+    const rb = $('rsBuild'); if (rb) rb.addEventListener('click', () => Resume.build());
+  }
+
   /* ================= coaching ================= */
   function storyList() {
     const mm = S.mindmap || {};
@@ -2419,6 +2519,7 @@
     return (mm.bridgeSkills || []).slice(0, 4).map(s => ({ skill: s.skill, title: s.skill, story: trunc(s.why, 170), useWhen: '' }));
   }
   function renderCoaching() {
+    renderCoachPrep(); renderResume();
     const mm = S.mindmap || {};
     const nextCall = agendaItems().find(i => i.prep);
     $('coachPitch').innerHTML = mm.elevatorPitch ? `<div class="pitch-card"><div class="eyebrow" style="margin-bottom:.6rem">Your pitch · current draft</div><div class="pitch">“${esc(mm.elevatorPitch)}”</div><div class="pitch-acts"><button class="btn" data-ask="Tailor my pitch for ${esc(nextCall ? 'my call with ' + nextCall.prep.contactName.split(' ')[0] : 'my next conversation')}." data-hint="Keep it in my voice, 4-5 sentences, and say what you changed." data-send="1">Tailor for ${esc(nextCall ? nextCall.prep.contactName.split(' ')[0] : 'next call')}</button><button class="btn" data-ask="Here's my pitch rewritten in my own words. Give me honest feedback: ">Rewrite it myself</button></div></div>` : '<div class="empty">Your pitch gets drafted with your readout.</div>';
@@ -2454,68 +2555,96 @@
   $('intelRefresh').addEventListener('click', () => Coach.generate());
   $('storyMatch').addEventListener('click', () => Stories.match());
 
-  /* ================= direction ================= */
+  /* ================= path (the bridge) =================
+     Milestones are worked out from what is really in the student's data: nothing is marked reached unless it happened. */
+  function milestones() {
+    const pf = S.profile || {}, mm = S.mindmap || {};
+    const first = (arr) => arr.filter(Boolean).sort()[0] || '';
+    const sent = S.network.map(c => c.sentAt ? c.sentAt.slice(0, 10) : '').concat(S.outreach.map(o => o.sentDate));
+    const talks = S.interactions.filter(i => i.type && i.type !== 'message');
+    const people = new Set(talks.map(i => norm(i.contactName)));
+    const posts = S.opportunities.filter(isPosting);
+    const ot = norm(pf.opportunityType || '');
+    const goal = /intern/.test(ot) ? 'Got the internship' : /full/.test(ot) ? 'Got the job' : 'Found your next step';
+    return [
+      { b: 'Told Bridge', s: 'Your first conversation with Bridge', done: !!pf.readoutSeenAt, d: (pf.readoutSeenAt || '').slice(0, 10) },
+      { b: 'Map built', s: 'A first idea of where your experience points', done: !!(mm.revisedAt || mm.rightNow), d: (mm.revisedAt || '').slice(0, 10) },
+      { b: 'First person', s: 'Someone who could help you', done: S.network.length > 0, d: '' },
+      { b: 'First message', s: 'You reached out to someone', done: sent.some(Boolean), d: first(sent) },
+      { b: 'First call', s: 'A call, even 15 minutes', done: talks.length > 0, d: first(talks.map(i => i.date)) },
+      { b: 'Three calls', s: 'Patterns start to show', done: people.size >= 3, d: '' },
+      { b: 'Opening saved', s: 'A real posting that was checked', done: posts.length > 0, d: first(posts.map(o => o.checkedOn)) },
+      { b: 'Applied', s: 'You sent an application', done: S.opportunities.some(o => ['applied', 'interviewing'].includes(appStatus(o))), d: '' },
+      { b: 'Interviewing', s: 'A real interview on the calendar', done: S.opportunities.some(o => appStatus(o) === 'interviewing'), d: '' },
+      { b: goal, s: '', done: S.opportunities.some(o => /accepted/i.test(o.status || '')), d: '', goal: true },
+    ];
+  }
   function renderDirection() {
-    const mm = S.mindmap; const pf = S.profile || {};
-    const readout = !!mm;
-    $('readoutBanner').innerHTML = (readout && !pf.readoutSeenAt) ? `<div class="readout-banner"><div><div class="eyebrow">Your readout</div><div style="font-family:var(--serif);font-size:1.2rem;margin-top:.3rem">Your potential career path, from everything you told Bridge. It's a working map, not a commitment.</div></div><button class="btn primary" id="readoutDone">Open my dashboard →</button></div>` : (Readout.busy ? `<div class="readout-banner"><div><div class="eyebrow">Your readout</div><div style="font-family:var(--serif);font-size:1.2rem;margin-top:.3rem">Bridge is putting your readout together…</div></div></div>` : '');
-    const rd = $('readoutDone'); if (rd) rd.addEventListener('click', async () => { if (db) { try { await saveProfile({ readoutSeenAt: new Date().toISOString() }); applyStage(); maybeWelcome(); } catch (e) { } } go('today'); });
-    $('revisedNote').textContent = mm && mm.revisedAt ? 'Last revised ' + fmtDate(mm.revisedAt.slice(0, 10)) : '';
-    if (!mm) { $('cmapBody').innerHTML = ''; $('routeBody').innerHTML = '<div class="empty">Built from your first conversation with Bridge.</div>'; return; }
-    const act = activeStop;
-    const node = (key, cls, label, title, when) => `<button class="cnode ${cls}${act === key ? ' on' : ''}" data-stop="${key}"><span class="eyebrow">${esc(label)}</span><b>${esc(title || '—')}</b>${when ? `<small>${esc(when)}</small>` : ''}<span class="cnode-more">details ↓</span></button>`;
-    const shortNow = mm.rightNow ? trunc(mm.rightNow.split(/(?<=[.;—])\s/)[0], 90) : '';
-    const forks = mm.forks || [];
-    $('cmapBody').innerHTML = `<p class="cmap-hint">Your path, left to right. Tap any stop to jump to its details below.</p><div class="cmap" id="cmap"><svg class="cmap-lines" id="cmapLines" aria-hidden="true"></svg>${node('now', 'now', 'Right now', shortNow)}${mm.targetNextStep ? node('next', '', 'Next step', mm.targetNextStep.title, mm.targetNextStep.timing) : ''}${mm.nextStage ? node('stage', '', 'Then', mm.nextStage.title, mm.nextStage.timing) : ''}<div class="cforks">${forks.map((f, i) => node('fork-' + i, 'fork', f.label || 'Path', f.title)).join('')}</div></div>${mm.whatsFixed ? `<button class="cfixed${act === 'fixed' ? ' on' : ''}" data-stop="fixed"><span class="eyebrow">What stays fixed, whichever path</span>${esc(mm.whatsFixed)}</button>` : ''}`;
-    const stop = (key, title, when, why, yields, cls) => `<div class="stop ${cls || ''}${act === key ? ' active' : ''}" data-stopkey="${key}"><div class="stop-top"><div class="stop-title">${esc(title)}</div>${when ? `<div class="stop-when">${esc(when)}</div>` : ''}</div>${why || yields ? `<div class="stop-grid">${why ? `<div><h4>Why this stage</h4><p>${esc(why)}</p></div>` : ''}${yields ? `<div><h4>What it yields</h4><p>${esc(yields)}</p></div>` : ''}</div>` : ''}</div>`;
-    let html = '<div class="rail">';
-    if (mm.rightNow) html += `<div class="stop${act === 'now' ? ' active' : ''}" data-stopkey="now"><div class="stop-top"><div class="stop-title">Right now</div></div><p style="margin-top:.5rem">${esc(mm.rightNow)}</p></div>`;
-    if (mm.targetNextStep) html += stop('next', mm.targetNextStep.title, mm.targetNextStep.timing, mm.targetNextStep.why, mm.targetNextStep.yields);
-    if (mm.nextStage) html += stop('stage', mm.nextStage.title, mm.nextStage.timing, mm.nextStage.why, mm.nextStage.yields);
-    const forkAct = /^fork-/.test(act || '');
-    if (forks.length) html += `<div class="stop${forkAct ? ' active' : ''}" data-stopkey="fork"><div class="stop-top"><div class="stop-title">The fork</div></div><div class="forks">${forks.map((f, i) => `<div class="fork${act === 'fork-' + i ? ' on' : ''}" data-stopkey="fork-${i}"><span class="eyebrow">${esc(f.label)}</span><b>${esc(f.title)}</b><p>${esc(f.why)}</p><p><i>Yields:</i> ${esc(f.yields)}</p></div>`).join('')}</div></div>`;
-    if (mm.whatsFixed) html += `<div class="stop fixed${act === 'fixed' ? ' active' : ''}" data-stopkey="fixed"><div class="stop-top"><div class="stop-title" style="color:var(--route)">What's actually fixed</div></div><p style="margin-top:.5rem;color:var(--text)">${esc(mm.whatsFixed)}</p></div>`;
-    $('routeBody').innerHTML = html + '</div>';
-    // The rail line stops exactly at the last stop's dot, whatever that card's height.
-    const railEl = $('routeBody').querySelector('.rail');
-    const fitRail = () => { const last = railEl && railEl.lastElementChild; if (!last) return; const dotY = (1.1 + 0.66) * parseFloat(getComputedStyle(document.documentElement).fontSize); railEl.style.setProperty('--rail-end', Math.max(0, last.offsetHeight - dotY) + 'px'); };
-    if (railEl) { fitRail(); if (window.ResizeObserver) { if (window.__railRO) window.__railRO.disconnect(); window.__railRO = new ResizeObserver(fitRail); window.__railRO.observe(railEl); } }
-    $('cmapBody').querySelectorAll('[data-stop]').forEach(b => b.addEventListener('click', () => {
-      activeStop = b.dataset.stop; renderDirection();
-      const k = /^fork-/.test(activeStop) ? activeStop : activeStop;
-      const el = document.querySelector('#routeBody [data-stopkey="' + k + '"]') || document.querySelector('#routeBody [data-stopkey="fork"]');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }));
-    requestAnimationFrame(drawCmap);
+    const el = $('pathBody'); if (!el) return;
+    const mm = S.mindmap, pf = S.profile || {};
+    if (!mm) { el.innerHTML = '<div class="pg-head"><span class="eyebrow">Path</span><h2>Where you\'re heading, and why</h2></div><div class="soon">Your path is built from your first conversation with Bridge.</div>'; return; }
+    const M = milestones(), n = M.length;
+    let last = -1; M.forEach((m, i) => { if (m.done && !m.goal) last = i; });
+    const doneCount = M.filter(m => m.done && !m.goal).length;
+    const pct = (i) => (i / (n - 1)) * 100;
+    const reach = last < 0 ? 0 : pct(last) + (last < n - 1 ? (pct(last + 1) - pct(last)) / 2 : 0);
+    const stops = M.map((m, i) => `<div class="xs ${m.done ? 'done' : (m.goal ? 'goal' : 'ahead')}${i % 2 ? ' lo' : ' hi'}${i === 0 ? ' first' : ''}${i === n - 1 ? ' last' : ''}" style="--x:${pct(i).toFixed(2)}%" title="${esc(m.s)}"><i></i>${m.goal ? '' : `<div class="xl"><b>${esc(m.b)}</b><span>${esc(m.d ? fmtDate(m.d) : '')}</span></div>`}</div>`).join('');
+    const nextM = M.find(m => !m.done);
+    const startD = pf.s7QsAt || pf.readoutSeenAt || '';
+    const cross = `<div class="cross" id="crossing"><div class="sec-head" style="margin:0"><h3>Milestones</h3><span class="sec-note">${doneCount} of ${n - 1} reached</span></div><div class="xwrap"><div class="xbank l">Started<span>${esc(startD ? fmtDate(startD.slice(0, 10)) : '')}</span></div><div class="xspan"><svg class="xart" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 120 Q500 0 1000 120" fill="none" stroke="var(--border-strong)" stroke-width="1" vector-effect="non-scaling-stroke"/></svg><div class="xdeck"><div class="xfill" style="width:${reach.toFixed(2)}%"></div></div><div class="xyou" style="--x:${reach.toFixed(2)}%"><span>Now</span></div>${stops}</div><div class="xbank r">${esc(M[n - 1].b)}</div></div><p class="xnext"><b>Next:</b> ${esc(nextM ? nextM.b + (nextM.s ? ' · ' + nextM.s : '') : 'You made it.')}</p></div>`;
+    const forks = (mm.forks || []).filter(f => f && f.title);
+    const fk = mm.focus || (forks[0] ? { title: forks[0].title, why: forks[0].why, question: forks[0].q || '' } : (mm.nextStage ? { title: mm.nextStage.title, why: mm.nextStage.why, question: '' } : null));
+    const alts = (mm.focus ? forks : forks.slice(1));
+    const undone = M.filter(m => !m.done && !m.goal).slice(0, 3);
+    const hist = Array.isArray(mm.history) ? mm.history : [];
+    const dest = mm.nextStage && mm.nextStage.title;
+    const focusCard = fk ? `<div class="focus" id="dest"><span class="dest-l">Your focus</span><p class="focus-t">${esc(fk.title)}</p>${dest && dest !== fk.title ? `<p class="focus-s">${esc(dest)}</p>` : ''}${fk.why ? `<p class="focus-why">${esc(fk.why)}</p>` : ''}${fk.question ? `<p class="focus-q"><span>Question to test</span>${esc(fk.question)}</p>` : ''}${mm.targetNextStep ? `<div class="pn"><span>Next step: ${esc(mm.targetNextStep.title)}${mm.targetNextStep.timing ? ' · ' + esc(mm.targetNextStep.timing) : ''}</span></div>` : ''}
+      ${undone.length ? `<div class="focus-steps"><span class="fs-h">Your next milestones</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''}</li>`).join('')}</ol></div>` : ''}
+      ${mm.nextStage ? `<details class="focus-more"><summary>See the long term</summary><div class="lt"><div><span>${esc(mm.nextStage.timing || '')}</span><b>${esc(mm.nextStage.title)}</b><small>${esc(mm.nextStage.why || '')}</small></div></div></details>` : ''}
+      <div class="focus-upd"><b>${mm.revisedAt ? 'Updated ' + esc(fmtDate(mm.revisedAt.slice(0, 10))) : 'Not updated yet'}</b>${esc(mm.revisionWhy || '')}${hist.length > 1 ? `<details><summary>Earlier changes (${hist.length - 1})</summary><ul>${hist.slice(1).map(h => `<li>${esc(fmtDate(String(h.at).slice(0, 10)))} · ${esc(h.why)}</li>`).join('')}</ul></details>` : ''}</div></div>` : '';
+    const altHtml = alts.map(f => `<details class="path alt"><summary><span class="path-top"><span class="path-t">${esc(f.title)}</span>${f.label ? `<span class="chip">${esc(f.label)}</span>` : ''}</span><span class="alt-why">${esc(f.why || '')}</span><span class="alt-more">More ›</span></summary>${f.q ? `<p class="q">${esc(f.q)}</p>` : ''}${f.yields ? `<p class="q">${esc(f.yields)}</p>` : ''}</details>`).join('');
+    const rd = [];
+    if (mm.rightNow) rd.push(`<div class="rd now"><span class="rd-w">Now</span><span class="rd-t">Where you are</span><span class="rd-s">${esc(mm.rightNow)}</span></div>`);
+    if (mm.targetNextStep) rd.push(`<div class="rd next"><span class="rd-w">${esc(mm.targetNextStep.timing || 'Next')}</span><span class="rd-t">${esc(mm.targetNextStep.title)}</span><span class="rd-s">${esc(mm.targetNextStep.why || '')}</span>${undone.length ? `<div class="rd-steps"><span class="h">To get there</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''}</li>`).join('')}</ol></div>` : ''}</div>`);
+    if (mm.nextStage) rd.push(`<div class="rd far"><span class="rd-w">${esc(mm.nextStage.timing || 'Later')}</span><span class="rd-t">${esc(mm.nextStage.title)}</span><span class="rd-s">${esc(mm.nextStage.why || '')}</span></div>`);
+    const road = rd.length ? `<div class="road" id="road"><div class="sec-head" style="margin:0"><h3>The road, if your focus holds</h3><span class="sec-note">next steps in detail · later as a sketch</span></div><div class="rd-row">${rd.join('')}</div></div>` : '';
+    const known = (Array.isArray(mm.known) && mm.known.length ? mm.known : (mm.bridgeSkills || []).map(s => ({ t: s.skill, s: s.why }))).filter(k => k && k.t);
+    const open = (Array.isArray(mm.open) ? mm.open : []).filter(u => u && u.t);
+    const knownHtml = known.map(k => `<div class="kn-i k">${esc(k.t)}<small>${esc(k.s || '')}</small></div>`).join('') || '<p class="think-lead">Nothing yet.</p>';
+    const think = open.map(u => `<div class="think-i"><b>${esc(u.t)}</b><button class="jb" data-ask="${esc('About "' + u.t + '": ')}" data-send="0">I have a thought</button></div>`).join('');
+    const refreshing = Path.busy;
+    el.innerHTML = `<div class="pg-head"><span class="eyebrow">Path</span><h2>Where you're heading, and why</h2><p>A working map, not a commitment. It changes as real conversations bring evidence in, and Bridge tells you when it does.</p>${sample ? `<div style="margin-top:.6rem"><button type="button" class="btn" id="pathRefresh"${refreshing ? ' disabled' : ''}>${refreshing ? 'Re-reading…' : 'Refresh my path'}</button></div>` : ''}</div>
+      ${cross}
+      <div><div class="sec-head"><h3>Where your stories point</h3><span class="sec-note">not a decision · every conversation sharpens it</span></div><div class="focus-grid">${focusCard}${altHtml ? `<div class="alts"><span class="alts-l">Also worth testing</span>${altHtml}</div>` : ''}</div></div>
+      ${mm.whatsFixed ? `<p class="fixed"><b>What stays the same on every route:</b> ${esc(mm.whatsFixed)}</p>` : ''}
+      ${road}
+      <div class="card" id="know"><h3>What I know about you, and what's worth thinking about</h3><div class="grid2 even"><div class="kn"><span class="kn-h known">What I know</span>${knownHtml}</div><div class="kn"><span class="kn-h open">Worth thinking about</span><p class="think-lead">You don't need answers today. When something comes to mind, tell Bridge and it will turn it into direction.</p>${think || '<p class="muted" style="margin:0;font-size:.84rem">Nothing open right now. Refresh your path after a few conversations.</p>'}</div></div></div>`;
+    const rb = $('pathRefresh'); if (rb) rb.addEventListener('click', () => Path.refresh());
   }
-  let activeStop = '';
-  // Connectors are drawn from the boxes' real positions, so every line meets a box edge exactly.
-  function drawCmap() {
-    const wrap = $('cmap'), svg = $('cmapLines'); if (!wrap || !svg) return;
-    const W = wrap.getBoundingClientRect(); if (!W.width) return;
-    const rel = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - W.left, r: r.right - W.left, t: r.top - W.top, b: r.bottom - W.top, cy: (r.top + r.bottom) / 2 - W.top, cx: (r.left + r.right) / 2 - W.left }; };
-    const main = [...wrap.querySelectorAll(':scope > .cnode')].map(rel);
-    const forks = [...wrap.querySelectorAll('.cforks .cnode')].map(rel);
-    const stacked = main.length > 1 && main[1].t >= main[0].b - 1;
-    const d = [];
-    const r1 = (v) => Math.round(v) + 0.5;
-    if (!stacked) {
-      for (let i = 0; i < main.length - 1; i++) { const a = main[i], b = main[i + 1]; const xm = (a.r + b.l) / 2; d.push(`M${a.r} ${r1(a.cy)} H${xm} V${r1(b.cy)} H${b.l}`); }
-      if (forks.length && main.length) {
-        const a = main[main.length - 1], xm = r1((a.r + forks[0].l) / 2);
-        d.push(`M${a.r} ${r1(a.cy)} H${xm}`);
-        d.push(`M${xm} ${r1(forks[0].cy)} V${r1(forks[forks.length - 1].cy)}`);
-        forks.forEach(f => d.push(`M${xm} ${r1(f.cy)} H${f.l}`));
-      }
-    } else {
-      const x = r1(main[0] ? main[0].l + 22 : 22);
-      const all = main.concat(forks);
-      for (let i = 0; i < all.length - 1; i++) d.push(`M${x} ${all[i].b} V${all[i + 1].t}`);
-    }
-    svg.setAttribute('viewBox', `0 0 ${W.width} ${W.height}`); svg.setAttribute('width', W.width); svg.setAttribute('height', W.height);
-    svg.innerHTML = `<path d="${d.join(' ')}" fill="none" stroke="var(--brass)" stroke-width="2" stroke-linecap="square" opacity=".55"/>`;
-  }
-  window.addEventListener('resize', () => { if (currentPage === 'direction') drawCmap(); });
+  // One model call re-reads the whole record and may sharpen the focus; it must say why, and nothing changes without evidence.
+  const Path = {
+    busy: false,
+    async refresh() {
+      if (this.busy || !db || !S.mindmap) return; this.busy = true; renderDirection();
+      const prompt = 'Task: re-read this person\'s whole record and update their career path only where real evidence supports it. Reply ONLY with JSON: {"focus":{"title":string,"why":string,"question":string},"forks":[{"label":string,"title":string,"why":string,"q":string}],"known":[{"t":string,"s":string}],"open":[{"t":string,"s":string}],"revisionWhy":string}\n'
+        + '- focus: the one direction the evidence points to now (title max 12 words; why max 30 words naming real evidence; question = one thing to test next). Keep the current focus if nothing new supports a change.\n'
+        + '- forks: 1-3 other directions worth testing, each with a question to test. known: 3-5 things Bridge knows about them, with where it comes from (s). open: 2-3 things still unknown, with how they will find out (s).\n'
+        + '- revisionWhy: one sentence saying what changed and which real evidence caused it (a conversation, a posting, something they said), or "No change: nothing new yet."\n'
+        + 'Use only facts in the data. Never invent people, events, or outcomes.\n\nCURRENT MAP: ' + JSON.stringify({ focus: S.mindmap.focus || null, forks: S.mindmap.forks || [], nextStage: S.mindmap.nextStage || null }) + '\n\nDATA:\n' + contextBlock(32000);
+      try {
+        const r = await S7.modelJSON(prompt, 'default');
+        const now = new Date().toISOString();
+        const why = String((r && r.revisionWhy) || '').slice(0, 300);
+        const patch = { revisedAt: now, revisionWhy: why, history: [{ at: now, why: why || 'Re-read.' }].concat(Array.isArray(S.mindmap.history) ? S.mindmap.history : []).slice(0, 10) };
+        if (r && r.focus && r.focus.title) patch.focus = { title: String(r.focus.title), why: String(r.focus.why || ''), question: String(r.focus.question || '') };
+        if (r && Array.isArray(r.forks)) patch.forks = r.forks.filter(f => f && f.title).slice(0, 3).map(f => ({ label: String(f.label || ''), title: String(f.title), why: String(f.why || ''), q: String(f.q || '') }));
+        if (r && Array.isArray(r.known)) patch.known = r.known.filter(k => k && k.t).slice(0, 5).map(k => ({ t: String(k.t), s: String(k.s || '') }));
+        if (r && Array.isArray(r.open)) patch.open = r.open.filter(k => k && k.t).slice(0, 3).map(k => ({ t: String(k.t), s: String(k.s || '') }));
+        await S7.col.update('mindmap', 'main', patch);
+      } catch (e) { diag('path-refresh', e, e && e.text); Chat.status(isCapErr(e) || (e && e.code === 'model_unavailable') ? 'Refreshing your path needs this page open in Claude with chat allowed.' : 'Couldn\'t re-read your path just now. Try again in a bit.'); }
+      this.busy = false; renderDirection();
+    },
+  };
 
   /* ================= projects ================= */
   const NOTE_KINDS = [['decision', 'Decisions', 'var(--violet)'], ['progress', 'Progress', 'var(--route)'], ['question', 'Open questions', 'var(--amber)'], ['idea', 'Ideas', 'var(--brass)']];
@@ -2612,8 +2741,8 @@
     { el: '#agendaWrap', pg: 'today', t: 'Coming up', p: 'Calls and follow-ups land here. Connect your calendar in Settings and Bridge spots upcoming calls.' },
     { el: () => ($('dock').classList.contains('min') ? '#dockPill' : '#dock .dock-inner'), pg: 'today', t: 'Post your updates here', p: 'Tell Bridge when someone replies, when you book a call, how a conversation went, or who you met. It updates your dashboard and remembers it.' },
     { el: '#nav [data-page="people"]', t: 'Moves', p: 'The people who can get you where you are going, new people Bridge found for you to approve, and openings you are tracking. Tap anyone to open their page, or add someone you met.' },
-    { el: '#nav [data-page="direction"]', t: 'Path', p: 'Where your experience points, and the route to it. Each stop gets revised as real conversations bring evidence in.' },
-    { el: '#nav [data-page="coaching"]', t: 'Coaching', p: 'Your pitch, practice, and the stories that prove your experience.' },
+    { el: '#nav [data-page="direction"]', t: 'Path', p: 'Milestones across the bridge, where your stories point, and what changed along the way. Each part gets revised as real conversations bring evidence in.' },
+    { el: '#nav [data-page="coaching"]', t: 'Coaching', p: 'Prep for your next call as questions and answers, your pitch, practice, stories, and a resume built from what you told Bridge.' },
     { el: '#nav [data-page="projects"]', t: 'More', p: 'Your projects and your records.' },
     { el: '#gearBtn', t: 'Settings', p: 'Colors, light or dark, your calendar, and replaying this tour.' },
   ];
@@ -3369,7 +3498,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       }
     }
     if (db) {
-      const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['coach', 'coach/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
+      const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['coach', 'coach/main', 'doc'], ['resume', 'resume/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
       const apply = (key, kind, s) => { if (kind === 'doc') S[key] = s.exists ? clone(s.data()) : null; else S[key] = s.docs.map(d => Object.assign(clone(d.data()), { id: d.id })); };
       await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); } catch (e) { } }));
       try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; Chat.waitingSince = d.waitingSince || 0; Chat.readoutWanted = !!d.readoutWanted; } } catch (e) { }
