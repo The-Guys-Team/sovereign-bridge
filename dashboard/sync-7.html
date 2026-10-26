@@ -1569,6 +1569,7 @@
 </main>
 
 <div id="sheetHost"></div>
+<div id="tourLayer"></div>
 
 <div class="dock" id="dock">
   <button class="dock-pill" id="dockPill"><span class="dot"></span>Ask Bridge</button>
@@ -1576,7 +1577,7 @@
     <div class="ihead" id="ihead">
       <span class="learn-l">What Bridge is learning about you</span>
       <div class="learn" id="learn"></div>
-      <p class="learn-note">A few questions, then I'll show you what I see.</p>
+      <p class="learn-note">A few questions, then I'll show you what I see. Have a resume? Paste its text into the chat and I'll skip most of the questions.</p>
     </div>
     <div class="dock-bar">
       <span class="eyebrow"><span class="dot off" id="dockDot"></span><span id="dockLabel">Bridge chat</span></span>
@@ -1849,7 +1850,7 @@
     if (st === 'intake') { Chat.view = 'bar'; $('dock').classList.remove('min'); Chat.open = true; $('dock').classList.add('open'); Chat.render(); setTimeout(() => $('chatInput').focus(), 50); }
     if (st === 'seen') renderSeen();
     if (st === 'path') renderPath();
-    if (st === 'dash' && (prev === 'path' || prev === 'seen' || prev === 'intake')) { Chat.open = false; $('dock').classList.remove('open'); go('today'); Chat.render(); }
+    if (st === 'dash' && (prev === 'path' || prev === 'seen' || prev === 'intake')) { Chat.open = false; $('dock').classList.remove('open'); go('today'); Chat.render(); setTimeout(maybeTour, 1200); }
   }
   $('getStarted').addEventListener('click', () => { startedNow = true; applyStage(); });
 
@@ -2598,6 +2599,57 @@
     },
   };
 
+  /* ================= quick tour (first visit to Today; replay from Settings) ================= */
+  const TOUR = [
+    { el: '#bearing', pg: 'today', t: 'Your daily bearing', p: 'A fresh read of where you stand and the moves that matter now. Check here first.' },
+    { el: '#bearing .mv', pg: 'today', t: 'Your first move', p: 'The top move is the one to do first. Its button opens the page you need.' },
+    { el: '#moreWrap', pg: 'today', t: 'Got more time?', p: 'Optional extras with time estimates, for days you want to do more.' },
+    { el: '#agendaWrap', pg: 'today', t: 'Coming up', p: 'Calls and follow-ups land here. Connect your calendar in Settings and Bridge spots upcoming calls.' },
+    { el: () => ($('dock').classList.contains('min') ? '#dockPill' : '#dock .dock-inner'), pg: 'today', t: 'Post your updates here', p: 'Tell Bridge when someone replies, when you book a call, how a conversation went, or who you met. It updates your dashboard and remembers it.' },
+    { el: '#nav [data-page="people"]', t: 'Moves', p: 'The people who can get you where you are going, new people Bridge found for you to approve, and openings you are tracking. Tap anyone to open their page, or add someone you met.' },
+    { el: '#nav [data-page="direction"]', t: 'Path', p: 'Where your experience points, and the route to it. Each stop gets revised as real conversations bring evidence in.' },
+    { el: '#nav [data-page="coaching"]', t: 'Coaching', p: 'Your pitch, practice, and the stories that prove your experience.' },
+    { el: '#nav [data-page="projects"]', t: 'More', p: 'Your projects and your records.' },
+    { el: '#gearBtn', t: 'Settings', p: 'Colors, light or dark, your calendar, and replaying this tour.' },
+  ];
+  let tourSteps = [], tourI = 0;
+  const tourEl = (s) => { const q = typeof s.el === 'function' ? s.el() : s.el; const n = document.querySelector(q); if (!n) return null; const r = n.getBoundingClientRect(); return r.width && r.height ? n : null; };
+  function startTour() {
+    if (flowStage() !== 'dash' || $('scrim')) return;
+    go('today'); document.body.classList.add('touring');
+    setTimeout(() => { tourSteps = TOUR.filter(s => { if (s.pg) go(s.pg); return !!tourEl(s); }); tourI = 0; if (!tourSteps.length) return endTour(); drawTour(); }, 60);
+  }
+  function endTour() {
+    document.body.classList.remove('touring'); $('tourLayer').innerHTML = ''; go('today'); window.scrollTo(0, 0);
+    if (!(S.profile || {}).s7TourSeenAt) S7.saveProfile({ s7TourSeenAt: new Date().toISOString() }).catch(e => diag('tour', e));
+  }
+  function drawTour() {
+    const s = tourSteps[tourI]; if (!s) return endTour();
+    if (s.pg) go(s.pg);
+    const el = tourEl(s); if (!el) { tourSteps.splice(tourI, 1); return tourI >= tourSteps.length ? endTour() : drawTour(); }
+    const hdr = document.querySelector('#sDash .chrome').getBoundingClientRect().bottom;
+    const r0 = el.getBoundingClientRect(); if (s.pg && el.closest('#dashMain')) window.scrollTo(0, Math.max(0, window.scrollY + r0.top - hdr - 24));
+    requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect(), pad = 6, vh = window.innerHeight, vw = window.innerWidth;
+      const h = Math.min(r.height, vh * 0.55), tw = Math.min(340, vw - 32);
+      const below = r.top + h + 230 < vh;
+      let top = below ? r.top + h + 16 : Math.max(16, r.top - 16 - 220);
+      if (!below && r.top - 236 < 0) top = Math.min(vh - 236, r.top + h + 16);
+      const left = Math.min(Math.max(16, r.left), vw - tw - 16);
+      const last = tourI === tourSteps.length - 1;
+      $('tourLayer').innerHTML = `<div class="tour-block"></div><div class="tour-spot" style="top:${r.top - pad}px;left:${r.left - pad}px;width:${r.width + pad * 2}px;height:${h + pad * 2}px"></div>`
+        + `<div class="tour-tip" role="dialog" aria-label="Dashboard tour" style="top:${top}px;left:${left}px"><span class="eyebrow">Quick tour · ${tourI + 1} of ${tourSteps.length}</span><h3>${esc(s.t)}</h3><p>${esc(s.p)}</p>`
+        + `<div class="tour-foot"><div class="tdots">${tourSteps.map((_, i) => `<i class="${i === tourI ? 'on' : ''}"></i>`).join('')}</div><button class="tbtn ghost" id="tSkip">Skip</button>${tourI ? '<button class="tbtn" id="tBack">Back</button>' : ''}<button class="tbtn primary" id="tNext">${last ? 'Done' : 'Next'}</button></div></div>`;
+      $('tSkip').onclick = endTour; $('tNext').onclick = () => { if (last) endTour(); else { tourI++; drawTour(); } };
+      if ($('tBack')) $('tBack').onclick = () => { tourI--; drawTour(); };
+      $('tNext').focus();
+    });
+  }
+  window.addEventListener('resize', () => { if (document.body.classList.contains('touring') && tourSteps.length) drawTour(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('touring')) endTour(); });
+  // First visit: once the welcome and apps sheets are out of the way.
+  function maybeTour() { const pf = S.profile || {}; if (!pf.name || !pf.readoutSeenAt || pf.s7TourSeenAt || $('scrim') || document.body.classList.contains('touring')) return; startTour(); }
+
   /* ================= sheets: settings + welcome ================= */
   function sheet(kind) {
     if (kind === 'apps') return appsSheet();
@@ -2610,13 +2662,14 @@
         <div><div class="opt-h">Mode</div><div class="mode-opts">${[['system', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
         ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : (Apps.perms ? `<button class="btn" data-allow="${esc(a.server)}">Allow</button>` : Apps.addLink(a))}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
         ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
-        <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetDone">Done</button>'}</div>
+        <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetTour">Replay the tour</button><button class="btn" id="sheetDone">Done</button>'}</div>
       </div></div></div>`;
     $('sheetHost').innerHTML = html;
-    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } };
+    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } if (isWelcome) setTimeout(maybeTour, 900); };
     $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
     $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
     $('sheetDone').addEventListener('click', close); $('sheetX').addEventListener('click', close);
+    const rt = $('sheetTour'); if (rt) rt.addEventListener('click', () => { $('sheetHost').innerHTML = ''; setTimeout(startTour, 80); });
     $('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim' && !isWelcome) close(); });
     $('sheetHost').querySelectorAll('[data-allow]').forEach(b => b.addEventListener('click', async () => { await Apps.allow([b.dataset.allow]); sheet(kind); }));
   }
@@ -2635,7 +2688,7 @@
         <div class="sheet-foot"><button class="btn" id="appsSkip">${allowed ? 'Done' : 'Skip for now'}</button>${apps.length ? '' : '<!--'}<button class="btn primary" id="appsAllow"${Apps.asking || !apps.some(a => Apps.pick.has(a.server) && Apps.states[a.server] !== 'granted') ? ' disabled' : ''}>${Apps.asking ? 'Waiting for Claude…' : 'Allow selected'}</button>${apps.length ? '' : '-->'}</div>
       </div></div></div>`;
     $('sheetHost').querySelectorAll('[data-pick]').forEach(c => c.addEventListener('change', () => { if (c.checked) Apps.pick.add(c.dataset.pick); else Apps.pick.delete(c.dataset.pick); appsSheet(); }));
-    const done = async () => { $('sheetHost').innerHTML = ''; try { await saveProfile({ appsSeenAt: new Date().toISOString(), apps: apps.filter(a => Apps.states[a.server] === 'granted').map(a => a.server) }); } catch (e) { } maybeWelcome(); };
+    const done = async () => { $('sheetHost').innerHTML = ''; try { await saveProfile({ appsSeenAt: new Date().toISOString(), apps: apps.filter(a => Apps.states[a.server] === 'granted').map(a => a.server) }); } catch (e) { } maybeWelcome(); setTimeout(maybeTour, 600); };
     $('appsSkip').addEventListener('click', done);
     if ($('appsAllow')) $('appsAllow').addEventListener('click', async () => { const want = apps.filter(a => Apps.pick.has(a.server) && Apps.states[a.server] !== 'granted').map(a => a.server); const p = Apps.allow(want); appsSheet(); await p; appsSheet(); });
   }
@@ -2717,7 +2770,7 @@
         + '- s7Kind: start = the one best first move; todo = a plain task; worth = optional but valuable; decide = a choice they need to make. est = a time estimate like "15 min" or "before Thursday · 15 min". btn = a 2-5 word button label saying what opens ("Open your prep").\n'
         + '- more: up to 3 optional things for when they have extra time, each backed by something in the data (t = time like "20 min", b = title, s = one short line, btn = label, page/tab/target as for moves). [] if nothing real. headsUp: one line (max 20 words) about the nearest thing that needs attention, "" if none.\n'
         + '- NEVER suggest something already done: check TASKS DONE TODAY, SAVED FROM CHAT and RECENT CONVERSATIONS. If they are waiting on someone, the move is the follow-up on its date, not the original ask.\n'
-        + '- page/tab/target link each move to where the detail lives: page "pipeline" (target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "".\n'
+        + '- page/tab/target link each move to where the detail lives (use page "" for a plain to-do with no page to open; "coaching" only for pitch, stories or practice; btn must name what that page really shows, never "Open your pitch" for a people page): page "pipeline" (the Openings page; target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "".\n'
         + (evening ? '- wrap: up to 3 short past-tense lines of what actually moved today. Empty array if nothing moved; never invent.\n- reflect: one specific, gentle question about today (max 18 words).\n' : '')
         + 'Use only facts in the data. Never invent people, dates, or outcomes.\n\nDATA:\n' + contextBlock(40000);
       try {
@@ -2906,13 +2959,13 @@
 - {"type":"add_project_note","projectId","text","kind":"decision|progress|question|idea","label"}
 - {"type":"add_project","name","purpose"?,"currentStatus"?,"status":"idea|open","label"}
 - {"type":"journal","text","label"}
-- {"type":"navigate","page":"people|pipeline|coaching|direction|projects|records|today","tab"?:"prep|contacts|candidates|outreach","target"?: prep id, contact, company or project name,"label"}  (use when they ask to see / open / show something: "show me the prep" → page people, tab prep, target that call)`;
+- {"type":"navigate","page":"people|pipeline (the Openings page)|coaching|direction|projects|records|today","tab"?:"prep|contacts|candidates|outreach","target"?: prep id, contact, company or project name,"label"}  (use when they ask to see / open / show something: "show me the prep" → page people, tab prep, target that call)`;
   const RIPPLE = `RIPPLE RULE: one message usually changes several places. Emit every update it implies, not just the obvious one:
 - Reached out to / heard from someone: log_interaction + update_contact (lastContact today, status, notesAppend) + complete_task for the matching open task.
 - Waiting on someone or asked for a reminder: update_contact nextFollowUp + add_task (dueDate = that date, waitingOn true, linkedContactName).
 - Anything about a company in OPPORTUNITIES: update_opportunity notesAppend (and status if it changed).
 - A call got booked or moved: schedule_call (it also puts the call on their Google Calendar). Never create a second prep for the same person; pass prepId when one exists.
-- They ask to see something ("show me the prep", "open Alex's card", "take me to my pipeline"): navigate, and say where you took them.
+- They ask to see something ("show me the prep", "open Alex's card", "take me to my openings"): navigate, and say where you took them.
 The dashboard's bearing refreshes itself after you save, so make the data complete.`;
   const REPLY_FORMAT = 'FORMAT (exactly this, nothing before or after):\n<your reply to them, plain text, no JSON, no code fences>\n@@ACTIONS@@\n<a JSON array of actions, or [] if none>\n';
   function chatRules() {
@@ -2925,11 +2978,11 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
   }
   function onboardingRules() {
-    return 'Task: run the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Style: warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first. The two opening questions (where they are now, and what kind of opportunity they want) are answered before the chat starts: if s7Where and s7Want appear under "Already on file", do not ask them again, and confirm them only if the student seems to contradict them. If they are missing, ask where they are now (year / time since graduating, status) and what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure, which is a complete answer). Then the open-ended "tell me anything else about yourself" (the most important question; if thin, follow up gently, one prompt at a time); their experiences (jobs, teams, clubs, research, projects: for each, what they did and what they\'re proud of); schools and communities; location and constraints; what they are building or part of right now.\n'
+    return 'Task: run the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Style: warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first. The two opening questions (where they are now, and what kind of opportunity they want) are answered before the chat starts: if s7Where and s7Want appear under "Already on file", do not ask them again, and confirm them only if the student seems to contradict them. If they are missing, ask where they are now (year / time since graduating, status) and what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure, which is a complete answer). Right after their name, ask for their resume: if they have one they can paste its text into this chat and you will read their experience from it, so there are far fewer questions; if they do not have one, that is fine and you will build one from what they tell you. When they paste a resume: save school, major, class year and location with a profile action, add every job, leadership role, research, project and volunteer item with add_experience (put the experience type in "kind"), skip the experience questions, and ask only what the resume leaves out. Then the open-ended "tell me anything else about yourself" (the most important question; if thin, follow up gently, one prompt at a time); their experiences (jobs, teams, clubs, research, projects: for each, what they did and what they\'re proud of); schools and communities; location and constraints; what they are building or part of right now.\n'
       + 'Save facts AS YOU GO: every turn that reveals their name, school, year, goals or an experience gets its action in that same turn. Each action is one complete JSON object with a "label" key.\n'
       + 'When you have their name, stage, what they want, and at least two experiences, ask if they\'re ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. Keep the whole intake to about 8-10 questions.\n'
       + 'Style requests: Bridge looks the same for everyone; there are two palettes (Sky and Sand) and light/dark under the gear icon.\n\n'
-      + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","type"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"intake_done","label"}]\n'
+      + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","kind"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"intake_done","label"}]\n'
       + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nExperience so far: ' + S.experience.map(x => x.title + ' @ ' + x.org).join('; ') + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
   }
 
@@ -3034,7 +3087,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       const cta = $('intakeCta');
       if (cta) {
         const users = this.messages.filter(m => m.role === 'user' && !m.failed).length;
-        const show = lastStage === 'intake' && (users >= 5 || Readout.busy);
+        const show = lastStage === 'intake' && (users >= 5 || (users >= 3 && S.experience.length >= 2) || Readout.busy);
         cta.hidden = !show;
         const bm = $('buildMap'); bm.disabled = Readout.busy || !!this.inFlight; bm.textContent = Readout.busy ? 'Building your career map…' : 'Build my career map →';
       }
@@ -3263,7 +3316,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       }
       if (t === 'add_experience') {
         if (!a.title) throw new Error('no title'); const id = slug(a.org || a.title);
-        await db.collection('experience').doc(id).set({ title: a.title, org: a.org || '', dates: a.dates || '', highlights: a.highlights || '', skills: a.skills || '', type: a.type || '', order: S.experience.length + 1 });
+        await db.collection('experience').doc(id).set({ title: a.title, org: a.org || '', dates: a.dates || '', highlights: a.highlights || '', skills: a.skills || '', type: a.kind || '', order: S.experience.length + 1 });
         return { ok: true, label, undo: { op: 'delete', col: 'experience', id } };
       }
       if (t === 'add_project') {
@@ -3319,7 +3372,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         });
       });
       const pf = S.profile;
-      touchVisit(); applyStage(); maybeWelcome(); setTimeout(maybeApps, 1500);
+      touchVisit(); applyStage(); maybeWelcome(); setTimeout(maybeApps, 1500); setTimeout(maybeTour, 2600);
     }
     bootDone = true; renderAll(); Chat.render(); Chat.maybeResume();
     // Anything saved while Claude's usage limit was in effect gets answered now (one try per visit, then on return after 10+ minutes).
