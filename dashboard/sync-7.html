@@ -1376,6 +1376,8 @@
   .sheet { max-height: calc(100dvh - 32px); }
   .dk-chips button, .dock .dk-chips button { min-height: 40px; }
   .col > :empty, #connectWrap:empty, #startPanel:empty { display: none; }
+  .mv-box { position: relative; cursor: pointer; }
+  .mv-box::after { content: ""; position: absolute; inset: -11px; }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1575,12 +1577,12 @@
   <button class="dock-pill" id="dockPill"><span class="dot"></span>Ask Bridge</button>
   <div class="dock-inner">
     <div class="ihead" id="ihead">
-      <span class="learn-l">What Bridge is learning about you</span>
+      <span class="learn-l">What Bridge is picking up about you</span>
       <div class="learn" id="learn"></div>
-      <p class="learn-note">A few questions, then I'll show you what I see. Have a resume? Paste its text into the chat and I'll skip most of the questions.</p>
+      <p class="learn-note">No form here, just talk. Have a resume? Paste its text into the chat and I'll skip most of the questions.</p>
     </div>
     <div class="dock-bar">
-      <span class="eyebrow"><span class="dot off" id="dockDot"></span><span id="dockLabel">Bridge chat</span></span>
+      <span class="eyebrow"><span class="dot off" id="dockDot"></span><span id="dockLabel">Ask Bridge · post updates here, it remembers</span></span>
       <div class="dock-btns"><button class="linkish" id="histBtn">History</button><button class="linkish" id="minBtn">Hide chat</button></div>
     </div>
     <div class="thread" id="thread"><div class="thread-inner" id="threadInner"></div></div>
@@ -1588,7 +1590,7 @@
     <div class="dk-chips" id="dockChips"></div>
     <div class="intake-cta" id="intakeCta" hidden><span>Told Bridge enough? Your map takes about a minute.</span><button class="btn primary" id="buildMap">Build my career map →</button></div>
     <div class="dock-input">
-      <textarea id="chatInput" rows="1" placeholder="Tell Bridge anything: a reply, a reschedule, a question…"></textarea>
+      <textarea id="chatInput" rows="1" placeholder="Post an update: a reply, a call you booked, how it went"></textarea>
       <button class="send" id="sendBtn">Send</button>
     </div>
     <div class="dock-status" id="dockStatus"></div>
@@ -1898,10 +1900,11 @@
   function renderLearn() {
     const el = $('learn'); if (!el) return;
     const pf = S.profile || {};
-    const items = [['Your name', pf.name], ['Your school', pf.school], ['Where you are', pf.s7Where || pf.classYear], ['What you want', pf.s7Want || pf.opportunityType], ['What you\'ve done', S.experience.length], ['Where you want to be', pf.location]];
-    el.innerHTML = items.map(i => '<span class="' + (i[1] ? 'got' : '') + '"><i></i>' + esc(i[0]) + '</span>').join('');
+    const facts = [pf.name && 'You are ' + String(pf.name).split(/\s+/)[0], pf.school && pf.school, (pf.s7Where || pf.classYear) && (pf.s7Where || 'Class of ' + pf.classYear), (pf.s7Want || pf.opportunityType) && (pf.s7Want || pf.opportunityType), S.experience.length && S.experience.length + (S.experience.length === 1 ? ' experience' : ' experiences'), pf.location && pf.location].filter(Boolean);
+    const seenPic = (Array.isArray(pf.s7Picture) ? pf.s7Picture : []).slice(-6).map(p => trunc(p.t, 54));
+    const items = facts.concat(seenPic);
+    el.innerHTML = items.length ? items.map(i => '<span class="got"><i></i>' + esc(i) + '</span>').join('') : '<span><i></i>Nothing yet. Just talk.</span>';
   }
-
   /* ---- what I see ---- */
   function seenRows() {
     const pf = S.profile || {}, sn = pf.s7Seen || {};
@@ -2007,7 +2010,7 @@
   }
   const MV_KIND = { start: 'Start here', todo: 'To do', worth: 'Worth it', decide: 'Decide' };
   const goBtn = (cls, label, m) => (m.page && $('page-' + m.page)) ? `<button class="${cls}" data-go="${esc(m.page)}" data-tab="${esc(m.tab || '')}" data-target="${esc(m.target || '')}">${esc(label)}</button>` : '';
-  function renderDashDate() { $('dashDate').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); }
+  function renderDashDate() { $('dashDate').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); }
   function renderBearing() {
     const el = $('bearing');
     const b = S.brief, pf = S.profile || {}, sn = pf.s7Seen || {};
@@ -2015,7 +2018,7 @@
     const stale = briefStale();
     const moves = (b && Array.isArray(b.moves) && b.moves.length) ? b.moves : fallbackMoves();
     const headline = (b && b.headline) || pf.currentChapter || 'Bridge is getting its bearings.';
-    const refreshLabel = !sample ? '' : Brief.busy ? 'updating…' : stale ? 'new info · update' : 'refresh';
+    const refreshLabel = !sample ? '' : Brief.busy ? 'Refreshing…' : stale ? 'New info · Refresh' : (b && b.generatedAt ? 'Updated ' + fmtTime(new Date(b.generatedAt)) + ' · Refresh' : 'Refresh');
     const refresh = refreshLabel ? `<button class="bearing-refresh${stale ? ' stale' : ''}" id="briefRefresh"${Brief.busy ? ' disabled' : ''}>${refreshLabel}</button>` : '';
     const ev = (sn.evidence || []).filter(Boolean);
     const seen = sn.line
@@ -2024,13 +2027,15 @@
     const mvHtml = moves.map((m, i) => {
       const k = MV_KIND[m.s7Kind] ? m.s7Kind : (m.kind === 'coach' ? 'worth' : 'todo');
       const btn = goBtn('mv-btn', m.btn || (i === 0 ? 'Go' : 'Open'), m);
-      return `<div class="mv nobox${i === 0 ? ' first' : ''}"><div><div class="mv-top"><span class="kind ${k}">${MV_KIND[k]}</span>${m.est ? `<span class="mv-when">${esc(m.est)}</span>` : ''}</div><div class="mv-t">${esc(m.text)}</div>${m.why ? `<div class="mv-why">${esc(m.why)}</div>` : ''}${btn ? `<div class="mv-acts">${btn}</div>` : ''}</div></div>`;
+      const box = (b && Array.isArray(b.moves) && b.moves.length) ? `<button type="button" class="mv-box" data-mvdone="${i}" aria-label="${m.done ? 'Mark not done' : 'Mark done'}">${CHECK}</button>` : '';
+      return `<div class="mv${box ? '' : ' nobox'}${i === 0 ? ' first' : ''}${m.done ? ' done' : ''}">${box}<div><div class="mv-top"><span class="kind ${k}">${MV_KIND[k]}</span>${m.est ? `<span class="mv-when">${esc(m.est)}</span>` : ''}</div><div class="mv-t">${esc(m.text)}</div>${m.why ? `<div class="mv-why">${esc(m.why)}</div>` : ''}${btn ? `<div class="mv-acts">${btn}</div>` : ''}</div></div>`;
     }).join('') || '<div class="mv-why">No open moves right now.</div>';
     const si = sinceItems();
     const sinceWhen = sinceAt ? new Date(sinceAt).toLocaleDateString(undefined, { weekday: 'long' }) : '';
     const since = si.length ? `<div class="since-line"><span>New since ${esc(sinceWhen)}:</span>${si.map(x => `<b>${esc(x)}</b>`).join('<span>·</span>')}</div>` : '';
     el.innerHTML = `${seen}<div class="bear"><span class="bear-l">${isEvening ? "Tomorrow's first moves" : "Today's bearing"}</span><p class="bear-h">${esc(headline)}</p><div class="mvs">${mvHtml}</div>${since}</div>`;
     const rb = $('briefRefresh'); if (rb) rb.addEventListener('click', () => Brief.generate('manual refresh'));
+    el.querySelectorAll('[data-mvdone]').forEach(x => x.addEventListener('click', () => { const i = +x.dataset.mvdone; const mv = (S.brief.moves || []).map((m, j) => j === i ? Object.assign({}, m, { done: !m.done }) : m); S7.col.update('brief', 'main', { moves: mv }).then(() => { if (mv[i].done) logActivity('Done: ' + mv[i].text); }).catch(e => diag('mvdone', e)); }));
     const hw = el.querySelector('[data-how]'); if (hw) hw.addEventListener('click', () => { const e2 = el.querySelector('.ev'); e2.hidden = !e2.hidden; hw.setAttribute('aria-expanded', String(!e2.hidden)); hw.textContent = e2.hidden ? 'How I know →' : 'Hide'; });
     renderToday();
   }
@@ -2883,7 +2888,7 @@
         + '"experience":[{"title","org","dates","highlights","skills":"comma list","type":"job|leadership|research|project|volunteer"}],'
         + '"projects":[{"name","purpose","currentStatus"}],'
         + '"rightNow": string, "targetNextStep": {"title","timing","why","yields"}, "nextStage": {"title","timing","why","yields"}, "forks": [{"label":"Path A","title","why","yields"},{"label":"Path B","title","why","yields"}], "whatsFixed": string, "bridgeSkills": [{"skill","why"}], "elevatorPitch": string, "stories": [{"skill","title","story","useWhen"}], "seen": {"line": string, "evidence": [string], "energizes": string, "drains": string}, "firstMoves": [{"text","dueInDays":number,"priority":"high"|"med"}]}\n'
-        + '- seen.line: one sentence under 30 words, second person, specific to them, only from what they said. seen.evidence: 2-3 short sentences, each pointing to something they actually said. seen.energizes and seen.drains: a short phrase each, "" if they did not say.\n- profile.currentChapter: one line. classYear: the year they finish. Leave a field "" if unknown.\n- experience: every job, internship, project or role they described. projects: things they are building now.\n'
+        + '- seen.line: one sentence under 30 words, second person, specific to them, only from what they said. seen.evidence: 2-3 short sentences, each pointing to something they actually said. seen.energizes and seen.drains: a short phrase each, "" if they did not say.\n- profile.s7Picture (in ALREADY SAVED) holds impressions noted during the chat: use them with the transcript. Build the read from the whole conversation, including asides, not only direct answers to questions.\n- profile.currentChapter: one line. classYear: the year they finish. Leave a field "" if unknown.\n- experience: every job, internship, project or role they described. projects: things they are building now.\n'
         + '- bridgeSkills: 3-4 transferable skills proven by their experience. stories: 3-4, each tied to one skill: title max 10 words, story max 30 words, useWhen max 10 words. elevatorPitch: 4-5 sentences in their voice. firstMoves: exactly 3 concrete networking actions for this week.\n\n'
         + 'ALREADY SAVED: ' + JSON.stringify({ profile: S.profile || {}, experience: S.experience.map(x => x.title + ' @ ' + x.org) }) + '\n\nCONVERSATION:\n' + this.transcript();
       try {
@@ -2978,11 +2983,15 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
   }
   function onboardingRules() {
-    return 'Task: run the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. Style: warm, brief, one question at a time, never a form. On the first turn, welcome them: Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; a few questions at a time; oversharing welcome; the point is finding people, not postings. Ask their name first. The two opening questions (where they are now, and what kind of opportunity they want) are answered before the chat starts: if s7Where and s7Want appear under "Already on file", do not ask them again, and confirm them only if the student seems to contradict them. If they are missing, ask where they are now (year / time since graduating, status) and what kind of opportunity they want (full-time, internship, part-time, seasonal, or not sure, which is a complete answer). Right after their name, ask for their resume: if they have one they can paste its text into this chat and you will read their experience from it, so there are far fewer questions; if they do not have one, that is fine and you will build one from what they tell you. When they paste a resume: save school, major, class year and location with a profile action, add every job, leadership role, research, project and volunteer item with add_experience (put the experience type in "kind"), skip the experience questions, and ask only what the resume leaves out. Then the open-ended "tell me anything else about yourself" (the most important question; if thin, follow up gently, one prompt at a time); their experiences (jobs, teams, clubs, research, projects: for each, what they did and what they\'re proud of); schools and communities; location and constraints; what they are building or part of right now.\n'
-      + 'Save facts AS YOU GO: every turn that reveals their name, school, year, goals or an experience gets its action in that same turn. Each action is one complete JSON object with a "label" key.\n'
-      + 'When you have their name, stage, what they want, and at least two experiences, ask if they\'re ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. Keep the whole intake to about 8-10 questions.\n'
+    return 'Task: run the "Get to know you" intake for Bridge, a career dashboard for students and recent grads. The goal is to understand this person well enough to see them clearly, not to fill in fields. Style: warm, curious, one question at a time, a real conversation, never a form.\n'
+      + 'First turn: welcome them. Bridge closes the gap between where they are and where they want to go, even if they don\'t know yet; oversharing is welcome; the point is finding people, not postings. Ask their name first.\n'
+      + 'The two opening questions (where they are now, and what kind of opportunity they want) are answered before the chat starts: if s7Where and s7Want appear under "Already on file", do not ask them again, and confirm them only if the student seems to contradict them. If they are missing, ask them once, and "not sure" is a complete answer.\n'
+      + 'Right after their name, ask for their resume. If they have one they can paste its text into this chat and you will read their experience from it, so there are far fewer questions; if they do not have one, that is fine and you will build one from what they tell you. When they paste a resume: save school, major, class year and location with a profile action, add every job, leadership role, research, project and volunteer item with add_experience (put the experience type in "kind"), and do not ask about experience you already have.\n'
+      + 'How to listen: each question is a way into a conversation, not a slot to fill. Follow the thread in what they actually say, including asides and things they did not answer, and use their own words to go deeper: what draws them, what they would do for free, what drains them, what they are proud of and why, how they are with people, what they have tried, what they would try if it felt safe, tensions such as wanting a fallback while chasing something else. With a resume, spend the questions on this depth instead of on facts you already have. Never ask something only because a field is empty, and never skip saving something because it did not answer your question.\n'
+      + 'Every turn, save what you learned. Facts: use profile, add_experience and add_project whenever they reveal a name, school, year, location, or any experience, whatever they call it. Impressions: add at least one observe action each turn with a short, specific note in your own words about what you are picking up (their energy, values, how they think, what they are weighing). Ground every note in what they said; never flatter and never invent. A turn with nothing for the fact actions still gets an observe note. Each action is one complete JSON object with a "label" key.\n'
+      + 'When you could describe them to a friend in a few honest sentences (usually after 4-8 exchanges, sooner with a resume), ask if they are ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. There is no fixed number of questions.\n'
       + 'Style requests: Bridge looks the same for everyone; there are two palettes (Sky and Sand) and light/dark under the gear icon.\n\n'
-      + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","kind"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"intake_done","label"}]\n'
+      + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","kind"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"observe","text": one specific impression grounded in what they said,"label"},{"type":"intake_done","label"}]\n'
       + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nExperience so far: ' + S.experience.map(x => x.title + ' @ ' + x.org).join('; ') + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
   }
 
@@ -3027,7 +3036,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
     view: lsGet('bridge.dock', 'bar'),
     status(t) { $('dockStatus').textContent = t || ''; },
     setView(v) { this.view = v; lsSet('bridge.dock', v); $('dock').classList.toggle('min', v === 'min'); if (v === 'min') { this.open = false; $('dock').classList.remove('open'); } this.render(); },
-    setDot() { const d = $('dockDot'); d.className = 'dot' + (!sample ? ' off' : this.inFlight ? ' busy' : ''); $('dockLabel').textContent = !sample ? 'Bridge chat · reconnecting on send' : this.inFlight ? 'Bridge is thinking…' : 'Bridge chat'; },
+    setDot() { const d = $('dockDot'); d.className = 'dot' + (!sample ? ' off' : this.inFlight ? ' busy' : ''); $('dockLabel').textContent = !sample ? 'Bridge chat · reconnecting on send' : this.inFlight ? 'Bridge is thinking…' : (lastStage === 'dash' ? 'Ask Bridge · post updates here, it remembers' : 'Bridge chat'); },
     prefill(text, send, hint) {
       if (this.view === 'min') this.setView('bar');
       const i = $('chatInput'); i.value = text; autoGrow();
@@ -3313,6 +3322,13 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
         const prev = S.profile ? Object.assign({}, S.profile) : null;
         await saveProfile(Object.assign({}, clean, { updatedAt: todayISO() }));
         return { ok: true, label, undo: prev ? { op: 'set', col: 'profile', id: 'main', data: prev } : { op: 'delete', col: 'profile', id: 'main' } };
+      }
+      if (t === 'observe') {
+        const txt = String(a.text || '').trim().slice(0, 240); if (!txt) throw new Error('empty');
+        const prev = S.profile ? Object.assign({}, S.profile) : null;
+        const pic = (S.profile && Array.isArray(S.profile.s7Picture) ? S.profile.s7Picture : []).concat([{ t: txt, at: now }]).slice(-40);
+        await saveProfile({ s7Picture: pic, updatedAt: todayISO() });
+        return { ok: true, label: a.label ? label : 'Noticed: ' + trunc(txt, 60), undo: prev ? { op: 'set', col: 'profile', id: 'main', data: prev } : { op: 'delete', col: 'profile', id: 'main' } };
       }
       if (t === 'add_experience') {
         if (!a.title) throw new Error('no title'); const id = slug(a.org || a.title);
