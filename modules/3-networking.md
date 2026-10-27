@@ -1,4 +1,4 @@
-<!-- bridge_version: 5.2.0 | module: 3-networking -->
+<!-- bridge_version: 7.0.0 | module: 3-networking -->
 # Module 3 — Networking engine, meetings, work queue, guidance, tone
 
 *Storage note: contacts, interactions, tasks, opportunities, and guidance are rows in `01_ACTIVE.md` (kernel §2), keyed by `id`. Update the row in place; put history in the one-line *Recent log*.*
@@ -74,6 +74,8 @@ For every call, interview, or info session:
 Write every one of these as a row in ACTIVE's *Interactions* table (`date | contact_id | type | learned | adjust_next_time | next_move | updated`), update the contact's row, and, if a dashboard exists, its `interactions` list. If anything changes the person's self-understanding, also update the Target hypothesis or Mind map in CORE per the feedback loop.
 
 When a call, interview, or program surfaces an actual role, internship, collaboration, or warm path in — not just a contact — add it to ACTIVE's *Opportunities* table (`id | title | org | type: role/internship/program/collaboration/warm-path | status | source_contact_id | note | updated`). This is also what fills the dashboard's Opportunities tab and what Guidance draws on when it flags a pending decision.
+
+**Finding openings: people first.** When the student asks for openings, start from the people they already know. List the employers where they have a contact (family, friends, past job, school, alumni) or a candidate, and look at those employers' real openings first; an opening with someone to talk to gives the best chance of getting in. It doesn't have to be every search, and never claim a connection that isn't in their data. Open every posting's page before saving it (if it doesn't load, don't save it), save at most 8 per search, and never invent a posting, company, or person. The exact fields (`url`, `sourceName`, `checkedOn`, `appStatus`) are in `modules/4-dashboard.md`, "Finding openings". A good next move is then a message to the person who can talk about that employer, drafted for the student to send themselves.
 
 Never let a meeting go undebriefed, or materials go uncaptured, into the next session's orientation — that's exactly the kind of loose thread the session-start check should catch.
 

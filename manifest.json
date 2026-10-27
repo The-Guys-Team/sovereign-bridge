@@ -1,8 +1,8 @@
 {
-  "latest_version": "6.1.0",
+  "latest_version": "7.0.0-rc1",
   "schema_version": 2,
   "min_supported_version": "5.0.0",
-  "released": "2026-09-23",
+  "released": "2026-10-27",
   "active_cohorts": ["PILOT-01"],
   "kernel": "current.md",
   "modules": {
@@ -12,8 +12,8 @@
     "4-dashboard": "modules/4-dashboard.md"
   },
   "dashboard": {
-    "version": "equinox-6.1",
-    "path": "dashboard/equinox-6.html"
+    "version": "sync-7.0",
+    "path": "dashboard/sync-7.html"
   },
   "templates": {
     "_META": "templates/_META.md",
@@ -27,8 +27,8 @@
     "equinox-6-migration": "modules/equinox-6-migration.md"
   },
   "whats_new": [
-    "Connect your apps in one step, and Bridge saves your messages if you hit your Claude usage limit."
+    "TEST BUILD of Sync 7: a new look, a 10-minute first task on Today, openings where you know someone first, drafts for thank-yous and follow-ups, and an editable resume."
   ],
-  "message_id": "2026-09-21-a",
+  "message_id": "2026-10-27-rc1",
   "message": ""
 }
