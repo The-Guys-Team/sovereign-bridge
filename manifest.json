@@ -26,6 +26,29 @@
     "1-to-2": "migrations/1-to-2.md",
     "equinox-6-migration": "modules/equinox-6-migration.md"
   },
+  "urls": {
+    "kernel": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/current.md",
+    "manifest": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/manifest.json",
+    "dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/dashboard/sync-7.html",
+    "dashboard_readme": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/dashboard/README.md",
+    "modules": {
+      "1-intake": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/modules/1-intake.md",
+      "2-mindmap": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/modules/2-mindmap.md",
+      "3-networking": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/modules/3-networking.md",
+      "4-dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/modules/4-dashboard.md"
+    },
+    "templates": {
+      "_META": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/templates/_META.md",
+      "00_CORE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/templates/00_CORE.md",
+      "01_ACTIVE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/templates/01_ACTIVE.md",
+      "DIGESTS": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/templates/DIGESTS.md",
+      "archive_month": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/templates/archive_month.md"
+    },
+    "migrations": {
+      "1-to-2": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/migrations/1-to-2.md",
+      "equinox-6-migration": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.0/modules/equinox-6-migration.md"
+    }
+  },
   "whats_new": [
     "A new look, and a Today page that starts with one 10-minute task.",
     "Openings where you know someone come first, with real links checked before they're saved.",
