@@ -1,5 +1,5 @@
 {
-  "latest_version": "7.0.0-rc1",
+  "latest_version": "7.0.0",
   "schema_version": 2,
   "min_supported_version": "5.0.0",
   "released": "2026-10-27",
@@ -27,8 +27,10 @@
     "equinox-6-migration": "modules/equinox-6-migration.md"
   },
   "whats_new": [
-    "TEST BUILD of Sync 7: a new look, a 10-minute first task on Today, openings where you know someone first, drafts for thank-yous and follow-ups, and an editable resume."
+    "A new look, and a Today page that starts with one 10-minute task.",
+    "Openings where you know someone come first, with real links checked before they're saved.",
+    "Drafts for thank-yous and follow-ups, and a resume you can edit."
   ],
-  "message_id": "2026-10-27-rc1",
+  "message_id": "2026-10-27-a",
   "message": ""
 }
