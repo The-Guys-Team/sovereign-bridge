@@ -88,7 +88,7 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; font-size: 14px; }
   h1, h2, h3 { font-family: var(--serif); text-wrap: balance; margin: 0; font-weight: 700; letter-spacing: -0.01em; font-stretch: 92%; }
-  button { font-family: inherit; color: inherit; }
+  button { font-family: inherit; color: var(--text); }
   button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
   .eyebrow { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-faint); }
   .muted { color: var(--text-muted); }
@@ -1381,6 +1381,133 @@
   .debrief { display: flex; flex-direction: column; gap: 0.5rem; }
   .debrief label { display: flex; flex-direction: column; gap: 0.3rem; }
   .debrief input { width: 100%; font: inherit; font-size: 0.88rem; border: 1px solid var(--border-strong); border-radius: 9px; padding: 0.55rem 0.7rem; background: var(--paper); color: var(--text); }
+  .rs-ed { outline: none; border-radius: 4px; padding: 0 2px; cursor: text; }
+  .rs-ed:hover { background: rgba(127,127,127,0.12); }
+  .rs-ed:focus { background: rgba(127,127,127,0.16); box-shadow: 0 0 0 2px var(--brass); }
+  .rs-entry { margin-top: 0.4rem; }
+  .rs-entry .linkish { font-size: 0.78rem; }
+
+  /* ===================== Sync 7 · readable text on the colored page (light looks) =====================
+     Text that sits directly on the colored ground uses the ground tokens; every light surface (cards, rows, chips...) switches back
+     to the paper tokens. Status colors are darkened so they pass 4.5:1 on their soft backgrounds. */
+  :root { --p-text: var(--text); --p-muted: var(--text-muted); --p-faint: var(--text-faint); --p-brass: var(--brass); --p-border: var(--border); --p-border-strong: var(--border-strong); }
+  :root:not(.b-dark):not([data-lstyle="paper"]) #dashMain .page > .wrap { --text: var(--g-text); --text-muted: var(--g-muted); --text-faint: var(--g-faint); --brass: var(--g-accent); --border: var(--g-line); --border-strong: var(--g-line); color: var(--g-text); }
+:where(:root:not(.b-dark)) :where(#dashMain) :where(
+  .addp,
+  .addp input,
+  .addp select,
+  .ag-row.now,
+  .agenda,
+  .app-ic.mono,
+  .apps-build,
+  .askdock-reply,
+  .blank,
+  .btn,
+  .cand,
+  .capture,
+  .card,
+  .cdetail,
+  .cfixed,
+  .changed,
+  .chip,
+  .chip.amber,
+  .chip.brass,
+  .chip.route,
+  .chip.rust,
+  .chip.violet,
+  .clip,
+  .cnode,
+  .comp-row input,
+  .composer,
+  .conn,
+  .connect,
+  .cross,
+  .debrief input,
+  .dk-chips button,
+  .dk-in,
+  .dk-input input,
+  .dk-msg.b .dk-bub,
+  .dock-inner,
+  .dock-input textarea,
+  .draft,
+  .drill,
+  .exp,
+  .headsup,
+  .ihead,
+  .ini,
+  .intake-cta,
+  .intel-col,
+  .intel-item small span,
+  .lane,
+  .learn span.got,
+  .made,
+  .made .blank,
+  .more-row,
+  .msg.bot .bub,
+  .msg.u .t,
+  .mv-made,
+  .mv-made .blank,
+  .new,
+  .note-row input,
+  .noted,
+  .opp,
+  .opp2,
+  .opt,
+  .pal-opt,
+  .path,
+  .pcard,
+  .pill,
+  .pitch-card,
+  .plist,
+  .ppl,
+  .prep,
+  .prep2,
+  .proj,
+  .purpose,
+  .pv,
+  .rd.now,
+  .rec-list,
+  .rec-tools2 input,
+  .resume,
+  .road,
+  .row-card,
+  .rt,
+  .search,
+  .seg,
+  .shape div,
+  .sheet,
+  .st,
+  .stat,
+  .step,
+  .stop,
+  .stop.fixed,
+  .story,
+  .story .next,
+  .tag,
+  .talk,
+  .task,
+  .tbtn,
+  .tour-tip,
+  .upl,
+  .upl i,
+  .xs i,
+  .xs.goal i
+) {
+  --text: var(--p-text); --text-muted: var(--p-muted); --text-faint: var(--p-faint); --brass: var(--p-brass); --border: var(--p-border); --border-strong: var(--p-border-strong);
+  color: var(--p-text);
+}
+
+  :root[data-palette="sky"]:not(.b-dark) { --amber: #836111; --route: #486F52; --rust: #A3443A; --violet: #4E6A74; }
+  :root[data-palette="sand"]:not(.b-dark) { --amber: #816010; --route: #476E51; --rust: #A3443A; --violet: #4C6A71; }
+  :root:not(.b-dark) .btn-ok { color: #fff; }
+  :root.b-dark .btn-ok { color: #161413; }
+  .tabs .n { color: var(--text); opacity: 1; }
+  :root[data-palette="sky"]:not(.b-dark) #sDash { --chrome-dim: rgba(251,248,241,0.92); --chrome-accent: #FFF1CF; }
+  :root[data-palette="sand"]:not(.b-dark) #sDash { --chrome-dim: rgba(30,28,27,0.78); }
+  /* headings of cards that sit inside a light surface keep the paper text color, not the ground color */
+  :root:not(.b-dark):not([data-lstyle="paper"]) #dashMain :is(.card, .road, .prep2, .cross, .focus-grid .alts, .resume, .pcard, .opp2, .more-row, .connect, .row-card) :is(.sec-head h3, .sec-head .sec-note) { color: var(--p-text); }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .card-head .sec-note { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1484,7 +1611,7 @@
         </div>
         <div class="col">
           <div class="card" id="agendaWrap">
-            <div class="sec-head"><h3>Coming up</h3><span class="sec-note" id="agendaNote"></span></div>
+            <div class="card-head"><h3>Coming up</h3><span class="sec-note" id="agendaNote"></span></div>
             <div id="headsUp"></div>
             <div id="agendaBody"></div>
             <div id="radarWrap"></div>
@@ -1533,6 +1660,7 @@
     <div class="wrap">
       <div class="page-head"><div class="eyebrow">How you tell it</div><h2>Coaching</h2><p>Your pitch, the stories that prove it, and what real conversations are teaching you.</p></div>
       <div id="coachPrep"></div>
+      <div id="coachDrafts"></div>
       <div id="coachPitch"></div>
       <div><div class="sec-head"><h3>Practice</h3><span class="sec-note">runs in the chat below</span></div><div class="drills" id="drills"></div></div>
       <div><div class="sec-head"><h3>Stories to tell</h3><button class="linkish" id="storyMatch">match to my next calls</button></div><div class="stories" id="stories"></div></div>
@@ -1608,8 +1736,8 @@
     logo: '<rect x="0" y="0" width="64" height="64" rx="15" fill="var(--logo-tile)"/><g transform="translate(32 33) scale(1.1) translate(-32 -33)"><g stroke="var(--logo-mark)" stroke-width="1.15" stroke-linecap="round"><line x1="27.8" y1="18.5" x2="10" y2="40.22"/><line x1="27.8" y1="18.5" x2="14.5" y2="39.68"/><line x1="27.8" y1="18.5" x2="19" y2="39.26"/><line x1="27.8" y1="18.5" x2="23.5" y2="38.97"/><line x1="36.2" y1="18.5" x2="40.5" y2="38.97"/><line x1="36.2" y1="18.5" x2="45" y2="39.26"/><line x1="36.2" y1="18.5" x2="49.5" y2="39.68"/><line x1="36.2" y1="18.5" x2="54" y2="40.22"/></g><path d="M8 40.5Q32 37 56 40.5" fill="none" stroke="var(--logo-mark)" stroke-width="2.6" stroke-linecap="round"/><g stroke="var(--logo-mark)" stroke-width="3.6"><line x1="28" y1="15" x2="26.4" y2="50"/><line x1="36" y1="15" x2="37.6" y2="50"/></g><g fill="none" stroke="var(--logo-mark)" stroke-width="2.3" stroke-linejoin="round"><path d="M27.6 26.5L32 30.5L36.4 26.5"/><path d="M26.9 45L32 41.2L37.1 45"/></g></g>',
     logoViewBox: '0 0 64 64',
     palettes: [
-      { id: 'sky', name: 'Sky', note: 'Dusty blue on Cream, Coral accent. Calm.', sw: ['#9DB5BB', '#E47E7A', '#F6F1E7'] },
-      { id: 'sand', name: 'Sand', note: 'Sand with Espresso and Mustard. Warm.', sw: ['#D8CCB6', '#E7B94E', '#4A2C1D'] },
+      { id: 'sky', name: 'Sky', note: 'Blue in light, grey in dark', sw: ['#52707A', '#F4F3EE', '#26282B'] },
+      { id: 'sand', name: 'Sand', note: 'Sand in light, Char in dark', sw: ['#D8CCB6', '#F4EFE4', '#1E1C1B'] },
     ],
     // Apps Bridge can use. `server` is the claude.ai connector name; it must also be declared in the page's mcp manifest.
     // `icon`: optional official logo as an <img> src (data: URI). Without one, a lettered tile is shown.
@@ -1701,6 +1829,7 @@
     document.querySelectorAll('.page').forEach(p => { p.hidden = p.id !== 'page-' + page; });
     if (tab) { const tb = document.querySelector('#page-' + page + ' .tabs button[data-tab="' + tab + '"]'); if (tb) tb.click(); }
     window.scrollTo(0, 0);
+    if (page === 'direction') setTimeout(() => Path.maybeAuto(), 300);
     if (target) setTimeout(() => {
       let el = document.querySelector('#page-' + page + ' [data-key="' + CSS.escape(target) + '"]');
       if (!el) return;
@@ -2142,28 +2271,40 @@
     const cands = S.candidates.filter(c => c.status !== 'denied' && !dismissed.has(c.id) && !known.has(norm(c.name)) && sameOrg(c.company, o.org));
     return { linked, people, cands };
   }
+  const WARM_B = ['personal', 'past-job', 'college', 'high-school'];
+  // The best way into an opening is someone the student already knows there. Linked first, then warm ties (family, friends, past job, school), then anyone else in the data.
+  function bestConnection(o) {
+    const w = waysIn(o);
+    if (w.linked[0]) return { c: w.linked[0], score: 3, label: srcLabel(w.linked[0].bucket) };
+    const warm = w.people.find(c => WARM_B.includes(c.bucket));
+    if (warm) return { c: warm, score: 2, label: srcLabel(warm.bucket) };
+    if (w.people[0]) return { c: w.people[0], score: 1, label: 'in your network' };
+    if (w.cands[0]) return { c: w.cands[0], score: 1, label: 'found by Bridge', cand: true };
+    return { c: null, score: 0, label: '' };
+  }
   let oppFilter = 'all', curPosting = null, postingsInReply = 0;
   function openPosting(id) { if (!S.opportunities.some(o => o.id === id)) return; curPosting = id; go('posting'); renderPosting(); }
   function oppCard(o) {
-    const st = appStatus(o), w = waysIn(o), post = isPosting(o);
+    const st = appStatus(o), w = waysIn(o), post = isPosting(o), bc = bestConnection(o);
     const n = w.people.length + w.cands.length;
     const when = o.deadline ? 'Deadline ' + fmtDate(o.deadline) : o.postedDate ? 'Posted ' + fmtDate(o.postedDate) : '';
-    return `<div class="opp2${st === 'closed' ? ' closed' : ''}"><div class="path-top"><span class="opp2-org">${esc(o.org || o.title)}</span><span class="chip ${APP_CHIP[st]}">${esc(APP_ST.find(s => s[0] === st)[1])}</span></div>
+    return `<div class="opp2${st === 'closed' ? ' closed' : ''}"><div class="path-top"><span class="opp2-org">${esc(o.org || o.title)}</span>${bc.score >= 2 && st !== 'closed' ? '<span class="chip route">Best chance</span>' : ''}<span class="chip ${APP_CHIP[st]}">${esc(APP_ST.find(s => s[0] === st)[1])}</span></div>
       <div class="opp2-co">${esc([o.title, o.location].filter(Boolean).join(' · '))}</div>
       <div class="opp2-role">${esc([OPP_ONE[o.type] || '', when].filter(Boolean).join(' · '))}</div>
       ${post ? `<div class="opp2-role"><b>${esc(checkedText(o))}</b> · verify before you apply</div>` : '<div class="opp2-role">Tracked by you. No posting link saved.</div>'}
       ${o.fit ? `<div class="opp2-fit"><b>Why it fits</b>${esc(trunc(o.fit, 200))}</div>` : ''}
+      ${bc.c ? `<div class="opp2-fit"><b>${bc.score >= 3 ? 'Your way in' : 'You know someone here'}</b>${esc(bc.c.name)} · ${esc(bc.label)}${bc.c.role ? ' · ' + esc(bc.c.role) : ''}</div>` : ''}
       <div class="opp2-acts"><button type="button" class="jb" data-posting="${esc(o.id)}">${post ? 'Read the posting' : 'Open'}</button>${w.linked[0] ? `<button type="button" class="way" data-person="${esc(w.linked[0].id)}">Your way in: ${esc(w.linked[0].name)} ›</button>` : n ? `<span class="chip violet">${n} possible way${n === 1 ? '' : 's'} in</span>` : ''}</div></div>`;
   }
   function renderOpenings() {
     renderPosting();
-    $('pipeDesc').textContent = 'Real postings Bridge found, and anything else you are tracking. Every posting shows when it was last checked. Check it again before you apply.';
+    $('pipeDesc').textContent = 'Openings where you know someone come first: someone who can talk to you about the place gives you the best chance of getting in. Every posting shows when it was last checked. Check it again before you apply.';
     const opps = S.opportunities.slice();
-    const counts = { all: opps.length }; APP_ST.forEach(s => { counts[s[0]] = opps.filter(o => appStatus(o) === s[0]).length; });
+    const counts = { all: opps.length, best: opps.filter(o => appStatus(o) !== 'closed' && bestConnection(o).score >= 2).length }; APP_ST.forEach(s => { counts[s[0]] = opps.filter(o => appStatus(o) === s[0]).length; });
     if (oppFilter !== 'all' && !counts[oppFilter]) oppFilter = 'all';
-    $('oppFilters').innerHTML = [['all', 'All']].concat(APP_ST).map(([k, l]) => `<button class="pill${k === oppFilter ? ' active' : ''}" data-of="${k}">${l}${counts[k] ? ' ' + counts[k] : ''}</button>`).join('');
+    $('oppFilters').innerHTML = [['all', 'All'], ['best', 'Best chance']].concat(APP_ST).map(([k, l]) => `<button class="pill${k === oppFilter ? ' active' : ''}" data-of="${k}">${l}${counts[k] ? ' ' + counts[k] : ''}</button>`).join('');
     $('oppFilters').querySelectorAll('[data-of]').forEach(b => b.addEventListener('click', () => { oppFilter = b.dataset.of; renderOpenings(); }));
-    const list = opps.filter(o => oppFilter === 'all' || appStatus(o) === oppFilter).sort((a, b) => APP_ST.findIndex(s => s[0] === appStatus(a)) - APP_ST.findIndex(s => s[0] === appStatus(b)) || String(b.checkedOn || '').localeCompare(String(a.checkedOn || '')));
+    const list = opps.filter(o => oppFilter === 'all' || (oppFilter === 'best' ? (appStatus(o) !== 'closed' && bestConnection(o).score >= 2) : appStatus(o) === oppFilter)).sort((a, b) => (appStatus(a) === 'closed') - (appStatus(b) === 'closed') || bestConnection(b).score - bestConnection(a).score || APP_ST.findIndex(s => s[0] === appStatus(a)) - APP_ST.findIndex(s => s[0] === appStatus(b)) || String(b.checkedOn || '').localeCompare(String(a.checkedOn || '')));
     if (!opps.length) {
       $('board').className = '';
       $('board').innerHTML = `<div class="soon"><p style="margin:0 0 .6rem">No openings yet. Bridge finds real postings in your Bridge project chat in Claude, where Claude can search the web and open each page before saving it. Ask it:</p><p style="margin:0 0 .8rem"><b>"Find openings that fit me."</b></p><button type="button" class="btn" id="copyFind">Copy that request</button><p class="muted" style="margin:.8rem 0 0;font-size:.82rem">Saved postings show up here with the link, the source and the date they were checked. Bridge never saves one it could not open.</p></div>`;
@@ -2310,28 +2451,48 @@
     if (!contact.draft) draftMessage(contact.id, contact);
   }
   /* ---- message drafts and "I sent it" ---- */
-  async function draftMessage(id, seed) {
+  const DRAFT_LABEL = { first: 'First message', thanks: 'Thank-you note', followup: 'Follow-up' };
+  const draftKind = (c) => (c.draft && c.draft.kind) || 'first';
+  const draftSent = (c) => !!(c.draft && c.draft.body && (draftKind(c) === 'first' ? c.sentAt : c.draft.sentAt));
+  async function draftMessage(id, seed, kind) {
     const c = S.network.find(x => x.id === id) || seed || null; if (!c || drafting.has(id)) return;
-    drafting.add(id); renderPerson();
+    const k = kind || 'first';
+    drafting.add(id); renderPerson(); renderCoachDrafts();
     const pf = S.profile || {}, mm = S.mindmap || {};
-    const prompt = 'Task: write a short first message from this student to a person they would like to talk to. Plain text, 70-110 words, warm and specific, in the student\'s voice. Open with the real connection if one is listed, say briefly who the student is, and end with a low-pressure ask for 15-20 minutes of advice (not a job ask unless the purpose says opening). Use only facts below; never invent shared experiences, and leave out anything not known instead of using placeholders.\n'
-      + 'Reply ONLY with JSON: {"body": string}\n\nSTUDENT: ' + JSON.stringify({ name: pf.name, school: pf.school, classYear: pf.classYear, major: pf.major, pitch: mm.elevatorPitch || '', wants: pf.s7Want || pf.opportunityType || '' })
-      + '\nPERSON: ' + JSON.stringify({ name: c.name, role: c.role, company: c.company, howTheyKnowEachOther: c.bridgePath || '', whyTalkToThem: c.whyTalk || '', theAsk: c.theAsk || '', purpose: purposeOf(c) || '' });
+    const lastCall = interactionsFor(c).find(i => i.type && i.type !== 'message');
+    const common = 'Plain text, warm and specific, in the student\'s voice. Use only facts below; never invent shared experiences, and leave out anything not known instead of using placeholders.\n';
+    const task = k === 'thanks'
+      ? 'Task: write a short thank-you note from this student to a person they just spoke with. 50-90 words. Thank them for their time, name one specific thing from the conversation if the record has one, say what the student will do next, and keep it sincere, not gushing. ' + common
+      : k === 'followup'
+        ? 'Task: write a short, friendly follow-up from this student to a person who has not replied to their earlier message. 40-70 words. Mention the earlier message briefly, make it easy to answer or decline, no pressure or guilt. ' + common
+        : 'Task: write a short first message from this student to a person they would like to talk to. 70-110 words, warm and specific. Open with the real connection if one is listed, say briefly who the student is, and end with a low-pressure ask for 15-20 minutes of advice (not a job ask unless the purpose says opening). ' + common;
+    const prompt = task + 'Reply ONLY with JSON: {"body": string}\n\nSTUDENT: ' + JSON.stringify({ name: pf.name, school: pf.school, classYear: pf.classYear, major: pf.major, pitch: mm.elevatorPitch || '', wants: pf.s7Want || pf.opportunityType || '' })
+      + '\nPERSON: ' + JSON.stringify({ name: c.name, role: c.role, company: c.company, howTheyKnowEachOther: c.bridgePath || '', whyTalkToThem: c.whyTalk || '', theAsk: c.theAsk || '', purpose: purposeOf(c) || '' })
+      + (k === 'thanks' && lastCall ? '\nTHE CONVERSATION: ' + JSON.stringify({ date: lastCall.date, summary: lastCall.summary || '', wentWell: lastCall.wentWell || '', prepForNext: lastCall.prepForNext || '' }) : '')
+      + (k === 'followup' ? '\nEARLIER MESSAGE: ' + JSON.stringify({ sentOn: c.sentAt ? c.sentAt.slice(0, 10) : '', text: c.draft && draftKind(c) === 'first' ? c.draft.body : '' }) : '');
     try {
       const r = await S7.modelJSON(prompt, 'default');
-      if (r && r.body) await S7.col.update('network', id, { draft: { body: String(r.body), createdAt: new Date().toISOString() } });
+      if (r && r.body) await S7.col.update('network', id, { draft: { body: String(r.body), kind: k, createdAt: new Date().toISOString() } });
       else Chat.status('Couldn\'t draft that message. Try again.');
     } catch (e) { diag('draft', e, e && e.text); Chat.status(isCapErr(e) || (e && e.code === 'model_unavailable') ? 'Drafting needs this page open in Claude with chat allowed.' : 'Couldn\'t draft that message just now. Try again in a bit.'); }
-    drafting.delete(id); renderPerson();
+    drafting.delete(id); renderPerson(); renderCoachDrafts();
   }
   async function markSent(id) {
     const c = S.network.find(x => x.id === id); if (!c || !db) return;
-    const today = todayISO(), next = addDaysISO(5);
+    const k = draftKind(c), today = todayISO();
     try {
-      await S7.col.update('network', id, { sentAt: new Date().toISOString(), status: c.status === 'active' ? 'active' : 'contacted', lastContact: today, nextFollowUp: next });
-      await S7.col.set('outreach', slug('outreach-' + c.name), { contactName: c.name, company: c.company || '', channel: 'message', status: 'sent', sentDate: today, nextFollowUpDate: next, note: 'First message sent (from the draft on their page).' });
-      await S7.col.set('interactions', slug('msg-' + c.name), { contactName: c.name, company: c.company || '', type: 'message', date: today, summary: 'Sent a first message.', source: 'page' });
-      logActivity('Sent a message to ' + c.name);
+      if (k === 'first') {
+        const next = addDaysISO(5);
+        await S7.col.update('network', id, { sentAt: new Date().toISOString(), status: c.status === 'active' ? 'active' : 'contacted', lastContact: today, nextFollowUp: next });
+        await S7.col.set('outreach', slug('outreach-' + c.name), { contactName: c.name, company: c.company || '', channel: 'message', status: 'sent', sentDate: today, nextFollowUpDate: next, note: 'First message sent (from the draft on their page).' });
+        await S7.col.set('interactions', slug('msg-' + c.name), { contactName: c.name, company: c.company || '', type: 'message', date: today, summary: 'Sent a first message.', source: 'page' });
+      } else {
+        const next = k === 'followup' ? addDaysISO(7) : null;
+        await S7.col.update('network', id, { draft: Object.assign({}, c.draft, { sentAt: new Date().toISOString() }), lastContact: today, nextFollowUp: next });
+        if (k === 'followup') await S7.col.set('outreach', slug('followup-' + c.name), { contactName: c.name, company: c.company || '', channel: 'message', status: 'follow-up sent', sentDate: today, nextFollowUpDate: next, note: 'Follow-up sent (from the draft on their page).' });
+        await S7.col.set('interactions', slug('msg-' + c.name), { contactName: c.name, company: c.company || '', type: 'message', date: today, summary: k === 'thanks' ? 'Sent a thank-you note.' : 'Sent a follow-up.', source: 'page' });
+      }
+      logActivity((k === 'thanks' ? 'Thanked ' : 'Sent a message to ') + c.name);
     } catch (e) { diag('sent', e); Chat.status('Couldn\'t log that. Try again.'); }
   }
   async function addNote(id, text) {
@@ -2349,11 +2510,15 @@
     if (!c) { el.innerHTML = '<button class="back" data-go="people">‹ Back to People</button><div class="soon">' + (Date.now() - personOpenedAt < 5000 ? 'Opening…' : 'That person isn\'t on your list any more.') + '</div>'; return; }
     const o = oppOf(c), p = purposeOf(c), ints = interactionsFor(c), notes = parseNotes(c);
     const busy = drafting.has(c.id);
-    const draft = c.draft && c.draft.body
-      ? `<div class="draft" id="pDraft"><span class="draft-to">To ${esc(c.name)}</span><div class="draft-body">${esc(c.draft.body)}</div><div class="draft-foot"><button class="btn" id="dCopy">Copy</button>${c.sentAt ? `<span>Sent ${esc(fmtDate(c.sentAt.slice(0, 10)))}. Bridge keeps the follow-up date.</span>` : `<button class="btn primary" id="dSent">I sent it</button><button class="btn" id="dRedo"${busy ? ' disabled' : ''}>Draft another</button><span>Nothing sends without you. Tap "I sent it" once it's out, and Bridge logs it.</span>`}</div></div>`
-      : (c.sentAt ? '' : `<div class="draft"><span class="draft-to">First message</span><div class="draft-foot"><button class="btn primary" id="dMake"${busy ? ' disabled' : ''}>${busy ? 'Drafting…' : 'Draft a first message'}</button><span>Bridge writes it from what you know about them. You send it yourself.</span></div></div>`);
+    const dk = draftKind(c), dSent = draftSent(c);
+    const hasCall = interactionsFor(c).some(i => i.type && i.type !== 'message');
+    const more = [!busy && hasCall && !(dk === 'thanks' && c.draft && !dSent) ? `<button type="button" class="btn" data-dmore="thanks">Draft a thank-you note</button>` : '', !busy && c.sentAt && c.status !== 'active' && !(dk === 'followup' && c.draft && !dSent) ? `<button type="button" class="btn" data-dmore="followup">Draft a follow-up</button>` : ''].filter(Boolean).join('');
+    const draft = (c.draft && c.draft.body
+      ? `<div class="draft" id="pDraft"><span class="draft-to">${esc(DRAFT_LABEL[dk])} · To ${esc(c.name)}</span><div class="draft-body">${esc(c.draft.body)}</div><div class="draft-foot"><button class="btn" id="dCopy">Copy</button>${dSent ? `<span>Sent ${esc(fmtDate(String((dk === 'first' ? c.sentAt : c.draft.sentAt) || '').slice(0, 10)))}.${dk === 'first' ? ' Bridge keeps the follow-up date.' : ''}</span>` : `<button class="btn primary" id="dSent">I sent it</button><button class="btn" id="dRedo"${busy ? ' disabled' : ''}>Draft another</button><span>Nothing sends without you. Tap "I sent it" once it's out, and Bridge logs it.</span>`}</div></div>`
+      : (c.sentAt ? '' : `<div class="draft"><span class="draft-to">First message</span><div class="draft-foot"><button class="btn primary" id="dMake"${busy ? ' disabled' : ''}>${busy ? 'Drafting…' : 'Draft a first message'}</button><span>Bridge writes it from what you know about them. You send it yourself.</span></div></div>`))
+      + (more ? `<div style="display:flex;gap:.5rem;flex-wrap:wrap">${more}</div>` : '');
     const purpose = (c.whyTalk || c.theAsk || o)
-      ? `<div class="purpose${p === 'opening' || o ? '' : ' learn'}">${c.whyTalk ? `<div><h4>Why talk to them</h4><p>${esc(c.whyTalk)}</p></div>` : ''}${o ? `<div><h4>The opening</h4><p><b>${esc(o.org || '')}</b><br>${esc(o.title || '')}</p><button type="button" class="way" data-go="pipeline" data-target="${esc(o.id)}">See it in your pipeline ›</button></div>` : ''}${c.theAsk ? `<div><h4>The ask</h4><p>${esc(c.theAsk)}</p></div>` : ''}</div>`
+      ? `<div class="purpose${p === 'opening' || o ? '' : ' learn'}">${c.whyTalk ? `<div><h4>Why talk to them</h4><p>${esc(c.whyTalk)}</p></div>` : ''}${o ? `<div><h4>The opening</h4><p><b>${esc(o.org || '')}</b><br>${esc(o.title || '')}</p><button type="button" class="way" data-go="pipeline" data-target="${esc(o.id)}">See the opening ›</button></div>` : ''}${c.theAsk ? `<div><h4>The ask</h4><p>${esc(c.theAsk)}</p></div>` : ''}</div>`
       : `<div><button class="jb" data-ask="${esc('What do I want to learn from ' + first(c.name) + '? Help me write down why I want to talk to them and what I will ask.')}" data-send="1">Work out what to ask ${esc(first(c.name))}</button></div>`;
     const where = ints[0] ? (ints[0].summary || ints[0].materials || 'Talked ' + fmtDate(ints[0].date)) : (c.lastContact ? 'Last contact ' + fmtDate(c.lastContact) : 'You haven\'t reached out yet.');
     const next = c.nextFollowUp ? 'Follow up ' + fmtDate(c.nextFollowUp) : c.draft && !c.sentAt ? 'Send the draft below.' : c.status === 'sourced' && !c.sentAt ? 'Draft a first message.' : 'Nothing scheduled.';
@@ -2366,7 +2531,8 @@
       <div class="grid2 even"><div class="card"><h3>History</h3><div class="timeline">${ints.length ? ints.map(i => `<div class="tl-item"><span class="tl-date">${esc(fmtDate(i.date))}</span> ${esc(trunc(i.summary || i.materials || i.type || '', 220))}</div>`).join('') : '<div class="tl-item">Nothing yet. This fills in as you reach out and talk.</div>'}</div></div>
       <div class="card"><h3>Your notes</h3>${(notes.dated.length || notes.plain.length) ? `<ul class="pnotes">${notes.dated.map(n => `<li><span class="tl-date">${esc(fmtDate(n.d))}</span> ${esc(n.t)}</li>`).join('')}${notes.plain.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '<p class="muted" style="margin:0;font-size:.84rem">Anything worth remembering for next time.</p>'}<div class="note-row"><input id="pNote" placeholder="Add a note" aria-label="Add a note about ${esc(c.name)}"><button class="btn" id="pNoteSave">Save</button></div></div></div>`;
     const bind = (id, fn) => { const b = $(id); if (b) b.addEventListener('click', fn); };
-    bind('dMake', () => draftMessage(c.id)); bind('dRedo', () => draftMessage(c.id)); bind('dSent', () => markSent(c.id));
+    bind('dMake', () => draftMessage(c.id)); bind('dRedo', () => draftMessage(c.id, null, dk)); bind('dSent', () => markSent(c.id));
+    el.querySelectorAll('[data-dmore]').forEach(b => b.addEventListener('click', () => draftMessage(c.id, null, b.dataset.dmore)));
     bind('dCopy', async () => { try { await navigator.clipboard.writeText(c.draft.body); $('dCopy').textContent = 'Copied'; } catch (e) { const r = document.createRange(); r.selectNodeContents(el.querySelector('.draft-body')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $('dCopy').textContent = 'Selected: press copy'; } });
     const save = async () => { const v = $('pNote').value; if (v.trim()) { $('pNote').value = ''; await addNote(c.id, v); } };
     bind('pNoteSave', save); $('pNote').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); save(); } });
@@ -2440,6 +2606,26 @@
       } catch (e) { diag('debrief', e); Chat.status('Couldn\'t save that debrief. Try again.'); }
     },
   };
+  function draftQueue() {
+    const rows = [], seen = new Set(), add = (r) => { const k = r.c.id + ':' + r.kind; if (!seen.has(k)) { seen.add(k); rows.push(r); } };
+    S.network.forEach(c => { if (c.draft && c.draft.body && !draftSent(c)) add({ c, kind: draftKind(c), have: true, why: DRAFT_LABEL[draftKind(c)] + ' ready' }); });
+    S.interactions.filter(i => i.type && i.type !== 'message' && daysSince(i.date) !== null && daysSince(i.date) <= 10).forEach(i => {
+      const c = S.network.find(x => norm(x.name) === norm(i.contactName) || (norm(i.contactName).length > 2 && norm(x.name).split(' ')[0] === norm(i.contactName).split(' ')[0])); if (!c) return;
+      if (c.draft && draftKind(c) === 'thanks' && Date.parse(c.draft.createdAt) >= Date.parse(i.date + 'T00:00:00')) return;
+      add({ c, kind: 'thanks', have: false, why: 'You spoke ' + fmtDate(i.date) });
+    });
+    S.network.forEach(c => { const sentDays = c.sentAt ? daysSince(c.sentAt.slice(0, 10)) : null; if (((sentDays !== null && sentDays >= 5 && c.status === 'contacted') || followDue(c)) && !(c.draft && draftKind(c) === 'followup' && !draftSent(c))) add({ c, kind: 'followup', have: false, why: sentDays !== null ? 'Sent ' + sentDays + ' days ago, no reply yet' : 'Follow-up is due' }); });
+    return rows.slice(0, 8);
+  }
+  function renderCoachDrafts() {
+    const el = $('coachDrafts'); if (!el) return;
+    const q = draftQueue();
+    el.innerHTML = `<div class="sec-head"><h3>Drafts to send</h3><span class="sec-note">thank-yous and follow-ups · nothing sends without you</span></div>`
+      + (q.length ? `<div class="stack">${q.map((r, i) => `<div class="row-card"><div class="row-line"><div><b>${esc(DRAFT_LABEL[r.kind])}</b> · <button type="button" class="linkish" data-dperson="${esc(r.c.id)}">${esc(r.c.name)}</button> <span class="muted">${esc(r.why)}</span></div>${r.have ? `<button type="button" class="jb" data-dopen="${esc(r.c.id)}">Open draft</button>` : `<button type="button" class="jb" data-dmake="${i}"${drafting.has(r.c.id) ? ' disabled' : ''}>${drafting.has(r.c.id) ? 'Drafting…' : 'Draft it'}</button>`}</div>${r.have ? `<div class="muted" style="font-size:.82rem;margin-top:.4rem">${esc(trunc(r.c.draft.body, 150))}</div>` : ''}</div>`).join('')}</div>`
+        : '<div class="soon">Nothing to send right now. After a call, or when someone has not replied, drafts for thank-yous and follow-ups show up here.</div>');
+    el.querySelectorAll('[data-dperson],[data-dopen]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.dperson || b.dataset.dopen)));
+    el.querySelectorAll('[data-dmake]').forEach(b => b.addEventListener('click', async () => { const r = q[+b.dataset.dmake]; await draftMessage(r.c.id, null, r.kind); openPerson(r.c.id); }));
+  }
   function renderCoachPrep() {
     const el = $('coachPrep'); if (!el) return;
     const nx = Prep.next();
@@ -2489,26 +2675,60 @@
   };
   const rsFill = (s) => esc(s).replace(/\[fill in:\s*([^\]]*)\]/gi, (_, w) => `<span class="blank">${w}</span>`);
   function resumeText(r) {
-    const pf = S.profile || {}, out = [pf.name || '', r.summary || ''];
+    const pf = S.profile || {}, out = [r.name != null ? r.name : (pf.name || ''), r.summary || ''];
     r.experience.forEach(x => { out.push('', [x.title, x.org, x.dates].filter(Boolean).join(' · ')); x.bullets.forEach(b => out.push('- ' + b.t)); });
     if (r.skills.length) out.push('', 'Skills: ' + r.skills.join(', '));
     r.education.forEach(e => out.push('', [e.school, e.detail].filter(Boolean).join(' · ')));
     return out.join('\n');
   }
+  // The resume is a document the student can type in. Click a line to edit it; it saves when you click away.
+  function rsGet(r, path) {
+    const [k, a, b] = path.split('.');
+    if (k === 'name') return r.name != null ? r.name : ((S.profile || {}).name || '');
+    if (k === 'summary') return r.summary || '';
+    if (k === 'skills') return (r.skills || []).join(', ');
+    if (k === 'edu') return [r.education[+a].school, r.education[+a].detail].filter(Boolean).join(' · ');
+    const x = r.experience[+a]; return b === undefined ? '' : (k === 'b' ? (x.bullets[+b] || {}).t : x[k === 'title' ? 'title' : k === 'org' ? 'org' : 'dates']);
+  }
+  function rsSet(r, path, v) {
+    const [k, a, b] = path.split('.'); const d = JSON.parse(JSON.stringify(r));
+    if (k === 'name') d.name = v; else if (k === 'summary') d.summary = v;
+    else if (k === 'skills') d.skills = v.split(',').map(s => s.trim()).filter(Boolean);
+    else if (k === 'edu') { const p = v.split(' · '); d.education[+a] = { school: p[0] || '', detail: p.slice(1).join(' · ') }; }
+    else if (k === 'b') { if (!v.trim()) d.experience[+a].bullets.splice(+b, 1); else d.experience[+a].bullets[+b] = { t: v, isNew: false }; }
+    else d.experience[+a][k] = v;
+    d.editedAt = new Date().toISOString(); return d;
+  }
   function renderResume() {
     const el = $('coachResume'); if (!el) return;
+    if (el.contains(document.activeElement) && document.activeElement.isContentEditable) return;   // never redraw under the cursor
     const r = S.resume, pf = S.profile || {};
     if (!r || !Array.isArray(r.experience)) {
-      el.innerHTML = `<div class="sec-head"><h3>Your resume</h3></div><div class="soon"><p style="margin:0 0 .6rem">${S.experience.length ? 'Bridge can build a resume from what you told it. It never makes up an employer, date or number: anything it doesn\'t know shows up as a blank for you to fill in.' : 'Tell Bridge about your experience first, and it can build a resume from it.'}</p>${S.experience.length && sample ? `<button type="button" class="btn primary" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Building…' : 'Build my resume'}</button>` : ''}</div>`;
-    } else {
-      const head = `<div class="rs-name">${esc(pf.name || '')}</div>${r.summary ? `<div>${rsFill(r.summary)}</div>` : ''}`;
-      const exp = r.experience.map(x => `<b>${rsFill([x.title, x.org].filter(Boolean).join(', '))}</b>${x.dates ? ' · ' + rsFill(x.dates) : ''}<ul>${x.bullets.map(b => `<li${b.isNew ? ' class="new"' : ''}>${rsFill(b.t)}</li>`).join('')}</ul>`).join('');
-      const edu = r.education.map(e => `<div>${rsFill([e.school, e.detail].filter(Boolean).join(' · '))}</div>`).join('');
-      el.innerHTML = `<div class="sec-head"><h3>Your resume</h3><span class="sec-note">draft ${r.draftNo || 1} · built ${esc(fmtDate(String(r.builtAt).slice(0, 10)))} from your conversations</span></div>
-        <div class="resume">${head}<div class="rs-sec">Experience</div>${exp}${r.skills.length ? `<div class="rs-sec">Skills</div><div>${esc(r.skills.join(', '))}</div>` : ''}${edu ? `<div class="rs-sec">Education</div>${edu}` : ''}<div class="rs-legend"><span><span class="new">Green</span> = new or rewritten from our conversation</span><span><span class="blank">Amber</span> = I need you to fill it in</span></div></div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem"><button type="button" class="btn" id="rsCopy">Copy as text</button><button type="button" class="btn" data-ask="Change my resume: " data-send="0">Change it in chat</button>${sample ? `<button type="button" class="btn" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Rebuilding…' : 'Rebuild from my record'}</button>` : ''}</div>`;
-      const cp = $('rsCopy'); if (cp) cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(resumeText(r)); cp.textContent = 'Copied'; } catch (e) { cp.textContent = 'Copy failed'; } });
+      el.innerHTML = `<div class="sec-head"><h3>Your resume</h3></div><div class="soon"><p style="margin:0 0 .6rem">${S.experience.length ? 'Bridge can build a resume from what you told it. It never makes up an employer, date or number: anything it doesn\'t know shows up as a blank for you to fill in. Then you can type in it.' : 'Tell Bridge about your experience first, and it can build a resume from it.'}</p>${S.experience.length && sample ? `<button type="button" class="btn primary" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Building…' : 'Build my resume'}</button>` : ''}</div>`;
+      const b0 = $('rsBuild'); if (b0) b0.addEventListener('click', () => Resume.build());
+      return;
     }
+    r.education = r.education || []; r.skills = r.skills || [];
+    const ed = (path, cls, tag) => { const raw = rsGet(r, path) || ''; return `<${tag || 'span'} class="rs-ed${cls ? ' ' + cls : ''}" contenteditable="true" spellcheck="true" role="textbox" aria-label="Edit resume text" data-rs="${path}" data-raw="${esc(raw)}">${rsFill(raw)}</${tag || 'span'}>`; };
+    const head = `${ed('name', 'rs-name', 'div')}${r.summary ? ed('summary', '', 'div') : ''}`;
+    const exp = r.experience.map((x, i) => `<div class="rs-entry"><b>${ed('title.' + i)}${x.org ? ', ' : ''}${x.org ? ed('org.' + i) : ''}</b>${x.dates ? ' · ' + ed('dates.' + i) : ''}<ul>${x.bullets.map((b, j) => `<li${b.isNew ? ' class="new"' : ''}>${ed('b.' + i + '.' + j)}</li>`).join('')}</ul><button type="button" class="linkish" data-rsadd="${i}">+ Add a line</button></div>`).join('');
+    const edu = r.education.map((e, i) => `<div>${ed('edu.' + i)}</div>`).join('');
+    el.innerHTML = `<div class="sec-head"><h3>Your resume</h3><span class="sec-note">draft ${r.draftNo || 1} · built ${esc(fmtDate(String(r.builtAt).slice(0, 10)))}${r.editedAt ? ' · edited ' + esc(fmtDate(r.editedAt.slice(0, 10))) : ''}</span></div>
+      <p class="muted" style="margin:0 0 .5rem;font-size:.82rem">Click any line to type in it. Changes save when you click away.</p>
+      <div class="resume">${head}<div class="rs-sec">Experience</div>${exp}${r.skills.length ? `<div class="rs-sec">Skills</div><div>${ed('skills')}</div>` : ''}${edu ? `<div class="rs-sec">Education</div>${edu}` : ''}<div class="rs-legend"><span><span class="new">Green</span> = new or rewritten from our conversation</span><span><span class="blank">Amber</span> = I need you to fill it in</span></div></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem"><button type="button" class="btn" id="rsCopy">Copy as text</button><button type="button" class="btn" data-ask="Change my resume: " data-send="0">Ask Bridge to change it</button>${sample ? `<button type="button" class="btn" id="rsBuild"${Resume.busy ? ' disabled' : ''}>${Resume.busy ? 'Rebuilding…' : 'Rebuild from my record'}</button>` : ''}</div>`;
+    el.querySelectorAll('.rs-ed').forEach(n => {
+      n.addEventListener('focus', () => { n.textContent = n.dataset.raw; });
+      n.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); n.blur(); } });
+      n.addEventListener('paste', (e) => { e.preventDefault(); const tx = (e.clipboardData || window.clipboardData).getData('text').replace(/\s+/g, ' '); document.execCommand('insertText', false, tx); });
+      n.addEventListener('blur', async () => {
+        const v = n.textContent.replace(/\s+/g, ' ').trim();
+        if (v === (n.dataset.raw || '')) { n.innerHTML = rsFill(n.dataset.raw); return; }
+        try { await S7.col.set('resume', 'main', rsSet(S.resume, n.dataset.rs, v)); } catch (e) { diag('resume-edit', e); Chat.status('Couldn\'t save that edit. Try again.'); n.innerHTML = rsFill(n.dataset.raw); }
+      });
+    });
+    el.querySelectorAll('[data-rsadd]').forEach(b => b.addEventListener('click', async () => { const d = JSON.parse(JSON.stringify(S.resume)); d.experience[+b.dataset.rsadd].bullets.push({ t: 'Write your line here', isNew: false }); d.editedAt = new Date().toISOString(); try { await S7.col.set('resume', 'main', d); } catch (e) { diag('resume-add', e); } }));
+    const cp = $('rsCopy'); if (cp) cp.addEventListener('click', async () => { try { await navigator.clipboard.writeText(resumeText(r)); cp.textContent = 'Copied'; } catch (e) { cp.textContent = 'Copy failed'; } });
     const rb = $('rsBuild'); if (rb) rb.addEventListener('click', () => Resume.build());
   }
 
@@ -2519,7 +2739,7 @@
     return (mm.bridgeSkills || []).slice(0, 4).map(s => ({ skill: s.skill, title: s.skill, story: trunc(s.why, 170), useWhen: '' }));
   }
   function renderCoaching() {
-    renderCoachPrep(); renderResume();
+    renderCoachPrep(); renderCoachDrafts(); renderResume();
     const mm = S.mindmap || {};
     const nextCall = agendaItems().find(i => i.prep);
     $('coachPitch').innerHTML = mm.elevatorPitch ? `<div class="pitch-card"><div class="eyebrow" style="margin-bottom:.6rem">Your pitch · current draft</div><div class="pitch">“${esc(mm.elevatorPitch)}”</div><div class="pitch-acts"><button class="btn" data-ask="Tailor my pitch for ${esc(nextCall ? 'my call with ' + nextCall.prep.contactName.split(' ')[0] : 'my next conversation')}." data-hint="Keep it in my voice, 4-5 sentences, and say what you changed." data-send="1">Tailor for ${esc(nextCall ? nextCall.prep.contactName.split(' ')[0] : 'next call')}</button><button class="btn" data-ask="Here's my pitch rewritten in my own words. Give me honest feedback: ">Rewrite it myself</button></div></div>` : '<div class="empty">Your pitch gets drafted with your readout.</div>';
@@ -2579,6 +2799,19 @@
       { b: goal, s: '', done: S.opportunities.some(o => /accepted/i.test(o.status || '')), d: '', goal: true },
     ];
   }
+  // What to do next, from what is really in the record: debriefs, calls, drafts, follow-ups, people to review, openings. Falls back to the next milestones.
+  function nextSteps(M) {
+    const st = [];
+    needsDebrief().slice(0, 1).forEach(p => st.push({ b: 'Debrief', s: p.contactName, go: 'coaching' }));
+    const nx = Prep.next(); if (nx) st.push({ b: 'Your call', s: nx.p.contactName + ', ' + nx.w, go: 'coaching' });
+    S.network.filter(c => c.draft && c.draft.body && !(c.draft.kind && c.draft.kind !== 'first' ? c.draft.sentAt : c.sentAt)).slice(0, 1).forEach(c => st.push({ b: 'Send a message', s: c.name, person: c.id }));
+    S.network.filter(c => followDue(c)).slice(0, 1).forEach(c => st.push({ b: 'Follow up', s: c.name, person: c.id }));
+    const pend = S.candidates.filter(c => !c.status || c.status === 'pending'); if (pend.length) st.push({ b: 'Review new people', s: pend.length + ' waiting', go: 'people' });
+    const best = S.opportunities.filter(o => appStatus(o) === 'saved').map(o => ({ o, bc: bestConnection(o) })).sort((a, b) => b.bc.score - a.bc.score)[0];
+    if (best) st.push({ b: 'Look at an opening', s: best.o.org + (best.bc.c ? ', where you know ' + best.bc.c.name : ''), go: 'pipeline', target: best.o.id });
+    M.filter(m => !m.done && !m.goal).forEach(m => st.push({ b: m.b, s: m.s }));
+    return st.slice(0, 3);
+  }
   function renderDirection() {
     const el = $('pathBody'); if (!el) return;
     const mm = S.mindmap, pf = S.profile || {};
@@ -2595,14 +2828,17 @@
     const forks = (mm.forks || []).filter(f => f && f.title);
     const fk = mm.focus || (forks[0] ? { title: forks[0].title, why: forks[0].why, question: forks[0].q || '' } : (mm.nextStage ? { title: mm.nextStage.title, why: mm.nextStage.why, question: '' } : null));
     const alts = (mm.focus ? forks : forks.slice(1));
-    const undone = M.filter(m => !m.done && !m.goal).slice(0, 3);
+    const undone = nextSteps(M);
     const hist = Array.isArray(mm.history) ? mm.history : [];
     const dest = mm.nextStage && mm.nextStage.title;
-    const focusCard = fk ? `<div class="focus" id="dest"><span class="dest-l">Your focus</span><p class="focus-t">${esc(fk.title)}</p>${dest && dest !== fk.title ? `<p class="focus-s">${esc(dest)}</p>` : ''}${fk.why ? `<p class="focus-why">${esc(fk.why)}</p>` : ''}${fk.question ? `<p class="focus-q"><span>Question to test</span>${esc(fk.question)}</p>` : ''}${mm.targetNextStep ? `<div class="pn"><span>Next step: ${esc(mm.targetNextStep.title)}${mm.targetNextStep.timing ? ' · ' + esc(mm.targetNextStep.timing) : ''}</span></div>` : ''}
-      ${undone.length ? `<div class="focus-steps"><span class="fs-h">Your next milestones</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''}</li>`).join('')}</ol></div>` : ''}
+    const nxCall = Prep.next();
+    const stepGo = (s) => s.person ? `<button type="button" class="jb" data-person="${esc(s.person)}">Open</button>` : s.go ? `<button type="button" class="jb" data-go="${esc(s.go)}" data-target="${esc(s.target || '')}">Open</button>` : '';
+    const focusCard = fk ? `<div class="focus" id="dest"><span class="dest-l">Your focus</span><p class="focus-t">${esc(fk.title)}</p>${dest && dest !== fk.title ? `<p class="focus-s">${esc(dest)}</p>` : ''}${fk.why ? `<p class="focus-why"><b>Why it fits:</b> ${esc(fk.why)}</p>` : ''}${fk.question ? `<p class="focus-q"><span>Question to test</span>${esc(fk.question)}</p>` : ''}
+      ${nxCall && fk.question ? `<div class="pn"><span>Your call with ${esc(first(nxCall.p.contactName))} ${esc(nxCall.w)} tests this.</span><button type="button" class="jb" data-go="coaching">Open your prep</button></div>` : (fk.question ? `<div class="pn"><span>Talk it through with Bridge, or test it in a real conversation.</span><button type="button" class="jb" data-ask="${esc('Help me test this: ' + fk.question)}" data-send="1">Talk it through</button></div>` : (mm.targetNextStep ? `<div class="pn"><span>Next step: ${esc(mm.targetNextStep.title)}${mm.targetNextStep.timing ? ' · ' + esc(mm.targetNextStep.timing) : ''}</span></div>` : ''))}
+      ${undone.length ? `<div class="focus-steps"><span class="fs-h">Your next steps</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''} ${stepGo(m)}</li>`).join('')}</ol></div>` : ''}
       ${mm.nextStage ? `<details class="focus-more"><summary>See the long term</summary><div class="lt"><div><span>${esc(mm.nextStage.timing || '')}</span><b>${esc(mm.nextStage.title)}</b><small>${esc(mm.nextStage.why || '')}</small></div></div></details>` : ''}
       <div class="focus-upd"><b>${mm.revisedAt ? 'Updated ' + esc(fmtDate(mm.revisedAt.slice(0, 10))) : 'Not updated yet'}</b>${esc(mm.revisionWhy || '')}${hist.length > 1 ? `<details><summary>Earlier changes (${hist.length - 1})</summary><ul>${hist.slice(1).map(h => `<li>${esc(fmtDate(String(h.at).slice(0, 10)))} · ${esc(h.why)}</li>`).join('')}</ul></details>` : ''}</div></div>` : '';
-    const altHtml = alts.map(f => `<details class="path alt"><summary><span class="path-top"><span class="path-t">${esc(f.title)}</span>${f.label ? `<span class="chip">${esc(f.label)}</span>` : ''}</span><span class="alt-why">${esc(f.why || '')}</span><span class="alt-more">More ›</span></summary>${f.q ? `<p class="q">${esc(f.q)}</p>` : ''}${f.yields ? `<p class="q">${esc(f.yields)}</p>` : ''}</details>`).join('');
+    const altHtml = alts.map(f => `<details class="path alt"><summary><span class="path-top"><span class="path-t">${esc(f.title)}</span>${f.label ? `<span class="chip">${esc(f.label)}</span>` : ''}</span><span class="alt-why"><b>Why it might fit:</b> ${esc(f.why || '')}</span><span class="alt-more">More ›</span></summary>${f.q ? `<p class="q"><b>Question to test:</b> ${esc(f.q)}</p>` : ''}${f.yields ? `<p class="q">${esc(f.yields)}</p>` : ''}</details>`).join('');
     const rd = [];
     if (mm.rightNow) rd.push(`<div class="rd now"><span class="rd-w">Now</span><span class="rd-t">Where you are</span><span class="rd-s">${esc(mm.rightNow)}</span></div>`);
     if (mm.targetNextStep) rd.push(`<div class="rd next"><span class="rd-w">${esc(mm.targetNextStep.timing || 'Next')}</span><span class="rd-t">${esc(mm.targetNextStep.title)}</span><span class="rd-s">${esc(mm.targetNextStep.why || '')}</span>${undone.length ? `<div class="rd-steps"><span class="h">To get there</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''}</li>`).join('')}</ol></div>` : ''}</div>`);
@@ -2620,10 +2856,13 @@
       ${road}
       <div class="card" id="know"><h3>What I know about you, and what's worth thinking about</h3><div class="grid2 even"><div class="kn"><span class="kn-h known">What I know</span>${knownHtml}</div><div class="kn"><span class="kn-h open">Worth thinking about</span><p class="think-lead">You don't need answers today. When something comes to mind, tell Bridge and it will turn it into direction.</p>${think || '<p class="muted" style="margin:0;font-size:.84rem">Nothing open right now. Refresh your path after a few conversations.</p>'}</div></div></div>`;
     const rb = $('pathRefresh'); if (rb) rb.addEventListener('click', () => Path.refresh());
+    el.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
   }
   // One model call re-reads the whole record and may sharpen the focus; it must say why, and nothing changes without evidence.
   const Path = {
     busy: false,
+    // A map from before the focus fields existed gets one automatic re-read the first time Path is opened (flagged, so it never loops).
+    maybeAuto() { const mm = S.mindmap; if (mm && !mm.focus && !mm.focusTriedAt && sample && db && !this.busy && flowStage() === 'dash') { S7.col.update('mindmap', 'main', { focusTriedAt: new Date().toISOString() }).then(() => this.refresh()).catch(e => diag('path-auto', e)); } },
     async refresh() {
       if (this.busy || !db || !S.mindmap) return; this.busy = true; renderDirection();
       const prompt = 'Task: re-read this person\'s whole record and update their career path only where real evidence supports it. Reply ONLY with JSON: {"focus":{"title":string,"why":string,"question":string},"forks":[{"label":string,"title":string,"why":string,"q":string}],"known":[{"t":string,"s":string}],"open":[{"t":string,"s":string}],"revisionWhy":string}\n'
@@ -2792,8 +3031,8 @@
     const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Sync 7' : 'Settings'}">
       <div class="sheet-head">${logoSvg()}<div style="flex:1;min-width:0"><h3>${isWelcome ? (S.profile && S.profile.e6NewUser ? 'Make it yours' : 'Welcome to Sync 7') : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div><button type="button" class="sheet-x" id="sheetX" aria-label="Close">×</button></div>
       <div class="sheet-body">
-        <div><div class="opt-h">Palette</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
-        <div><div class="opt-h">Mode</div><div class="mode-opts">${[['system', 'Match device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
+        <div><div class="opt-h">Colors</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
+        <div><div class="opt-h">Light or dark</div><div class="mode-opts">${[['system', 'Match my device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
         ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : (Apps.perms ? `<button class="btn" data-allow="${esc(a.server)}">Allow</button>` : Apps.addLink(a))}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
         ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
         <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetTour">Replay the tour</button><button class="btn" id="sheetDone">Done</button>'}</div>
@@ -2866,6 +3105,8 @@
     if (mm.whatsFixed) lines.push('FIXED: ' + trunc(mm.whatsFixed, 200));
     lines.push('\nUP NEXT (calendar + prep):'); agendaItems().slice(0, 6).forEach(it => lines.push('- ' + whenLabel(it.start, it.allDay, it.end).text + ': ' + it.title + (it.prep ? ' [prep id ' + it.prep.id + ']' : '')));
     const db1 = needsDebrief(); if (db1.length) lines.push('NEEDS DEBRIEF: ' + db1.map(p => p.contactName + ' (' + p.meetingDate + ')').join('; '));
+    const bestLines = S.opportunities.filter(o => appStatus(o) !== 'closed').map(o => ({ o, bc: bestConnection(o) })).filter(x => x.bc.score >= 1).map(x => '- ' + x.o.org + ' | ' + x.o.title + (isPosting(x.o) ? ' | posting checked ' + x.o.checkedOn : ' | no posting link') + ' | knows ' + x.bc.c.name + ' (' + x.bc.label + (x.bc.c.role ? ', ' + x.bc.c.role : '') + ')');
+    if (bestLines.length) lines.push('\nBEST CHANCE (open openings where the student already knows someone at that employer; use these ids in moves):\n' + bestLines.join('\n'));
     lines.push('\nOPPORTUNITIES (id | org | title | status | notes):'); S.opportunities.forEach(o => lines.push('- ' + o.id + ' | ' + o.org + ' | ' + o.title + ' | ' + o.status + ' | ' + trunc(o.notes, 220)));
     lines.push('\nCONTACTS (id | name | company | bucket | goal | status | last | follow-up | notes):'); S.network.forEach(c => lines.push('- ' + c.id + ' | ' + c.name + ' | ' + (c.company || '') + ' | ' + (c.bucket || '') + ' | ' + (c.goal || '') + ' | ' + (c.status || '') + ' | ' + (c.lastContact || '') + ' | ' + (c.nextFollowUp || '') + ' | ' + trunc(c.notes, 180)));
     lines.push('\nPREP DOCS (id | contact | when | purpose):'); S.prep.forEach(p => lines.push('- ' + p.id + ' | ' + p.contactName + ' | ' + (p.meetingDate || 'unscheduled') + ' | ' + trunc(p.purpose, 140)));
@@ -2900,8 +3141,8 @@
         + 'Reply with ONLY JSON: {"headline": string, "moves": [{"text": string, "why": string, "kind": "do"|"coach", "s7Kind": "start"|"todo"|"worth"|"decide", "est": string, "btn": string, "page": string, "tab": string, "target": string}], "more": [{"t": string, "b": string, "s": string, "btn": string, "page": string, "tab": string, "target": string}], "headsUp": string'
         + (evening ? ', "wrap": [string], "reflect": string' : '') + '}\n'
         + '- headline: a direction, not a story. Max 12 words, imperative, no narration or "you bought time" framing. Good: "Push Palantir forward; hold ACE until Nov 1." / "Book two alumni calls this week." Bad: anything describing what already happened.\n'
-        + '- moves: exactly 3, most leveraged first. text = a concrete action starting with a verb (max 10 words). why = max 12 words, the reason only. Mix doing with coaching. Prefer time-sensitive items from UP NEXT, NEEDS DEBRIEF, and follow-up dates.\n'
-        + '- s7Kind: start = the one best first move; todo = a plain task; worth = optional but valuable; decide = a choice they need to make. est = a time estimate like "15 min" or "before Thursday · 15 min". btn = a 2-5 word button label saying what opens ("Open your prep").\n'
+        + '- moves: exactly 3, most leveraged first. text = a concrete action starting with a verb (max 10 words). why = max 12 words, the reason only. Mix doing with coaching. Prefer time-sensitive items from UP NEXT, NEEDS DEBRIEF, and follow-up dates. When BEST CHANCE lists an opening where they know someone, favor a move that uses that connection (ask the person for advice or an intro about that employer); it does not have to be every move.\n'
+        + '- s7Kind: start = the quick task to get started: exactly one concrete action the student can finish in 10 minutes or less (est must say "10 min" or less, never a multi-day task); todo = a plain task; worth = optional but valuable; decide = a choice they need to make. est = a time estimate like "15 min" or "before Thursday · 15 min". btn = a 2-5 word button label saying what opens ("Open your prep").\n'
         + '- more: up to 3 optional things for when they have extra time, each backed by something in the data (t = time like "20 min", b = title, s = one short line, btn = label, page/tab/target as for moves). [] if nothing real. headsUp: one line (max 20 words) about the nearest thing that needs attention, "" if none.\n'
         + '- NEVER suggest something already done: check TASKS DONE TODAY, SAVED FROM CHAT and RECENT CONVERSATIONS. If they are waiting on someone, the move is the follow-up on its date, not the original ask.\n'
         + '- page/tab/target link each move to where the detail lives (use page "" for a plain to-do with no page to open; "coaching" only for pitch, stories or practice; btn must name what that page really shows, never "Open your pitch" for a people page): page "pipeline" (the Openings page; target = opportunity id), "people" with tab "contacts" (target = contact id) or tab "prep" (target = prep id), "coaching", "direction", "projects" (target = project id), or "".\n'
@@ -3016,7 +3257,7 @@
         + 'Reply ONLY with JSON:\n{"profile":{"name","school","classYear","major","location","opportunityType","targetStart","currentChapter"},'
         + '"experience":[{"title","org","dates","highlights","skills":"comma list","type":"job|leadership|research|project|volunteer"}],'
         + '"projects":[{"name","purpose","currentStatus"}],'
-        + '"rightNow": string, "targetNextStep": {"title","timing","why","yields"}, "nextStage": {"title","timing","why","yields"}, "forks": [{"label":"Path A","title","why","yields"},{"label":"Path B","title","why","yields"}], "whatsFixed": string, "bridgeSkills": [{"skill","why"}], "elevatorPitch": string, "stories": [{"skill","title","story","useWhen"}], "seen": {"line": string, "evidence": [string], "energizes": string, "drains": string}, "firstMoves": [{"text","dueInDays":number,"priority":"high"|"med"}]}\n'
+        + '"rightNow": string, "targetNextStep": {"title","timing","why","yields"}, "nextStage": {"title","timing","why","yields"}, "focus": {"title": string, "why": string, "question": string}, "forks": [{"label":"Path A","title","why","yields","q": a question to test"},{"label":"Path B","title","why","yields","q"}], "known": [{"t": something you know about them,"s": where it came from}], "open": [{"t": something still unknown,"s": how they could find out}], "whatsFixed": string, "bridgeSkills": [{"skill","why"}], "elevatorPitch": string, "stories": [{"skill","title","story","useWhen"}], "seen": {"line": string, "evidence": [string], "energizes": string, "drains": string}, "firstMoves": [{"text","dueInDays":number,"priority":"high"|"med"}]}\n'
         + '- seen.line: one sentence under 30 words, second person, specific to them, only from what they said. seen.evidence: 2-3 short sentences, each pointing to something they actually said. seen.energizes and seen.drains: a short phrase each, "" if they did not say.\n- profile.s7Picture (in ALREADY SAVED) holds impressions noted during the chat: use them with the transcript. Build the read from the whole conversation, including asides, not only direct answers to questions.\n- profile.currentChapter: one line. classYear: the year they finish. Leave a field "" if unknown.\n- experience: every job, internship, project or role they described. projects: things they are building now.\n'
         + '- bridgeSkills: 3-4 transferable skills proven by their experience. stories: 3-4, each tied to one skill: title max 10 words, story max 30 words, useWhen max 10 words. elevatorPitch: 4-5 sentences in their voice. firstMoves: exactly 3 concrete networking actions for this week.\n\n'
         + 'ALREADY SAVED: ' + JSON.stringify({ profile: S.profile || {}, experience: S.experience.map(x => x.title + ' @ ' + x.org) }) + '\n\nCONVERSATION:\n' + this.transcript();
@@ -3032,7 +3273,7 @@
         const haveProj = new Set(S.projects.map(x => norm(x.name)));
         for (const x of (r.projects || []).slice(0, 5)) { if (!x || !x.name || haveProj.has(norm(x.name))) continue; await db.collection('projects').doc(slug(x.name)).set({ name: String(x.name), type: 'other', status: 'open', purpose: String(x.purpose || ''), currentStatus: String(x.currentStatus || ''), connection: '', tags: [], notes: [] }); }
         for (const m of (r.firstMoves || []).slice(0, 3)) { if (!m || !m.text) continue; await db.collection('tasks').doc(slug(m.text)).set({ text: String(m.text), dueDate: addDaysISO(Number(m.dueInDays) || 3), priority: m.priority === 'high' ? 'high' : 'med', done: false, waitingOn: false, contextType: 'career', createdAt: now }); }
-        const mm = { rightNow: r.rightNow || '', targetNextStep: r.targetNextStep || null, nextStage: r.nextStage || null, forks: r.forks || [], whatsFixed: r.whatsFixed || '', bridgeSkills: r.bridgeSkills || [], elevatorPitch: r.elevatorPitch || '', stories: r.stories || [], revisedAt: now };
+        const mm = { focus: (r.focus && r.focus.title) ? { title: String(r.focus.title), why: String(r.focus.why || ''), question: String(r.focus.question || '') } : null, known: Array.isArray(r.known) ? r.known.filter(k => k && k.t).slice(0, 5).map(k => ({ t: String(k.t), s: String(k.s || '') })) : [], open: Array.isArray(r.open) ? r.open.filter(k => k && k.t).slice(0, 3).map(k => ({ t: String(k.t), s: String(k.s || '') })) : [], rightNow: r.rightNow || '', targetNextStep: r.targetNextStep || null, nextStage: r.nextStage || null, forks: r.forks || [], whatsFixed: r.whatsFixed || '', bridgeSkills: r.bridgeSkills || [], elevatorPitch: r.elevatorPitch || '', stories: r.stories || [], revisedAt: now };
         await db.doc('mindmap/main').set(mm);
         S.mindmap = mm;
         if (Chat.readoutWanted || Chat.waitingSince) { Chat.readoutWanted = false; Chat.waitingSince = 0; Chat.persist(); }
