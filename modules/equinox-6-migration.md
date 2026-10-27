@@ -1,4 +1,4 @@
-<!-- bridge_version: 7.0.1 | module: equinox-6-migration -->
+<!-- bridge_version: 7.0.2 | module: equinox-6-migration -->
 # Module: Dashboard migration (run once per student whose dashboard predates Equinox 6)
 
 Trigger: `00_CORE.md` → `dashboardVersion` is missing, or is neither an Equinox 6 version (`equinox-6`, `equinox-6.<n>`) nor a Sync 7 version (`sync-7`, `sync-7.<n>`). Students already on Equinox 6 or Sync 7 skip this module: they get the current dashboard through the normal template update in the kernel (§1.3, §4.1), which keeps their dashboard URL and database.

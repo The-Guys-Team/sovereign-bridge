@@ -15,6 +15,12 @@ Release rules:
 
 ---
 
+## 7.0.2 — 2026-10-27 (schema 2)
+
+Kernel §1.4 and the intake module. New students start in their dashboard: Claude gives a one-line welcome, publishes the dashboard, and the welcome, first questions and "What I see" happen there; the chat intake is the fallback when no dashboard can be published. No dashboard file change (`sync-7.1`), no change to the shape of student data.
+
+---
+
 ## 7.0.1 — 2026-10-27 (schema 2)
 
 Dashboard only (`dashboard/sync-7.html`, dashboard version `sync-7.1`). No change to the shape of student data and no kernel behavior change; the kernel only carries the new version number.

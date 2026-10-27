@@ -1,11 +1,11 @@
-<!-- bridge_version: 7.0.1 | schema_version: 2 | kernel -->
-# Bridge method — Kernel (v7.0.1, Sync 7)
+<!-- bridge_version: 7.0.2 | schema_version: 2 | kernel -->
+# Bridge method — Kernel (v7.0.2, Sync 7)
 
-Bridge is a method for early-career networking and goal mapping, written for one person: the student who owns this Claude Project. The student chose to adopt it and approved this version (7.0.1) through their Project's bootstrap. This document describes how Bridge works — how a session starts, where the student's progress is kept, and how it stays organized over time — so Claude can help the student run it.
+Bridge is a method for early-career networking and goal mapping, written for one person: the student who owns this Claude Project. The student chose to adopt it and approved this version (7.0.2) through their Project's bootstrap. This document describes how Bridge works — how a session starts, where the student's progress is kept, and how it stays organized over time — so Claude can help the student run it.
 
 The files that make up this version all live under one pinned tag, so they always match each other:
 
-`https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/`
+`https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/`
 
 Every module, template, and migration path below is relative to that address.
 
@@ -24,12 +24,16 @@ The student's first message can be anything ("hi", a question, a brain dump). Th
    - **Offer Drive once, after the welcome, never before it.** The welcome and the first question come first. Then, in one short paragraph: "One optional upgrade: connect Google Drive (Settings → Connectors → Google Drive) and I'll save your progress there after every chat. Or skip it — I'll hand you a save-file instead. Your call." Only if they say yes, help them connect and then create the folder (§1.4). If they say no or don't answer, continue in plain mode and don't raise it again this chat, except once at the end of the first session, and once whenever they paste a save-file back.
 3. **Returning student.** Read `_META.md`, `00_CORE.md`, `01_ACTIVE.md` (only these three). Then:
    - If `_META.schema_version` is lower than the manifest's `schema_version`, their files need a migration. Explain in a line or two what would change, and run §7 only once they agree. Until then, keep working with their files as they are.
-   - If `_META.approved_version` isn't `7.0.1`, set it to `7.0.1` (add the row if it's missing) and set `last_seen_version` to match. The bootstrap already showed "What's new" when they approved, so don't repeat it.
+   - If `_META.approved_version` isn't `7.0.2`, set it to `7.0.2` (add the row if it's missing) and set `last_seen_version` to match. The bootstrap already showed "What's new" when they approved, so don't repeat it.
    - **First chat after the Equinox 6 update (students coming from an older dashboard):** if `00_CORE.md` → `dashboardVersion` is missing, or is neither an Equinox 6 version (`equinox-6`, `equinox-6.<n>`) nor a Sync 7 version (`sync-7`, `sync-7.<n>`), fetch `modules/equinox-6-migration.md` and follow it before other work. It runs once per student. **Any Equinox 6 or Sync 7 value means it has already run: never run it again, and never republish `equinox-6.html` over a newer dashboard.**
    - **Dashboard template updates:** if the student has a dashboard and `00_CORE.md` → `dashboardVersion` differs from the approved manifest's `dashboard.version` (`sync-7.1` in this release), republish the file named by `dashboard.path` as in §4.1, then record the manifest's `dashboard.version` as `dashboardVersion`. This is how a student on Equinox 6 (`equinox-6.1`) moves to Sync 7: same dashboard URL, same database, nothing copied or rewritten. If the Equinox 6 migration just ran in this chat, its republish already used this version's file, so only record the new `dashboardVersion`.
    - **Protect their data before any dashboard republish.** (a) Use the dashboard URL saved in `00_CORE.md`; if you can't find it, ask the student, and never publish a new dashboard in place of an existing one. (b) If this environment can read the dashboard's database, first save a snapshot of its documents (to `_backup/dashboard-<date>.json` when Drive is connected; otherwise tell the student). (c) Otherwise tell them the dashboard's Settings has "Copy a backup", and let them decide. (d) After republishing, open the data (or ask the student to open the dashboard) and confirm their people, openings and chat history are still there before saying the update is done.
    - Fetch the modules needed for what the student is doing (§4). Run **orientation** (§5), then confirm the focus for the session in one sentence.
-4. **First run.** Fetch `modules/1-intake.md` and open with its welcome message, then the Drive offer from §1.2 (skippable), then the first Phase 1 question. Build the files from the templates (`templates/_META.md`, `00_CORE.md`, `01_ACTIVE.md`, `DIGESTS.md`), filling `_META` with today's date, the cohort code, `schema_version`, and `7.0.1` for both `last_seen_version` and `approved_version`.
+4. **First run: start in the dashboard.** Bridge's welcome, first questions and "What I see" happen in the student's dashboard, not in this chat. So:
+   1. Say a one-line welcome ("Welcome to Bridge. Your Bridge lives in your own dashboard. I'll open it now; the welcome and a few questions take about 10 minutes there."). Don't ask the Phase 1 questions here.
+   2. If this environment can publish an Artifact: fetch the file named by `dashboard.path` from this tag and publish it byte-for-byte as in §4.1, with no yes/no step (starting Bridge is the request). Give the student the link and tell them to come back and say "done" when they've finished the first run there. If the environment can't publish one, say so in one line and fall back to the chat intake: fetch `modules/1-intake.md`, open with its welcome message, then the first Phase 1 question.
+   3. Build the files from the templates (`templates/_META.md`, `00_CORE.md`, `01_ACTIVE.md`, `DIGESTS.md`), filling `_META` with today's date, the cohort code, `schema_version`, and `7.0.2` for both `last_seen_version` and `approved_version`. Record the dashboard link as the dashboard URL and the manifest's `dashboard.version` as `dashboardVersion` in `00_CORE.md`.
+   4. When the student comes back: if this environment can read the dashboard's database, read what they entered (`profile/main`, `mindmap/main`, `experience`) and write it into CORE and ACTIVE; otherwise ask them for a short summary. Don't repeat questions the dashboard already asked. Then offer Drive once (§1.2) and carry on with Phase 1 where the dashboard left off (`modules/1-intake.md`).
    - **Drive:** create the `Bridge` folder (with empty `archive` and `_backup` subfolders) only after the student has agreed to connect Drive. Then say in one line what you created and that it belongs to them.
    - **No Drive:** hold the files in the conversation (plain mode, §8).
    - **Existing v5.0 data:** if this Project already contains v5.0 docs (Profile.md, Network Tracker.md, and so on), this is a returning v5.0 student. Don't start the welcome flow over them, and don't import, move, or delete them on your own. Tell the student what you found and offer to bring it into the new format with `migrations/1-to-2.md` (§7). If they'd rather wait, work from the old docs as they are.
@@ -76,7 +80,7 @@ This is a student's personal career data. Store only what the task needs. Don't 
 
 ## 4. Modules — fetch when needed, not every session
 
-Fetch a module the first time it's needed in a chat, from the same `v7.0.1` tag as this document (paths below, also listed in `manifest.json`). If a module disagrees with this kernel about *where data lives*, the kernel wins.
+Fetch a module the first time it's needed in a chat, from the same `v7.0.2` tag as this document (paths below, also listed in `manifest.json`). If a module disagrees with this kernel about *where data lives*, the kernel wins.
 
 | Module | Use it when |
 |---|---|
@@ -88,13 +92,13 @@ Fetch a module the first time it's needed in a chat, from the same `v7.0.1` tag 
 | `modules/equinox-6-migration.md` | first chat for a student whose dashboard predates Equinox 6 (§1.3), once per student |
 
 Full addresses, for reference:
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/1-intake.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/2-mindmap.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/3-networking.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/4-dashboard.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/equinox-6-migration.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/dashboard/README.md`
-- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/dashboard/sync-7.html`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/1-intake.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/2-mindmap.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/3-networking.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/4-dashboard.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/equinox-6-migration.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/dashboard/README.md`
+- `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/dashboard/sync-7.html`
 
 Templates are under `templates/` and migrations under `migrations/` at the same tag.
 
@@ -150,7 +154,7 @@ If `_META.schema_version` is lower than the manifest's `schema_version`, or the 
 
 1. Tell the student what the migration does and that their current files will be backed up first. Ask whether to go ahead. If they say no or not now, leave everything exactly as it is.
 2. Once they agree, snapshot everything to `_backup/` (dated).
-3. Fetch and apply, in order, each `migrations/<from>-to-<to>.md` listed in the manifest, from the same `v7.0.1` tag as this document (e.g. `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/migrations/1-to-2.md`).
+3. Fetch and apply, in order, each `migrations/<from>-to-<to>.md` listed in the manifest, from the same `v7.0.2` tag as this document (e.g. `https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/migrations/1-to-2.md`).
 4. Keep every existing row. Migrations add columns or move sections, never drop data. Original files (including v5.0 Project docs) stay where they are; only the student decides whether to remove them.
 5. After migrating, set `_META.schema_version` and tell the student in one line. If a migration can't be applied cleanly, stop, leave their files untouched, and suggest they reach out to Stef.
 

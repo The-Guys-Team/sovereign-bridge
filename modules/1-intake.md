@@ -1,4 +1,4 @@
-<!-- bridge_version: 5.2.0 | module: 1-intake -->
+<!-- bridge_version: 7.0.2 | module: 1-intake -->
 # Module 1 — Intake (Phases 1–3)
 
 *Storage note: wherever this module says "write to Profile.md / Experience Inventory.md / Target Criteria.md / Projects.md," use the mapping in kernel §2 (CORE and ACTIVE, in the student's Drive or their save-file), following its write rules (structured rows, dated, one source of truth, write as you go).*
@@ -41,6 +41,8 @@ If a tool isn't connected, say so plainly and keep working with what's available
 ---
 
 ## Phase 1 — Get to know you
+
+**New students start in their dashboard (7.0.2+).** The welcome, the first questions and "What I see" happen there (kernel §1.4). Use the welcome message and questions below only when no dashboard could be published, or to continue Phase 1 after the student returns from it: read what the dashboard already collected and ask only what's missing.
 
 **On a first run** — whatever the student's first message was — open with a short welcome message before your first question. This is their first impression of the program, so keep it warm and brief rather than diving straight into a question cold. If their first message contained a real question or content, acknowledge it in a line and say you'll come back to it right after the intro. Something like:
 

@@ -1,5 +1,5 @@
 {
-  "latest_version": "7.0.1",
+  "latest_version": "7.0.2",
   "schema_version": 2,
   "min_supported_version": "5.0.0",
   "released": "2026-10-27",
@@ -27,33 +27,33 @@
     "equinox-6-migration": "modules/equinox-6-migration.md"
   },
   "urls": {
-    "kernel": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/current.md",
-    "manifest": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/manifest.json",
-    "dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/dashboard/sync-7.html",
-    "dashboard_readme": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/dashboard/README.md",
+    "kernel": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/current.md",
+    "manifest": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/manifest.json",
+    "dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/dashboard/sync-7.html",
+    "dashboard_readme": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/dashboard/README.md",
     "modules": {
-      "1-intake": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/1-intake.md",
-      "2-mindmap": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/2-mindmap.md",
-      "3-networking": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/3-networking.md",
-      "4-dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/4-dashboard.md"
+      "1-intake": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/1-intake.md",
+      "2-mindmap": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/2-mindmap.md",
+      "3-networking": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/3-networking.md",
+      "4-dashboard": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/4-dashboard.md"
     },
     "templates": {
-      "_META": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/templates/_META.md",
-      "00_CORE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/templates/00_CORE.md",
-      "01_ACTIVE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/templates/01_ACTIVE.md",
-      "DIGESTS": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/templates/DIGESTS.md",
-      "archive_month": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/templates/archive_month.md"
+      "_META": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/templates/_META.md",
+      "00_CORE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/templates/00_CORE.md",
+      "01_ACTIVE": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/templates/01_ACTIVE.md",
+      "DIGESTS": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/templates/DIGESTS.md",
+      "archive_month": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/templates/archive_month.md"
     },
     "migrations": {
-      "1-to-2": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/migrations/1-to-2.md",
-      "equinox-6-migration": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.1/modules/equinox-6-migration.md"
+      "1-to-2": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/migrations/1-to-2.md",
+      "equinox-6-migration": "https://raw.githubusercontent.com/The-Guys-Team/sovereign-bridge/v7.0.2/modules/equinox-6-migration.md"
     }
   },
   "whats_new": [
-    "A new look, and a Today page that starts with one 10-minute task.",
-    "Openings where you know someone come first, with real links checked before they're saved.",
-    "Drafts for thank-yous and follow-ups, an editable resume, and a People page that's easier to scan."
+    "Sync 7: a new look and a Today page that starts with one 10-minute task.",
+    "A People page that's easier to scan.",
+    "New students now start in their Bridge dashboard, not in the chat."
   ],
-  "message_id": "2026-10-27-b",
+  "message_id": "2026-10-27-c",
   "message": ""
 }

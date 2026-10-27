@@ -1,4 +1,4 @@
-<!-- bridge_version: 7.0.0 | module: 4-dashboard -->
+<!-- bridge_version: 7.0.2 | module: 4-dashboard -->
 # Module 4 — The live dashboard (Sync 7)
 
 *Storage note: the student's Bridge files (kernel §2 — in Drive, or their save-file) are the source of truth. The dashboard is a **view** of them, never the only copy. If the dashboard and the files disagree, update the dashboard to match the files.*
