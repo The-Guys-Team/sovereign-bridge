@@ -1653,6 +1653,13 @@
   :root[data-palette="slate"] .dot { width: 8px; height: 8px; background: var(--brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 25%, transparent); }
   :root[data-palette="slate"] .dot.off { background: var(--text-faint); box-shadow: none; }
   :root[data-palette="slate"] .dot.busy { background: var(--amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 25%, transparent); }
+  /* People list: separate soft bubbles, no outer outline (the old outline left a gap around the fill) */
+  :root[data-palette="slate"] .ppl { background: transparent; border: 0; border-radius: 0; overflow: visible; display: flex; flex-direction: column; gap: 0.6rem; }
+  :root[data-palette="slate"] .pr { border-top: 0; }
+  :root[data-palette="slate"] .pr:hover { background: color-mix(in srgb, var(--paper-sunk) 88%, var(--text)); }
+  :root[data-palette="slate"] #candidatesBody:not(:empty) + #contactsBody > .sec-head { margin-top: 1.8rem; }
+  /* the dot inside the minimized "Ask Bridge" pill must show against the pill color */
+  :root[data-palette="slate"] :is(.dock-pill, .dk-pill) .dot { background: var(--on-brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--on-brass) 30%, transparent); }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
