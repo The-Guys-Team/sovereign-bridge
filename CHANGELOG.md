@@ -15,6 +15,17 @@ Release rules:
 
 ---
 
+## 7.0.1 — 2026-10-27 (schema 2)
+
+Dashboard only (`dashboard/sync-7.html`, dashboard version `sync-7.1`). No change to the shape of student data and no kernel behavior change; the kernel only carries the new version number.
+
+- Moves > People: people you know on the left and new suggestions on the right (wide screens); on a phone a My people / New for you switch shows one at a time (remembered). Suggestions show three with "Show more". Once there are six or more people, the list gets a search box and status filters (Follow up, Waiting, In conversation, Not contacted).
+- The manifest lists the pinned address of every file (`urls`), because a student's Claude may only fetch addresses it has been given.
+
+Students on 7.0.0 (`dashboardVersion: sync-7.0`) get the new page through the normal template update: same dashboard URL, same database.
+
+---
+
 ## 7.0.0 — 2026-10-27 (schema 2)
 
 Sync 7. MAJOR: new look and a rebuilt dashboard (`dashboard/sync-7.html`, dashboard version `sync-7.0`). **No change to the shape of student data:** every addition is an optional field in the dashboard's own database, so schema stays 2 and there is no migration. Equinox 6 data renders unchanged, and `equinox-6.html` / `v6-rollback.html` stay in the repo for rollback.

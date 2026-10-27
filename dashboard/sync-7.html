@@ -1660,6 +1660,23 @@
   :root[data-palette="slate"] #candidatesBody:not(:empty) + #contactsBody > .sec-head { margin-top: 1.8rem; }
   /* the dot inside the minimized "Ask Bridge" pill must show against the pill color */
   :root[data-palette="slate"] :is(.dock-pill, .dk-pill) .dot { background: var(--on-brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--on-brass) 30%, transparent); }
+  /* Moves > People: people you know on the left, new suggestions on the right; on a phone a switch shows one at a time */
+  .pp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+  .pp-grid.solo { grid-template-columns: minmax(0, 1fr); }
+  .pp-grid.solo #ppNew { display: none; }
+  .pp-col { min-width: 0; }
+  #ppNew .sec-head { margin-top: 0; }
+  .pp-tabs { margin-bottom: 1rem; }
+  .pp-tabs .n { margin-left: 0.3rem; font-size: 0.72rem; background: var(--brass); color: var(--on-brass); border-radius: 999px; padding: 0 0.45rem; }
+  .pp-tabs button.active .n { background: var(--paper); color: var(--text); }
+  .ppl-tools { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; }
+  .ppl-tools .search { max-width: none; }
+  @media (min-width: 901px) { .pp-tabs { display: none; } #ppNew .sec-head { margin-top: 0; } }
+  @media (max-width: 900px) {
+    .pp-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .pp-grid[data-pane="people"] #ppNew, .pp-grid[data-pane="new"] #ppPeople { display: none; }
+  }
+  .pp-tabs[hidden] { display: none; }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1793,7 +1810,13 @@
           <button data-tab="outreach">Outreach<span class="n" id="nOutreach"></span></button>
           <button data-tab="prep">Call prep<span class="n" id="nPrep"></span></button>
         </div>
-        <div data-panel="contacts"><div id="candidatesBody"></div><div id="contactsBody"></div></div>
+        <div data-panel="contacts">
+          <div class="seg pp-tabs" id="ppTabs" role="tablist" aria-label="People view" hidden><button type="button" role="tab" data-pp="people" id="ppTabPeople">My people</button><button type="button" role="tab" data-pp="new" id="ppTabNew">New for you</button></div>
+          <div class="pp-grid" id="ppGrid" data-pane="people">
+            <div class="pp-col" id="ppPeople"><div id="contactsBody"></div></div>
+            <div class="pp-col" id="ppNew"><div id="candidatesBody"></div></div>
+          </div>
+        </div>
         <div data-panel="outreach" id="outreachBody" hidden></div>
         <div data-panel="prep" id="prepBody" hidden></div>
       </div>
@@ -2530,21 +2553,58 @@
     String(c.notes || '').split('\n').forEach(l => { const m = l.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/); if (m) dated.push({ d: m[1], t: m[2] }); else if (l.trim()) plain.push(l.trim()); });
     return { dated: dated.sort((a, b) => b.d.localeCompare(a.d)), plain };
   }
+  let ppPane = 'people', pplFilter = 'all', pplQuery = '';
+  try { ppPane = localStorage.getItem('bridge.ppPane') === 'new' ? 'new' : 'people'; } catch (e) { }
+  const PPL_FILTERS = [['all', 'All'], ['due', 'Follow up'], ['waiting', 'Waiting'], ['talking', 'In conversation'], ['new', 'Not contacted']];
+  function pplMatch(c, k) {
+    if (k === 'due') return followDue(c);
+    if (k === 'waiting') return !!c.sentAt && c.status !== 'active' && !followDue(c);
+    if (k === 'talking') return c.status === 'active';
+    if (k === 'new') return !c.sentAt && c.status !== 'active' && c.status !== 'contacted';
+    return true;
+  }
+  function pplRow(c) {
+    const o = oppOf(c), p = purposeOf(c);
+    const purpose = o ? `<span class="chip violet">Opening</span><span class="pc-t">${esc(o.org || o.title)}</span>` : p ? `<span class="chip">${p === 'opening' ? 'Opening' : 'Perspective'}</span>${c.whyTalk ? `<span class="pc-t">${esc(trunc(c.whyTalk, 90))}</span>` : ''}` : '';
+    const fu = c.nextFollowUp ? `follow up ${fmtDate(c.nextFollowUp)}` : c.lastContact ? `last ${fmtDate(c.lastContact)}` : srcLabel(c.bucket);
+    return `<button type="button" class="pr" data-person="${esc(c.id)}"><span class="ini">${esc(initials(c.name))}</span><span class="pr-who"><span class="pr-n">${esc(c.name)}</span><span class="pr-how">${esc([c.role, c.company].filter(Boolean).join(' · ') || srcLabel(c.bucket))}</span></span><span class="pr-can">${purpose}</span><span class="pr-side"><span class="chip ${followDue(c) ? 'rust' : (C_ST[c.status] || '')}">${esc(followDue(c) ? 'Follow up now' : stLabel(c))}</span><span class="pr-src">${esc(fu)}</span></span><span class="pr-go" aria-hidden="true">›</span></button>`;
+  }
+  function pplSorted() { return S.network.slice().sort((a, b) => (followDue(b) - followDue(a)) || ((WARM[a.bucket] ?? 4) - (WARM[b.bucket] ?? 4)) || String(a.name).localeCompare(String(b.name))); }
+  // Only the list itself is redrawn while typing in the search box, so the box keeps focus.
+  function renderPplList() {
+    const box = $('pplList'); if (!box) return;
+    const q = norm(pplQuery);
+    const list = pplSorted().filter(c => pplMatch(c, pplFilter) && (!q || norm(c.name + ' ' + (c.company || '') + ' ' + (c.role || '')).includes(q)));
+    box.innerHTML = list.length ? `<div class="ppl">${list.map(pplRow).join('')}</div>` : `<div class="soon">${S.network.length ? 'No one matches. Clear the search or pick another filter.' : 'No one on your list yet. Add someone you know below, or mention them in the chat and Bridge adds them.'}</div>`;
+    box.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
+  }
+  function setPane(p) {
+    ppPane = p; try { localStorage.setItem('bridge.ppPane', p); } catch (e) { }
+    $('ppGrid').dataset.pane = p;
+    $('ppTabs').querySelectorAll('[data-pp]').forEach(b => { const on = b.dataset.pp === p; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  }
   function renderPeople() {
     $('nContacts').textContent = S.network.length || '';
+    if (document.activeElement && document.activeElement.id === 'pplSearch') { renderPplList(); return; }
     renderCandidates();
+    const pend = S.candidates.filter(c => !c.status || c.status === 'pending').length, den = S.candidates.filter(c => c.status === 'denied').length;
+    const hasNew = pend > 0 || den > 0;
+    $('ppGrid').classList.toggle('solo', !hasNew); $('ppTabs').hidden = !hasNew;
+    $('ppTabPeople').textContent = 'My people' + (S.network.length ? ' ' + S.network.length : '');
+    $('ppTabNew').innerHTML = 'New for you' + (pend ? ' <span class="n">' + pend + '</span>' : '');
+    if (!hasNew) ppPane = 'people'; else if (!S.network.length && pend) ppPane = 'new';
+    setPane(ppPane);
     const el = $('contactsBody');
-    const sorted = S.network.slice().sort((a, b) => (followDue(b) - followDue(a)) || ((WARM[a.bucket] ?? 4) - (WARM[b.bucket] ?? 4)) || String(a.name).localeCompare(String(b.name)));
-    const row = (c) => {
-      const o = oppOf(c), p = purposeOf(c);
-      const purpose = o ? `<span class="chip violet">Opening</span><span class="pc-t">${esc(o.org || o.title)}</span>` : p ? `<span class="chip">${p === 'opening' ? 'Opening' : 'Perspective'}</span>${c.whyTalk ? `<span class="pc-t">${esc(trunc(c.whyTalk, 90))}</span>` : ''}` : '';
-      const fu = c.nextFollowUp ? `follow up ${fmtDate(c.nextFollowUp)}` : c.lastContact ? `last ${fmtDate(c.lastContact)}` : srcLabel(c.bucket);
-      return `<button type="button" class="pr" data-person="${esc(c.id)}"><span class="ini">${esc(initials(c.name))}</span><span class="pr-who"><span class="pr-n">${esc(c.name)}</span><span class="pr-how">${esc([c.role, c.company].filter(Boolean).join(' · ') || srcLabel(c.bucket))}</span></span><span class="pr-can">${purpose}</span><span class="pr-side"><span class="chip ${followDue(c) ? 'rust' : (C_ST[c.status] || '')}">${esc(followDue(c) ? 'Follow up now' : stLabel(c))}</span><span class="pr-src">${esc(fu)}</span></span><span class="pr-go" aria-hidden="true">›</span></button>`;
-    };
+    const counts = {}; PPL_FILTERS.forEach(([k]) => { counts[k] = S.network.filter(c => pplMatch(c, k)).length; });
+    if (!counts[pplFilter] && pplFilter !== 'all') pplFilter = 'all';
+    const showTools = S.network.length >= 6;
     el.innerHTML = `<div class="sec-head"><h3>People</h3><span class="sec-note">follow-ups due first, then your warmest connections · tap anyone to open their page</span></div>`
-      + (sorted.length ? `<div class="ppl">${sorted.map(row).join('')}</div>` : '<div class="soon">No one on your list yet. Add someone you know below, or mention them in the chat and Bridge adds them.</div>')
-      + addFormHtml();
-    el.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
+      + (showTools ? `<div class="ppl-tools"><input class="search" id="pplSearch" type="search" placeholder="Search people, companies…" aria-label="Search your people" value="${esc(pplQuery)}"><div class="pills" id="pplFilters">${PPL_FILTERS.filter(([k]) => k === 'all' || counts[k]).map(([k, l]) => `<button type="button" class="pill${k === pplFilter ? ' active' : ''}" data-pf="${k}">${l}${k !== 'all' ? ' ' + counts[k] : ''}</button>`).join('')}</div></div>` : '')
+      + '<div id="pplList"></div>' + addFormHtml();
+    renderPplList();
+    const se = $('pplSearch'); if (se) se.addEventListener('input', () => { pplQuery = se.value; renderPplList(); });
+    el.querySelectorAll('[data-pf]').forEach(b => b.addEventListener('click', () => { pplFilter = b.dataset.pf; renderPeople(); }));
+    $('ppTabs').querySelectorAll('[data-pp]').forEach(b => { b.onclick = () => setPane(b.dataset.pp); });
     wireAdd();
     renderPerson();
     renderOutreach(); renderPrep();
@@ -2579,14 +2639,18 @@
   }
   /* ---- new people Bridge found: approve makes a contact and drafts a first message ---- */
   const drafting = new Set();
+  let showAllCands = false;
   function renderCandidates() {
     const el = $('candidatesBody');
     const pend = S.candidates.filter(c => !c.status || c.status === 'pending');
     const den = S.candidates.filter(c => c.status === 'denied');
     const today = todayISO();
+    const pendSorted = pend.slice().sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || '')));
+    const pendShown = showAllCands ? pendSorted : pendSorted.slice(0, 3);
     const card = (c) => `<div class="cand${c.batchDate === today ? ' fresh' : ''}"><span class="ini">${esc(initials(c.name))}</span><div class="cand-body"><div class="pr-n">${esc(c.name)}${c.batchDate === today ? ' <span class="chip brass">New</span>' : ''}</div><div class="pr-how">${esc([c.title, c.company].filter(Boolean).join(' · '))}</div>${c.why ? `<div class="cand-why">${esc(c.why)}</div>` : ''}<div class="cand-meta">${(c.tags || []).map(t => `<span class="chip">${esc(t)}</span>`).join('')}${c.source ? `<a href="${esc(c.source)}" target="_blank" rel="noopener">source ↗</a>` : ''}</div></div><div class="cand-acts"><button class="btn-ok" data-approve="${esc(c.id)}">Approve</button><button class="btn-no" data-skip="${esc(c.id)}">Skip</button></div></div>`;
-    el.innerHTML = (pend.length ? `<div class="sec-head"><h3>New people Bridge found</h3><span class="sec-note">approve and Bridge drafts a first message · nothing is ever sent for you</span></div><div class="cands">${pend.sort((a, b) => String(b.batchDate || b.createdAt || '').localeCompare(String(a.batchDate || a.createdAt || ''))).map(card).join('')}</div>` : '')
+    el.innerHTML = (pend.length ? `<div class="sec-head"><h3>New people Bridge found</h3><span class="sec-note">approve and Bridge drafts a first message · nothing is ever sent for you</span></div><div class="cands">${pendShown.map(card).join('')}</div>${pendSorted.length > 3 ? `<button type="button" class="linkish" id="candMore" style="margin-top:.6rem">${showAllCands ? 'Show fewer' : 'Show ' + (pendSorted.length - 3) + ' more'}</button>` : ''}` : '')
       + (den.length ? `<details class="fold"><summary>Skipped (${den.length})</summary><div class="stack">${den.map(c => `<div class="row-card row-line"><span>${esc(c.name)}</span><button class="linkish" data-restore="${esc(c.id)}">restore</button></div>`).join('')}</div></details>` : '');
+    const cm = $('candMore'); if (cm) cm.addEventListener('click', () => { showAllCands = !showAllCands; renderCandidates(); });
     el.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => approveCandidate(b.dataset.approve)));
     el.querySelectorAll('[data-skip]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.skip, { status: 'denied', decidedAt: new Date().toISOString() }); } catch (e) { diag('skip', e); } }));
     el.querySelectorAll('[data-restore]').forEach(b => b.addEventListener('click', async () => { try { await S7.col.update('candidates', b.dataset.restore, { status: 'pending', decidedAt: new Date().toISOString() }); } catch (e) { diag('restore', e); } }));
