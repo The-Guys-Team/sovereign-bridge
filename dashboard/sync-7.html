@@ -2,15 +2,14 @@
 <script>
 /* Paint the saved palette + mode before first render (per-device cache; the account copy lives in profile.appearance). */
 (function () {
-  var pal = 'sky', mode = 'system';
-  try { var a = JSON.parse(localStorage.getItem('bridge.appearance') || '{}'); pal = a.palette || pal; mode = a.mode || mode; } catch (e) { }
-  if (['sand', 'sky'].indexOf(pal) < 0) pal = 'sky';
-  var r = document.documentElement; r.setAttribute('data-palette', pal); r.setAttribute('data-bmode', mode);
+  var pal = 'slate', mode = 'system';
+  try { var a = JSON.parse(localStorage.getItem('bridge.appearance') || '{}'); mode = a.mode || mode; } catch (e) { }
+  var r = document.documentElement; r.setAttribute('data-palette', pal); r.setAttribute('data-lstyle', 'paper'); r.setAttribute('data-bmode', mode);
   var viewerDark = r.getAttribute('data-theme') === 'dark' || (r.getAttribute('data-theme') !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
   r.classList.toggle('b-dark', mode === 'dark' || (mode === 'system' && viewerDark));
 })();
 </script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Manrope:wght@400;500;600;700&display=swap">
 <style>
   /* =====================================================================
      BRAND TOKENS — the only place palette + type live. Swap here, nowhere else.
@@ -1508,6 +1507,141 @@
   :root:not(.b-dark):not([data-lstyle="paper"]) #dashMain :is(.card, .road, .prep2, .cross, .focus-grid .alts, .resume, .pcard, .opp2, .more-row, .connect, .row-card) :is(.sec-head h3, .sec-head .sec-note) { color: var(--p-text); }
   .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
   .card-head .sec-note { font-family: var(--mono); font-size: 0.64rem; color: var(--text-faint); }
+
+  /* ===================== Sync 7 · Slate look =====================
+     One calm page color, type that does the work (serif headlines, quiet body, small spaced labels), one accent,
+     tone-on-tone cards and hairlines instead of boxes. Light and dark only. */
+  :root[data-palette="slate"] {
+    --serif: 'Newsreader', Georgia, serif; --quote: 'Newsreader', Georgia, serif; --sans: 'Manrope', system-ui, -apple-system, sans-serif; --mono: 'Manrope', system-ui, -apple-system, sans-serif;
+    --paper: #F7F2E8; --paper-raised: #FBF8F1; --paper-sunk: #EEE7D8; --ink: #F7F2E8; --ink-2: #EEE7D8;
+    --text: #27353A; --text-muted: #52605F; --text-faint: #58645F;
+    --brass: #2A6A6E; --brass-soft: #DDE9E7; --on-brass: #FFFFFF;
+    --border: #E2DAC8; --border-strong: #CFC6B1;
+    --chrome-text: #27353A; --chrome-dim: #52605F; --chrome-accent: #2A6A6E;
+    --logo-tile: #9DB5BB; --logo-mark: #FFFFFF; --shadow: none;
+    --route: #3D6B4B; --route-soft: #E4EBDD; --amber: #7A5810; --amber-soft: #F2E6C8; --rust: #8C3A2B; --rust-soft: #F1DDD3;
+    --slate: #52605F; --slate-soft: #EEE7D8; --violet: #2A6A6E; --violet-soft: #DDE9E7;
+    --stage: #F7F2E8; --stage-text: #27353A; --stage-dim: #52605F; --stage-accent: #2A6A6E; --stage-line: #E2DAC8;
+  }
+  :root[data-palette="slate"].b-dark {
+    --paper: #151A19; --paper-raised: #1B2321; --paper-sunk: #1F2826; --ink: #151A19; --ink-2: #1F2826;
+    --text: #F1EFE8; --text-muted: #BCC4C0; --text-faint: #96A19D;
+    --brass: #9FD0CB; --brass-soft: #1F3534; --on-brass: #151A19;
+    --border: #2D3835; --border-strong: #3B4743;
+    --chrome-text: #F1EFE8; --chrome-dim: #BCC4C0; --chrome-accent: #9FD0CB;
+    --logo-tile: #9DB5BB; --logo-mark: #FFFFFF;
+    --route: #8FC59F; --route-soft: #1E3526; --amber: #E9C46A; --amber-soft: #3A3114; --rust: #F0A08C; --rust-soft: #3D2119;
+    --slate: #BCC4C0; --slate-soft: #1F2826; --violet: #9FD0CB; --violet-soft: #1F3534;
+    --stage: #151A19; --stage-text: #F1EFE8; --stage-dim: #BCC4C0; --stage-accent: #9FD0CB; --stage-line: #2D3835;
+  }
+  :root[data-palette="slate"] body { background: var(--paper); color: var(--text); font-family: var(--sans); }
+  :root[data-palette="slate"] #sDash { background: transparent; }
+  /* header: logo + wordmark on the page, no dark bar */
+  :root[data-palette="slate"] .chrome { background: var(--paper); color: var(--text); border-bottom: 1px solid var(--border); }
+  :root[data-palette="slate"] .brand svg { width: 34px; height: 34px; }
+  :root[data-palette="slate"] .brand-name { font-family: var(--serif); font-weight: 600; font-size: 1.6rem; letter-spacing: -0.01em; font-variation-settings: "opsz" 72; color: var(--text); }
+  :root[data-palette="slate"] .brand-v { display: none; }
+  :root[data-palette="slate"] .who-line { color: var(--text-muted); }
+  :root[data-palette="slate"] .gear { border-color: var(--border-strong); color: var(--text-muted); }
+  :root[data-palette="slate"] .nav button { color: var(--text-muted); }
+  :root[data-palette="slate"] .nav button:hover { color: var(--text); }
+  :root[data-palette="slate"] .nav button.active { color: var(--text); font-weight: 600; border-bottom-color: var(--brass); }
+  /* type */
+  :root[data-palette="slate"] h1, :root[data-palette="slate"] h2, :root[data-palette="slate"] h3 { font-family: var(--serif); font-weight: 500; font-stretch: 100%; letter-spacing: -0.01em; }
+  :root[data-palette="slate"] .page-head h2, :root[data-palette="slate"] .pg-head h2 { font-size: clamp(1.9rem, 6vw, 2.5rem); line-height: 1.08; }
+  :root[data-palette="slate"] .page-head h2 em, :root[data-palette="slate"] .pg-head h2 em { font-style: italic; color: var(--brass); }
+  :root[data-palette="slate"] .sec-head h3 { font-size: 1.3rem; }
+  :root[data-palette="slate"] .eyebrow, :root[data-palette="slate"] .bear-l, :root[data-palette="slate"] .dest-l, :root[data-palette="slate"] .dash-date { font-weight: 600; letter-spacing: 0.16em; color: var(--text-faint); }
+  :root[data-palette="slate"] .dest-l, :root[data-palette="slate"] .stage-card .bear-l { color: var(--brass); }
+  /* soft cards: tone on tone, no borders, big radius */
+  :root[data-palette="slate"] :is(.card, .pcard, .opp2, .prep2, .row-card, .cand, .pr, .more-row, .connect, .addp, .proj, .story, .drill, .path, .cross, .intel-col, .task, .draft, .focus, .headsup, .soon, .stack > .row-card) { background: var(--paper-sunk); border: 1px solid transparent; border-radius: 20px; box-shadow: none; }
+  :root[data-palette="slate"] :is(.pcard.next, .addp, .prep2) { border-color: var(--brass); }
+  :root[data-palette="slate"] .soon { border: 1px dashed var(--border-strong); background: transparent; }
+  :root[data-palette="slate"] .connect { border: 1px solid var(--border-strong); background: transparent; }
+  :root[data-palette="slate"] .focus { color: var(--text); }
+  :root[data-palette="slate"] .focus-t { font-family: var(--serif); font-weight: 500; }
+  :root[data-palette="slate"] input, :root[data-palette="slate"] textarea, :root[data-palette="slate"] select { background: var(--paper-raised); border-color: var(--border-strong); color: var(--text); }
+  /* chips: quiet outlines, no colored fills */
+  :root[data-palette="slate"] .chip { background: transparent; border: 1px solid var(--border-strong); color: var(--text-muted); font-weight: 600; }
+  :root[data-palette="slate"] :is(.chip.route, .chip.violet, .chip.brass) { border-color: var(--brass); color: var(--brass); background: transparent; }
+  :root[data-palette="slate"] .chip.amber { border-color: var(--amber); color: var(--amber); background: transparent; }
+  :root[data-palette="slate"] .chip.rust { border-color: var(--rust); color: var(--rust); background: transparent; }
+  /* buttons: one solid accent for the main action, outlines and links for the rest */
+  :root[data-palette="slate"] :is(.btn, .pill, .tbtn, .jb, .bearing-refresh) { border-radius: 999px; }
+  :root[data-palette="slate"] .btn { background: transparent; border-color: var(--border-strong); color: var(--text); }
+  :root[data-palette="slate"] :is(.btn.primary, .go, .go-btn, .btn-ok, .dock .send, .dk-send, .reflect-row button) { background: var(--brass); color: var(--on-brass); border: 1px solid var(--brass); border-radius: 999px; }
+  :root[data-palette="slate"] .btn-no { border-radius: 999px; }
+  :root[data-palette="slate"] .go.alt { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  :root[data-palette="slate"] .jb { background: transparent; border: 1px solid var(--border-strong); color: var(--brass); font-weight: 600; }
+  :root[data-palette="slate"] .pill.active { background: var(--text); color: var(--paper); border-color: var(--text); }
+  :root[data-palette="slate"] .seg { background: transparent; border-color: var(--border-strong); }
+  :root[data-palette="slate"] .seg button.active { background: var(--text); color: var(--paper); }
+  :root[data-palette="slate"] .linkish { color: var(--brass); }
+  /* Today: the "what I see" card becomes a serif statement on the page */
+  :root[data-palette="slate"] .stage-card { background: transparent; color: var(--text); border-radius: 0; padding: 0.2rem 0 0; }
+  :root[data-palette="slate"] .stage-card .thread-line, :root[data-palette="slate"] .thread-line { font-family: var(--serif); font-weight: 500; font-size: clamp(1.8rem, 6.2vw, 2.4rem); line-height: 1.12; max-width: none; color: var(--text); }
+  :root[data-palette="slate"] .bear { border-top: 1px solid var(--border); }
+  :root[data-palette="slate"] .bear-h { font-family: var(--serif); font-weight: 500; font-size: 1.4rem; color: var(--text); }
+  :root[data-palette="slate"] .mv { background: transparent; border: 0; border-top: 1px solid var(--border); border-radius: 0; padding: 0.95rem 0; }
+  :root[data-palette="slate"] .mv.first { background: transparent; border-color: var(--border); }
+  :root[data-palette="slate"] .mv-t { font-size: 1.02rem; font-weight: 600; }
+  :root[data-palette="slate"] .mv-why { color: var(--text-muted); }
+  :root[data-palette="slate"] .kind { border: 0; padding: 0; background: none; font-weight: 700; letter-spacing: 0.14em; color: var(--text-faint); }
+  :root[data-palette="slate"] :is(.kind.start, .kind.todo) { color: var(--brass); background: none; }
+  :root[data-palette="slate"] :is(.kind.worth, .kind.decide) { color: var(--text-faint); }
+  :root[data-palette="slate"] .mv-when { color: var(--text-muted); }
+  :root[data-palette="slate"] .mv .mv-btn { background: transparent; border: 1px solid var(--brass); color: var(--brass); }
+  :root[data-palette="slate"] .mv.first .mv-btn { background: var(--brass); color: var(--on-brass); }
+  :root[data-palette="slate"] .mv-box { border-color: var(--border-strong); }
+  :root[data-palette="slate"] .mv.done .mv-box { background: var(--brass); border-color: var(--brass); }
+  :root[data-palette="slate"] .since-line { border-top-color: var(--border); color: var(--text-muted); }
+  :root[data-palette="slate"] .since-line b { color: var(--text); }
+  :root[data-palette="slate"] .stage-card .bearing-refresh { border-color: var(--border-strong); color: var(--text-muted); }
+  :root[data-palette="slate"] .stage-card .bearing-refresh.stale { border-color: var(--brass); color: var(--brass); }
+  :root[data-palette="slate"] .stage-card .how, :root[data-palette="slate"] .how { color: var(--brass); font-family: var(--sans); font-weight: 600; letter-spacing: 0; font-size: 0.85rem; }
+  :root[data-palette="slate"] .ev { border-left-color: var(--brass); }
+  :root[data-palette="slate"] .ev p { color: var(--text-muted); }
+  :root[data-palette="slate"] .ev p b { color: var(--text); }
+  :root[data-palette="slate"] :is(.stage-card .wrapup, .wrapup) { border-top: 1px solid var(--border); }
+  :root[data-palette="slate"] .stage-card .reflect-row input { background: var(--paper-raised); border-color: var(--border-strong); color: var(--text); }
+  :root[data-palette="slate"] .stage-card .radar summary, :root[data-palette="slate"] .stage-card .radar ul, :root[data-palette="slate"] .stage-card .wrapup ul { color: var(--text-muted); }
+  /* path */
+  :root[data-palette="slate"] .xfill { background: var(--brass); }
+  :root[data-palette="slate"] .xs.done i { background: var(--brass); border-color: var(--brass); }
+  :root[data-palette="slate"] .xs.goal i { background: var(--paper); border-color: var(--text); }
+  :root[data-palette="slate"] .xs.goal .xl b, :root[data-palette="slate"] .xbank.r { color: var(--text); }
+  :root[data-palette="slate"] .xyou span { background: var(--text); color: var(--paper); }
+  :root[data-palette="slate"] .xyou span::after { border-top-color: var(--text); }
+  :root[data-palette="slate"] .xbank { font-weight: 600; }
+  :root[data-palette="slate"] .xart path { stroke: var(--border-strong); }
+  /* dock, sheets, first run */
+  :root[data-palette="slate"] .dock-inner { background: var(--paper-raised); border: 1px solid var(--border-strong); border-radius: 22px; box-shadow: 0 8px 30px rgba(0,0,0,0.10); }
+  :root[data-palette="slate"] .dock-pill { background: var(--brass); color: var(--on-brass); border: 0; }
+  :root[data-palette="slate"] .dock-bar .eyebrow, :root[data-palette="slate"] .dk-bar .eyebrow { color: var(--text-faint); }
+  :root[data-palette="slate"] .sheet { border-radius: 24px; background: var(--paper); box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+  :root[data-palette="slate"] .sheet-head { background: var(--paper-sunk); color: var(--text); }
+  :root[data-palette="slate"] .sheet-head p { color: var(--text-muted); }
+  :root[data-palette="slate"] .sheet-x { border-color: var(--border-strong); color: var(--text); }
+  :root[data-palette="slate"] :is(.welcome, .seen, .landing) { background: var(--paper); color: var(--text); }
+  :root[data-palette="slate"] .welcome .tag1 { font-family: var(--serif); font-weight: 500; font-size: clamp(1.8rem, 6vw, 2.4rem); line-height: 1.12; color: var(--text); }
+  :root[data-palette="slate"] .welcome .tag2, :root[data-palette="slate"] .welcome .intro, :root[data-palette="slate"] .seen-hint, :root[data-palette="slate"] .seen .rr span { color: var(--text-muted); }
+  :root[data-palette="slate"] .welcome .tag2 { font-family: var(--serif); font-style: italic; }
+  :root[data-palette="slate"] .seen-line { font-family: var(--serif); font-weight: 500; color: var(--text); }
+  :root[data-palette="slate"] .dest-l { color: var(--brass); }
+  :root[data-palette="slate"] .hrows { border-color: var(--border-strong); }
+  :root[data-palette="slate"] .hrow { border-color: var(--border); }
+  :root[data-palette="slate"] .hrow span:first-child { color: var(--text-faint); }
+  :root[data-palette="slate"] .hrow button { color: var(--brass); }
+  :root[data-palette="slate"] .ghost-stage { border-color: var(--border-strong); color: var(--text); }
+  :root[data-palette="slate"] .opt { background: var(--paper-sunk); border: 1px solid transparent; color: var(--text); }
+  :root[data-palette="slate"] .opt.on { border-color: var(--brass); box-shadow: none; }
+  :root[data-palette="slate"] .learn span { color: var(--text-muted); border-color: var(--border-strong); }
+  :root[data-palette="slate"] .learn span.got { color: var(--text); border-color: var(--brass); background: var(--brass-soft); }
+  :root[data-palette="slate"] .learn span.got i { background: var(--brass); border-color: var(--brass); }
+  :root[data-palette="slate"] .tour-spot { box-shadow: 0 0 0 9999px rgba(15,20,19,0.55), 0 0 0 3px var(--brass); }
+  :root[data-palette="slate"] .resume { background: var(--paper-raised); border-color: var(--border); }
+  :root[data-palette="slate"] .msg.user .bub { background: var(--brass); color: var(--on-brass); }
+  :root[data-palette="slate"] .msg.bot .bub, :root[data-palette="slate"] .msg.b .t { background: var(--paper-sunk); color: var(--text); }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1790,17 +1924,17 @@
 
   /* ================= appearance ================= */
   const Look = {
-    palette: document.documentElement.getAttribute('data-palette') || 'sky',
+    palette: 'slate',
     mode: document.documentElement.getAttribute('data-bmode') || 'system',
     apply(pal, mode, save) {
-      if (pal) this.palette = BRAND.palettes.some(x => x.id === pal) ? pal : 'sky'; if (mode) this.mode = mode;
+      if (mode) this.mode = mode;
       const r = document.documentElement;
-      r.setAttribute('data-palette', this.palette); r.setAttribute('data-bmode', this.mode);
+      r.setAttribute('data-palette', 'slate'); r.setAttribute('data-lstyle', 'paper'); r.setAttribute('data-bmode', this.mode);
       const vt = r.getAttribute('data-theme');
       const viewerDark = vt === 'dark' || (vt !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
       r.classList.toggle('b-dark', this.mode === 'dark' || (this.mode === 'system' && viewerDark));
-      lsSet('bridge.appearance', { palette: this.palette, mode: this.mode });
-      if (save && db) { saveProfile(Object.assign({}, { appearance: { palette: this.palette, mode: this.mode } })).catch(() => { }); }
+      lsSet('bridge.appearance', { palette: 'slate', mode: this.mode });
+      if (save && db) { saveProfile(Object.assign({}, { appearance: { palette: 'slate', mode: this.mode } })).catch(() => { }); }
     },
   };
   try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => Look.apply()); } catch (e) { }
@@ -2844,7 +2978,7 @@
     const knownHtml = known.map(k => `<div class="kn-i k">${esc(k.t)}<small>${esc(k.s || '')}</small></div>`).join('') || '<p class="think-lead">Nothing yet.</p>';
     const think = open.map(u => `<div class="think-i"><b>${esc(u.t)}</b><button class="jb" data-ask="${esc('About "' + u.t + '": ')}" data-send="0">I have a thought</button></div>`).join('');
     const refreshing = Path.busy;
-    el.innerHTML = `<div class="pg-head"><span class="eyebrow">Path</span><h2>Where you're heading, and why</h2><p>A working map, not a commitment. It changes as real conversations bring evidence in, and Bridge tells you when it does.</p>${sample ? `<div style="margin-top:.6rem"><button type="button" class="btn" id="pathRefresh"${refreshing ? ' disabled' : ''}>${refreshing ? 'Re-reading…' : 'Refresh my path'}</button></div>` : ''}</div>
+    el.innerHTML = `<div class="pg-head"><span class="eyebrow">Path</span><h2>Where you're <em>heading</em>, and why.</h2><p>A working map, not a commitment. It changes as real conversations bring evidence in, and Bridge tells you when it does.</p>${sample ? `<div style="margin-top:.6rem"><button type="button" class="btn" id="pathRefresh"${refreshing ? ' disabled' : ''}>${refreshing ? 'Re-reading…' : 'Refresh my path'}</button></div>` : ''}</div>
       ${cross}
       <div><div class="sec-head"><h3>Where your stories point</h3><span class="sec-note">not a decision · every conversation sharpens it</span></div><div class="focus-grid">${focusCard}${altHtml ? `<div class="alts"><span class="alts-l">Also worth testing</span>${altHtml}</div>` : ''}</div></div>
       ${mm.whatsFixed ? `<p class="fixed"><b>What stays the same on every route:</b> ${esc(mm.whatsFixed)}</p>` : ''}
@@ -3025,14 +3159,13 @@
     const html = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isWelcome ? 'Welcome to Sync 7' : 'Settings'}">
       <div class="sheet-head">${logoSvg()}<div style="flex:1;min-width:0"><h3>${isWelcome ? (S.profile && S.profile.e6NewUser ? 'Make it yours' : 'Welcome to Sync 7') : 'Settings'}</h3><p>${isWelcome ? (S.profile && S.profile.readoutSeenAt && !S.profile.e6NewUser ? 'Bridge has a new look, and everything you\'ve built is right where you left it: your people, pipeline, notes and chat history. Pick how you want it to look.' : 'One last thing before your dashboard: pick how you want Bridge to look.') : 'How Bridge looks on this account. You can change it any time.'}</p></div><button type="button" class="sheet-x" id="sheetX" aria-label="Close">×</button></div>
       <div class="sheet-body">
-        <div><div class="opt-h">Colors</div><div class="pal-opts">${BRAND.palettes.map(p => `<button class="pal-opt${Look.palette === p.id ? ' on' : ''}" data-pal="${p.id}"><span class="sw">${p.sw.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${p.name}</b><span class="muted" style="font-size:.72rem">${p.note}</span></button>`).join('')}</div></div>
         <div><div class="opt-h">Light or dark</div><div class="mode-opts">${[['system', 'Match my device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
         ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : (Apps.perms ? `<button class="btn" data-allow="${esc(a.server)}">Allow</button>` : Apps.addLink(a))}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
-        ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Palettes and light/dark are yours to choose.</p>'}
+        ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Light or dark is yours to choose.</p>'}
         <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetTour">Replay the tour</button><button class="btn" id="sheetDone">Done</button>'}</div>
       </div></div></div>`;
     $('sheetHost').innerHTML = html;
-    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: Look.palette, mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } if (isWelcome) setTimeout(maybeTour, 900); };
+    const close = async () => { $('sheetHost').innerHTML = ''; if (isWelcome && db) { try { await saveProfile(Object.assign({}, { e6SeenAt: new Date().toISOString(), appearance: { palette: 'slate', mode: Look.mode } })); } catch (e) { } setTimeout(() => Apps.maybeShow(), 400); } if (isWelcome) setTimeout(maybeTour, 900); };
     $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
     $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
     $('sheetDone').addEventListener('click', close); $('sheetX').addEventListener('click', close);
@@ -3343,7 +3476,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + '- reply: 1-4 sentences usually; longer only for drafts, prep, or mock interviews. Name the strategic implication when useful and end with ONE concrete question. Do NOT restate what you saved; the page shows that.\n'
       + '- actions: every fact from their LATEST message worth keeping. Prefer updating existing records over duplicates. Never invent facts.\n'
       + '- You cannot browse or open links from this chat. If asked to find job postings, say so plainly, point them to their Bridge project chat in Claude (where Claude can search the web), and never make up a posting, company or person. add_posting is only for a chat that really opened the page.\n'
-      + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for the two palettes (Sky and Sand) and light/dark.\n\n'
+      + '- Style or branding requests (colors, fonts, logo): don\'t promise changes. Bridge\'s look is the same for everyone; point them to the gear icon for light and dark.\n\n'
       + RIPPLE + '\n\n' + ACTIONS_DOC + '\n\nDATA:\n' + contextBlock(38000);
   }
   function onboardingRules() {
@@ -3354,7 +3487,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       + 'How to listen: each question is a way into a conversation, not a slot to fill. Follow the thread in what they actually say, including asides and things they did not answer, and use their own words to go deeper: what draws them, what they would do for free, what drains them, what they are proud of and why, how they are with people, what they have tried, what they would try if it felt safe, tensions such as wanting a fallback while chasing something else. With a resume, spend the questions on this depth instead of on facts you already have. Never ask something only because a field is empty, and never skip saving something because it did not answer your question.\n'
       + 'Every turn, save what you learned. Facts: use profile, add_experience and add_project whenever they reveal a name, school, year, location, or any experience, whatever they call it. Impressions: add at least one observe action each turn with a short, specific note in your own words about what you are picking up (their energy, values, how they think, what they are weighing). Ground every note in what they said; never flatter and never invent. A turn with nothing for the fact actions still gets an observe note. Each action is one complete JSON object with a "label" key.\n'
       + 'When you could describe them to a friend in a few honest sentences (usually after 4-8 exchanges, sooner with a resume), ask if they are ready to see their career map. When they say yes (or ask to "build my map"), include {"type":"intake_done"} and tell them it takes about a minute. There is no fixed number of questions.\n'
-      + 'Style requests: Bridge looks the same for everyone; there are two palettes (Sky and Sand) and light/dark under the gear icon.\n\n'
+      + 'Style requests: Bridge looks the same for everyone; there is light and dark under the gear icon.\n\n'
       + REPLY_FORMAT + 'Actions you can use: [{"type":"profile","fields":{"name"?,"school"?,"classYear"?,"major"?,"location"?,"currentChapter"?,"opportunityType"?,"wordVomit"?,"schools"?,"targetStart"?},"label"},{"type":"add_experience","title","org","dates"?,"highlights","skills"?:"comma list","kind"?:"job|leadership|research|project|volunteer","label"},{"type":"add_project","name","purpose"?,"currentStatus"?,"label"},{"type":"observe","text": one specific impression grounded in what they said,"label"},{"type":"intake_done","label"}]\n'
       + 'Already on file: ' + JSON.stringify(S.profile || {}) + '\nExperience so far: ' + S.experience.map(x => x.title + ' @ ' + x.org).join('; ') + '\nProjects: ' + S.projects.map(p => p.name).join(', ');
   }
@@ -3739,7 +3872,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
       try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; Chat.waitingSince = d.waitingSince || 0; Chat.readoutWanted = !!d.readoutWanted; } } catch (e) { }
       Chat.ready = true; loaded = true;
       try { db.doc('chat/main').onSnapshot(s => { if (s.exists) Chat.onRemote(s.data()); }); } catch (e) { }
-      const ap = S.profile && S.profile.appearance; if (ap) Look.apply(ap.palette, ap.mode, false); else Look.apply('sky', 'system', false);
+      const ap = S.profile && S.profile.appearance; if (ap) Look.apply(null, ap.mode, false); else Look.apply(null, 'system', false);
       const seen = new Set();
       specs.forEach(([key, path, kind]) => {
         const ref = kind === 'doc' ? db.doc(path) : db.collection(path);
@@ -3747,7 +3880,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
           apply(key, kind, s);
           if (seen.has(key) && !['brief', 'activity', 'coach'].includes(key)) lastDataChange = Date.now();
           seen.add(key);
-          if (key === 'profile' && S.profile && S.profile.appearance) Look.apply(S.profile.appearance.palette, S.profile.appearance.mode, false);
+          if (key === 'profile' && S.profile && S.profile.appearance) Look.apply(null, S.profile.appearance.mode, false);
           renderAll(); if (key === 'profile' || key === 'mindmap') maybeWelcome();
         });
       });
