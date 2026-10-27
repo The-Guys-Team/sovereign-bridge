@@ -1,4 +1,4 @@
-<!-- bridge_version: 7.0.0 | module: 3-networking -->
+<!-- bridge_version: 7.0.2 | module: 3-networking -->
 # Module 3 — Networking engine, meetings, work queue, guidance, tone
 
 *Storage note: contacts, interactions, tasks, opportunities, and guidance are rows in `01_ACTIVE.md` (kernel §2), keyed by `id`. Update the row in place; put history in the one-line *Recent log*.*
