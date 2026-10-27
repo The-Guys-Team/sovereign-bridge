@@ -53,6 +53,14 @@ All optional, so Equinox 6 data works untouched (and Equinox 6 ignores them):
 - `opportunities`: `appStatus`, `url`, `sourceName`, `checkedOn`, `location`, `postedDate`, `deadline`, `fit`, `duties`, `requirements`, `nextStep`, `dismissedPeople`
 - `resume/main`: `{draftNo, builtAt, editedAt?, name?, summary, experience [{title, org, dates, bullets [{t, isNew}]}], skills, education [{school, detail}]}`. Written from the student's `experience` only. Where a fact is unknown the text carries `[fill in: what is needed]`. Never invent an employer, date, number or outcome.
 
+## Updates never remove data; backup and restore
+
+Updating a dashboard means republishing the new page to the student's **same URL**. The database belongs to that URL, so nothing is copied, moved, or rewritten, and the page only adds optional fields. Profile writes merge into the stored profile and are refused if the profile could not be read.
+
+- **Backup:** the dashboard's Settings has "Copy a backup", which copies every document and collection as JSON (`{docs, collections}`). Before republishing, Claude takes the same snapshot with the database tool when it can read the database.
+- **Restore** (only if something is ever missing, and only with the student's okay): write each backed-up document and record back with the database tool, `set` for documents and per-collection ids, without deleting anything that is already there.
+- **Rollback:** the older dashboard files stay in the repo and read the same data, so a new release can point `dashboard.path` back at them (`dashboard/README.md`).
+
 ## Keep text short; keep Agenda and To-Do distinct
 
 Keep guidance and to-do text to one line. Put detail on the page that owns it. A scheduled call belongs in `prep`, not as a duplicate task (set `agendaLinked: true` if one already exists). Everything else is a concrete action in `tasks`. Match the field names already used in `dashboard/sync-7.html`.

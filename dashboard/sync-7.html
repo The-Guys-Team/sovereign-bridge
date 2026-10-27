@@ -1513,26 +1513,26 @@
      tone-on-tone cards and hairlines instead of boxes. Light and dark only. */
   :root[data-palette="slate"] {
     --serif: 'Newsreader', Georgia, serif; --quote: 'Newsreader', Georgia, serif; --sans: 'Manrope', system-ui, -apple-system, sans-serif; --mono: 'Manrope', system-ui, -apple-system, sans-serif;
-    --paper: #F7F2E8; --paper-raised: #FBF8F1; --paper-sunk: #EEE7D8; --ink: #F7F2E8; --ink-2: #EEE7D8;
-    --text: #27353A; --text-muted: #52605F; --text-faint: #58645F;
+    --paper: #F7F2E8; --paper-raised: #FBF8F1; --paper-sunk: #E9E0CC; --ink: #F7F2E8; --ink-2: #E9E0CC;
+    --text: #27353A; --text-muted: #4A5857; --text-faint: #536060;
     --brass: #2A6A6E; --brass-soft: #DDE9E7; --on-brass: #FFFFFF;
-    --border: #E2DAC8; --border-strong: #CFC6B1;
-    --chrome-text: #27353A; --chrome-dim: #52605F; --chrome-accent: #2A6A6E;
+    --border: #DDD3BD; --border-strong: #C9BEA6;
+    --chrome-text: #27353A; --chrome-dim: #4A5857; --chrome-accent: #2A6A6E;
     --logo-tile: #9DB5BB; --logo-mark: #FFFFFF; --shadow: none;
     --route: #3D6B4B; --route-soft: #E4EBDD; --amber: #7A5810; --amber-soft: #F2E6C8; --rust: #8C3A2B; --rust-soft: #F1DDD3;
-    --slate: #52605F; --slate-soft: #EEE7D8; --violet: #2A6A6E; --violet-soft: #DDE9E7;
-    --stage: #F7F2E8; --stage-text: #27353A; --stage-dim: #52605F; --stage-accent: #2A6A6E; --stage-line: #E2DAC8;
+    --slate: #4A5857; --slate-soft: #E9E0CC; --violet: #2A6A6E; --violet-soft: #DDE9E7;
+    --stage: #F7F2E8; --stage-text: #27353A; --stage-dim: #4A5857; --stage-accent: #2A6A6E; --stage-line: #DDD3BD;
   }
   :root[data-palette="slate"].b-dark {
-    --paper: #151A19; --paper-raised: #1B2321; --paper-sunk: #1F2826; --ink: #151A19; --ink-2: #1F2826;
-    --text: #F1EFE8; --text-muted: #BCC4C0; --text-faint: #96A19D;
-    --brass: #9FD0CB; --brass-soft: #1F3534; --on-brass: #151A19;
-    --border: #2D3835; --border-strong: #3B4743;
-    --chrome-text: #F1EFE8; --chrome-dim: #BCC4C0; --chrome-accent: #9FD0CB;
+    --paper: #11181E; --paper-raised: #172029; --paper-sunk: #1B2630; --ink: #11181E; --ink-2: #1B2630;
+    --text: #EEF2F5; --text-muted: #B4C2CD; --text-faint: #8FA1AF;
+    --brass: #8EC3DB; --brass-soft: #1D3342; --on-brass: #0F161B;
+    --border: #2A3946; --border-strong: #394B5A;
+    --chrome-text: #EEF2F5; --chrome-dim: #B4C2CD; --chrome-accent: #8EC3DB;
     --logo-tile: #9DB5BB; --logo-mark: #FFFFFF;
     --route: #8FC59F; --route-soft: #1E3526; --amber: #E9C46A; --amber-soft: #3A3114; --rust: #F0A08C; --rust-soft: #3D2119;
-    --slate: #BCC4C0; --slate-soft: #1F2826; --violet: #9FD0CB; --violet-soft: #1F3534;
-    --stage: #151A19; --stage-text: #F1EFE8; --stage-dim: #BCC4C0; --stage-accent: #9FD0CB; --stage-line: #2D3835;
+    --slate: #B4C2CD; --slate-soft: #1B2630; --violet: #8EC3DB; --violet-soft: #1D3342;
+    --stage: #11181E; --stage-text: #EEF2F5; --stage-dim: #B4C2CD; --stage-accent: #8EC3DB; --stage-line: #2A3946;
   }
   :root[data-palette="slate"] body { background: var(--paper); color: var(--text); font-family: var(--sans); }
   :root[data-palette="slate"] #sDash { background: transparent; }
@@ -1642,6 +1642,17 @@
   :root[data-palette="slate"] .resume { background: var(--paper-raised); border-color: var(--border); }
   :root[data-palette="slate"] .msg.user .bub { background: var(--brass); color: var(--on-brass); }
   :root[data-palette="slate"] .msg.bot .bub, :root[data-palette="slate"] .msg.b .t { background: var(--paper-sunk); color: var(--text); }
+  .tour-spot { transition: none; }
+  /* Today's bearing sits in its own soft bubble so the page reads as clear segments */
+  :root[data-palette="slate"] .stage-card .bear { background: var(--paper-sunk); border: 0; border-radius: 22px; padding: 1.2rem 1.3rem 1.1rem; }
+  :root[data-palette="slate"] .stage-card .bear .mv:first-of-type { border-top: 0; padding-top: 0.4rem; }
+  :root[data-palette="slate"] .stage-card .bear .mv { border-top-color: var(--border-strong); }
+  :root[data-palette="slate"] .stage-card .bear .since-line { border-top-color: var(--border-strong); }
+  :root[data-palette="slate"] .stage-card .bear .mv-box { background: var(--paper-raised); }
+  /* the live dot beside "Ask Bridge": clearly visible in both looks */
+  :root[data-palette="slate"] .dot { width: 8px; height: 8px; background: var(--brass); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brass) 25%, transparent); }
+  :root[data-palette="slate"] .dot.off { background: var(--text-faint); box-shadow: none; }
+  :root[data-palette="slate"] .dot.busy { background: var(--amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 25%, transparent); }
 </style>
 
 <section id="sWelcome" class="welcome s7-screen" aria-label="Welcome to Bridge">
@@ -1944,10 +1955,16 @@
   // or the readout right after the survey) never overwrite each other with a stale profile.
   // Data read from the dashboard database arrives frozen; anything we change later must be our own copy.
   const clone = (v) => JSON.parse(JSON.stringify(v == null ? null : v));
+  // Data safety: a profile write only ever merges new fields into the stored document (update), and it is refused
+  // if the profile could not be read at load, so a partial copy can never replace a student's real profile.
+  let profileKnown = false;
   function saveProfile(patch) {
+    if (db && !profileKnown) return Promise.reject(new Error('profile not loaded; refusing to write'));
+    const had = !!S.profile;
     const next = Object.assign({}, S.profile || {}, patch);
     S.profile = next;
-    return db ? db.doc('profile/main').set(next) : Promise.resolve();
+    if (!db) return Promise.resolve();
+    return had ? db.doc('profile/main').update(patch) : db.doc('profile/main').set(next);
   }
 
   /* ================= navigation ================= */
@@ -3102,8 +3119,9 @@
 
   /* ================= quick tour (first visit to Today; replay from Settings) ================= */
   const TOUR = [
-    { el: '#bearing', pg: 'today', t: 'Your daily bearing', p: 'A fresh read of where you stand and the moves that matter now. Check here first.' },
-    { el: '#bearing .mv', pg: 'today', t: 'Your first move', p: 'The top move is the one to do first. Its button opens the page you need.' },
+    { el: '#bearing .thread-line', pg: 'today', t: 'What Bridge sees', p: 'One line on who you are right now, from everything you have told it. Tap "How I know" to see why.' },
+    { el: '#bearing .bear', pg: 'today', t: 'Your daily bearing', p: 'The moves that matter today. Check here first.' },
+    { el: '#bearing .mv', pg: 'today', t: 'Start with this one', p: 'The top move is a quick task you can finish in about 10 minutes. Its button opens the page you need.' },
     { el: '#moreWrap', pg: 'today', t: 'Got more time?', p: 'Optional extras with time estimates, for days you want to do more.' },
     { el: '#agendaWrap', pg: 'today', t: 'Coming up', p: 'Calls and follow-ups land here. Connect your calendar in Settings and Bridge spots upcoming calls.' },
     { el: () => ($('dock').classList.contains('min') ? '#dockPill' : '#dock .dock-inner'), pg: 'today', t: 'Post your updates here', p: 'Tell Bridge when someone replies, when you book a call, how a conversation went, or who you met. It updates your dashboard and remembers it.' },
@@ -3124,27 +3142,40 @@
     document.body.classList.remove('touring'); $('tourLayer').innerHTML = ''; go('today'); window.scrollTo(0, 0);
     if (!(S.profile || {}).s7TourSeenAt) S7.saveProfile({ s7TourSeenAt: new Date().toISOString() }).catch(e => diag('tour', e));
   }
+  // The box to highlight: the element's own box when it is a visible card or button; otherwise the box around its text,
+  // so a line of text is circled tightly instead of the whole empty row beside it.
+  function tourBox(el) {
+    const cs = getComputedStyle(el), bg = cs.backgroundColor, hasBg = bg && !/rgba?\(\s*\d+,\s*\d+,\s*\d+,\s*0\s*\)|transparent/.test(bg);
+    if (!hasBg && !(parseFloat(cs.borderTopWidth) > 0)) { const rg = document.createRange(); rg.selectNodeContents(el); const rr = rg.getBoundingClientRect(); if (rr.width > 0 && rr.height > 0) return rr; }
+    return el.getBoundingClientRect();
+  }
   function drawTour() {
     const s = tourSteps[tourI]; if (!s) return endTour();
     if (s.pg) go(s.pg);
-    const el = tourEl(s); if (!el) { tourSteps.splice(tourI, 1); return tourI >= tourSteps.length ? endTour() : drawTour(); }
+    let el = tourEl(s); if (!el) { tourSteps.splice(tourI, 1); return tourI >= tourSteps.length ? endTour() : drawTour(); }
     const hdr = document.querySelector('#sDash .chrome').getBoundingClientRect().bottom;
-    const r0 = el.getBoundingClientRect(); if (s.pg && el.closest('#dashMain')) window.scrollTo(0, Math.max(0, window.scrollY + r0.top - hdr - 24));
-    requestAnimationFrame(() => {
-      const r = el.getBoundingClientRect(), pad = 6, vh = window.innerHeight, vw = window.innerWidth;
-      const h = Math.min(r.height, vh * 0.55), tw = Math.min(340, vw - 32);
-      const below = r.top + h + 230 < vh;
-      let top = below ? r.top + h + 16 : Math.max(16, r.top - 16 - 220);
-      if (!below && r.top - 236 < 0) top = Math.min(vh - 236, r.top + h + 16);
-      const left = Math.min(Math.max(16, r.left), vw - tw - 16);
+    // Bring the target to just under the header in one instant jump, then measure after layout settles.
+    if (el.closest('#dashMain')) { const r0 = el.getBoundingClientRect(); window.scrollTo({ top: Math.max(0, window.scrollY + r0.top - hdr - 18), behavior: 'instant' }); }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el = tourEl(s) || el;
+      const r = tourBox(el), vw = window.innerWidth, vh = window.innerHeight, pad = 10, edge = 8;
+      // spotlight: the element's own box plus even padding, kept inside the screen; corner radius follows the element
+      const x1 = Math.max(edge, r.left - pad), y1 = Math.max(edge, r.top - pad), x2 = Math.min(vw - edge, r.right + pad), y2 = Math.min(vh - edge, r.bottom + pad);
+      const rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+      const radius = Math.round(Math.min(Math.max(rad + pad, 14), (y2 - y1) / 2, 30));
+      const tight = r !== el.getBoundingClientRect();
+      const tw = Math.min(340, vw - 32), th = 210;
+      const spaceBelow = vh - y2, spaceAbove = y1;
+      let top = spaceBelow >= th + 16 ? y2 + 14 : spaceAbove >= th + 16 ? y1 - th - 14 : Math.max(16, vh - th - 16);
+      const left = Math.min(Math.max(16, x1), vw - tw - 16);
       const last = tourI === tourSteps.length - 1;
-      $('tourLayer').innerHTML = `<div class="tour-block"></div><div class="tour-spot" style="top:${r.top - pad}px;left:${r.left - pad}px;width:${r.width + pad * 2}px;height:${h + pad * 2}px"></div>`
+      $('tourLayer').innerHTML = `<div class="tour-block"></div><div class="tour-spot" style="top:${y1}px;left:${x1}px;width:${x2 - x1}px;height:${y2 - y1}px;border-radius:${radius}px"></div>`
         + `<div class="tour-tip" role="dialog" aria-label="Dashboard tour" style="top:${top}px;left:${left}px"><span class="eyebrow">Quick tour · ${tourI + 1} of ${tourSteps.length}</span><h3>${esc(s.t)}</h3><p>${esc(s.p)}</p>`
         + `<div class="tour-foot"><div class="tdots">${tourSteps.map((_, i) => `<i class="${i === tourI ? 'on' : ''}"></i>`).join('')}</div><button class="tbtn ghost" id="tSkip">Skip</button>${tourI ? '<button class="tbtn" id="tBack">Back</button>' : ''}<button class="tbtn primary" id="tNext">${last ? 'Done' : 'Next'}</button></div></div>`;
       $('tSkip').onclick = endTour; $('tNext').onclick = () => { if (last) endTour(); else { tourI++; drawTour(); } };
       if ($('tBack')) $('tBack').onclick = () => { tourI--; drawTour(); };
-      $('tNext').focus();
-    });
+      $('tNext').focus({ preventScroll: true });
+    }));
   }
   window.addEventListener('resize', () => { if (document.body.classList.contains('touring') && tourSteps.length) drawTour(); });
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('touring')) endTour(); });
@@ -3152,6 +3183,27 @@
   function maybeTour() { const pf = S.profile || {}; if (!pf.name || !pf.readoutSeenAt || pf.s7TourSeenAt || $('scrim') || document.body.classList.contains('touring')) return; startTour(); }
 
   /* ================= sheets: settings + welcome ================= */
+  /* ---- back up my data: a full copy of the dashboard database as JSON, kept by the student ---- */
+  const BACKUP_DOCS = ['profile/main', 'mindmap/main', 'brief/main', 'coach/main', 'resume/main', 'chat/main'];
+  const BACKUP_COLS = ['experience', 'network', 'interactions', 'sessions', 'prep', 'candidates', 'projects', 'opportunities', 'outreach', 'tasks', 'reflections', 'guidance', 'activity'];
+  async function buildBackup() {
+    const out = { app: 'bridge-dashboard', exportedAt: new Date().toISOString(), docs: {}, collections: {}, unreadable: [] };
+    for (const p of BACKUP_DOCS) { try { const s = await db.doc(p).get(); if (s.exists) out.docs[p] = s.data(); } catch (e) { out.unreadable.push(p); } }
+    for (const c of BACKUP_COLS) { try { const s = await db.collection(c).get(); out.collections[c] = {}; s.docs.forEach(d => { out.collections[c][d.id] = d.data(); }); } catch (e) { out.unreadable.push(c); } }
+    return out;
+  }
+  async function runBackup() {
+    const btn = $('backupBtn'), msg = $('backupMsg'); if (!btn || !db) return;
+    btn.disabled = true; btn.textContent = 'Copying…'; msg.textContent = '';
+    try {
+      const out = await buildBackup(); const json = JSON.stringify(out);
+      const n = Object.keys(out.docs).length + Object.values(out.collections).reduce((a, c) => a + Object.keys(c).length, 0);
+      const note = n + ' records, ' + Math.max(1, Math.round(json.length / 1024)) + ' KB' + (out.unreadable.length ? '. Could not read: ' + out.unreadable.join(', ') : '');
+      try { await navigator.clipboard.writeText(json); msg.textContent = 'Copied (' + note + '). Paste it into a file or a Bridge chat to keep it.'; }
+      catch (e) { msg.innerHTML = 'Select all and copy (' + esc(note) + '):<textarea id="backupText" readonly rows="4" style="width:100%;margin-top:.4rem"></textarea>'; const ta = $('backupText'); ta.value = json; ta.focus(); ta.select(); }
+    } catch (e) { diag('backup', e); msg.textContent = 'Couldn\'t make a backup just now. Try again.'; }
+    btn.disabled = false; btn.textContent = 'Copy a backup';
+  }
   function sheet(kind) {
     if (kind === 'apps') return appsSheet();
     const isWelcome = kind === 'welcome';
@@ -3161,6 +3213,7 @@
       <div class="sheet-body">
         <div><div class="opt-h">Light or dark</div><div class="mode-opts">${[['system', 'Match my device'], ['light', 'Light'], ['dark', 'Dark']].map(([m, l]) => `<button class="pill${Look.mode === m ? ' active' : ''}" data-mode="${m}">${l}</button>`).join('')}</div></div>
         ${isWelcome ? '' : `<div><div class="opt-h">Connected apps</div><div class="apps-list">${(Apps.perms ? Apps.available() : BRAND.apps.slice(0, 1)).map(a => { const st = Apps.states[a.server] || (cal ? 'granted' : 'prompt'); return `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)}</small></div>${st === 'granted' ? '<span class="chip route">On</span>' : (Apps.perms ? `<button class="btn" data-allow="${esc(a.server)}">Allow</button>` : Apps.addLink(a))}</div>`; }).join('')}${Apps.perms ? Apps.others().map(a => `<div class="conn">${Apps.tile(a)}<div style="flex:1;min-width:0"><b>${esc(a.server)}</b><small>${esc(a.does)} Used in your Bridge chats.</small></div>${Apps.addLink(a)}</div>`).join('') : ''}</div><p class="sheet-note" style="margin-top:.5rem">To add or remove an app from your Claude account, go to claude.ai → Settings → Connectors.</p></div>`}
+        ${isWelcome ? '' : '<div><div class="opt-h">Your data</div><p class="sheet-note" style="margin:0 0 .6rem">Everything lives in your own Bridge dashboard, and updates never remove it. You can still copy a full backup any time, for example before an update.</p><button type="button" class="btn" id="backupBtn">Copy a backup</button><div class="sheet-note" id="backupMsg" style="margin-top:.5rem"></div></div>'}
         ${isWelcome ? '' : '<p class="sheet-note">Bridge\'s logo, layout and type are the same for everyone. Light or dark is yours to choose.</p>'}
         <div class="sheet-foot">${isWelcome ? '<button class="btn primary" id="sheetDone">Open my Bridge →</button>' : '<button class="btn" id="sheetTour">Replay the tour</button><button class="btn" id="sheetDone">Done</button>'}</div>
       </div></div></div>`;
@@ -3169,6 +3222,7 @@
     $('sheetHost').querySelectorAll('[data-pal]').forEach(b => b.addEventListener('click', () => { Look.apply(b.dataset.pal, null, !isWelcome); sheet(kind); }));
     $('sheetHost').querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { Look.apply(null, b.dataset.mode, !isWelcome); sheet(kind); }));
     $('sheetDone').addEventListener('click', close); $('sheetX').addEventListener('click', close);
+    const bb = $('backupBtn'); if (bb) bb.addEventListener('click', runBackup);
     const rt = $('sheetTour'); if (rt) rt.addEventListener('click', () => { $('sheetHost').innerHTML = ''; setTimeout(startTour, 80); });
     $('scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim' && !isWelcome) close(); });
     $('sheetHost').querySelectorAll('[data-allow]').forEach(b => b.addEventListener('click', async () => { await Apps.allow([b.dataset.allow]); sheet(kind); }));
@@ -3868,7 +3922,7 @@ The dashboard's bearing refreshes itself after you save, so make the data comple
     if (db) {
       const specs = [['profile', 'profile/main', 'doc'], ['mindmap', 'mindmap/main', 'doc'], ['brief', 'brief/main', 'doc'], ['coach', 'coach/main', 'doc'], ['resume', 'resume/main', 'doc'], ['experience', 'experience'], ['network', 'network'], ['interactions', 'interactions'], ['sessions', 'sessions'], ['prep', 'prep'], ['candidates', 'candidates'], ['projects', 'projects'], ['opportunities', 'opportunities'], ['outreach', 'outreach'], ['tasks', 'tasks'], ['reflections', 'reflections'], ['guidance', 'guidance'], ['activity', 'activity']];
       const apply = (key, kind, s) => { if (kind === 'doc') S[key] = s.exists ? clone(s.data()) : null; else S[key] = s.docs.map(d => Object.assign(clone(d.data()), { id: d.id })); };
-      await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); } catch (e) { } }));
+      await Promise.all(specs.map(async ([key, path, kind]) => { try { const ref = kind === 'doc' ? db.doc(path) : db.collection(path); apply(key, kind, await ref.get()); if (key === 'profile') profileKnown = true; } catch (e) { } }));
       try { const cs = await db.doc('chat/main').get(); if (cs.exists) { const d = cs.data(); Chat.messages = clone(d.messages || []); Chat.remoteInflight = d.inflight || null; Chat.waitingSince = d.waitingSince || 0; Chat.readoutWanted = !!d.readoutWanted; } } catch (e) { }
       Chat.ready = true; loaded = true;
       try { db.doc('chat/main').onSnapshot(s => { if (s.exists) Chat.onRemote(s.data()); }); } catch (e) { }

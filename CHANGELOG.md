@@ -29,6 +29,7 @@ Sync 7. MAJOR: new look and a rebuilt dashboard (`dashboard/sync-7.html`, dashbo
 - Text contrast is 4.5:1 or better on every page in both looks.
 - Kernel: §1.3 no longer re-runs the Equinox 6 migration for Sync 7 students (it now recognizes `sync-7` versions) and the template update republishes the file named by `dashboard.path`. §4.1 points at `sync-7.html`, and the look answer is Light / Dark / Match my device.
 - Modules: `modules/4-dashboard.md` rewritten for Sync 7, including the posting contract (open the page first, at most 8, never invent, connection first). `modules/3-networking.md` gains "Finding openings: people first". `modules/equinox-6-migration.md` now moves older dashboards onto the current dashboard file.
+- Data safety: updates republish to the same URL and add only optional fields; profile writes only merge and are refused if the profile could not be read; Settings has "Copy a backup"; the kernel asks Claude to snapshot the dashboard database before a republish and to confirm the data is still there afterward.
 - The page's own chat cannot browse or open links; openings are found in the student's Bridge Project chat and written to the dashboard database.
 - Not included (backlog): resume file upload, Outlook calendar, a Sunday weekly wrap-up.
 
