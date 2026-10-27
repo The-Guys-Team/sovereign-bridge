@@ -2839,11 +2839,6 @@
       ${mm.nextStage ? `<details class="focus-more"><summary>See the long term</summary><div class="lt"><div><span>${esc(mm.nextStage.timing || '')}</span><b>${esc(mm.nextStage.title)}</b><small>${esc(mm.nextStage.why || '')}</small></div></div></details>` : ''}
       <div class="focus-upd"><b>${mm.revisedAt ? 'Updated ' + esc(fmtDate(mm.revisedAt.slice(0, 10))) : 'Not updated yet'}</b>${esc(mm.revisionWhy || '')}${hist.length > 1 ? `<details><summary>Earlier changes (${hist.length - 1})</summary><ul>${hist.slice(1).map(h => `<li>${esc(fmtDate(String(h.at).slice(0, 10)))} · ${esc(h.why)}</li>`).join('')}</ul></details>` : ''}</div></div>` : '';
     const altHtml = alts.map(f => `<details class="path alt"><summary><span class="path-top"><span class="path-t">${esc(f.title)}</span>${f.label ? `<span class="chip">${esc(f.label)}</span>` : ''}</span><span class="alt-why"><b>Why it might fit:</b> ${esc(f.why || '')}</span><span class="alt-more">More ›</span></summary>${f.q ? `<p class="q"><b>Question to test:</b> ${esc(f.q)}</p>` : ''}${f.yields ? `<p class="q">${esc(f.yields)}</p>` : ''}</details>`).join('');
-    const rd = [];
-    if (mm.rightNow) rd.push(`<div class="rd now"><span class="rd-w">Now</span><span class="rd-t">Where you are</span><span class="rd-s">${esc(mm.rightNow)}</span></div>`);
-    if (mm.targetNextStep) rd.push(`<div class="rd next"><span class="rd-w">${esc(mm.targetNextStep.timing || 'Next')}</span><span class="rd-t">${esc(mm.targetNextStep.title)}</span><span class="rd-s">${esc(mm.targetNextStep.why || '')}</span>${undone.length ? `<div class="rd-steps"><span class="h">To get there</span><ol>${undone.map(m => `<li><b>${esc(m.b)}</b>${m.s ? ' · ' + esc(m.s) : ''}</li>`).join('')}</ol></div>` : ''}</div>`);
-    if (mm.nextStage) rd.push(`<div class="rd far"><span class="rd-w">${esc(mm.nextStage.timing || 'Later')}</span><span class="rd-t">${esc(mm.nextStage.title)}</span><span class="rd-s">${esc(mm.nextStage.why || '')}</span></div>`);
-    const road = rd.length ? `<div class="road" id="road"><div class="sec-head" style="margin:0"><h3>The road, if your focus holds</h3><span class="sec-note">next steps in detail · later as a sketch</span></div><div class="rd-row">${rd.join('')}</div></div>` : '';
     const known = (Array.isArray(mm.known) && mm.known.length ? mm.known : (mm.bridgeSkills || []).map(s => ({ t: s.skill, s: s.why }))).filter(k => k && k.t);
     const open = (Array.isArray(mm.open) ? mm.open : []).filter(u => u && u.t);
     const knownHtml = known.map(k => `<div class="kn-i k">${esc(k.t)}<small>${esc(k.s || '')}</small></div>`).join('') || '<p class="think-lead">Nothing yet.</p>';
@@ -2853,7 +2848,6 @@
       ${cross}
       <div><div class="sec-head"><h3>Where your stories point</h3><span class="sec-note">not a decision · every conversation sharpens it</span></div><div class="focus-grid">${focusCard}${altHtml ? `<div class="alts"><span class="alts-l">Also worth testing</span>${altHtml}</div>` : ''}</div></div>
       ${mm.whatsFixed ? `<p class="fixed"><b>What stays the same on every route:</b> ${esc(mm.whatsFixed)}</p>` : ''}
-      ${road}
       <div class="card" id="know"><h3>What I know about you, and what's worth thinking about</h3><div class="grid2 even"><div class="kn"><span class="kn-h known">What I know</span>${knownHtml}</div><div class="kn"><span class="kn-h open">Worth thinking about</span><p class="think-lead">You don't need answers today. When something comes to mind, tell Bridge and it will turn it into direction.</p>${think || '<p class="muted" style="margin:0;font-size:.84rem">Nothing open right now. Refresh your path after a few conversations.</p>'}</div></div></div>`;
     const rb = $('pathRefresh'); if (rb) rb.addEventListener('click', () => Path.refresh());
     el.querySelectorAll('[data-person]').forEach(b => b.addEventListener('click', () => openPerson(b.dataset.person)));
